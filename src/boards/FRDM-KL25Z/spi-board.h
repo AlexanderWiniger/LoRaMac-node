@@ -13,7 +13,7 @@
  * SPI driver structure definition
  */
 struct Spi_s {
-    SPI_TypeDef *Spi;
+    SPI_Type *Spi;
     Gpio_t Mosi;
     Gpio_t Miso;
     Gpio_t Sclk;

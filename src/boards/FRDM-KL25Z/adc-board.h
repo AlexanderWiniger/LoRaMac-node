@@ -9,10 +9,10 @@
 #define __ADC_MCU_H__
 
 /*!
- * Register the old AdcMcuReadChannel function to the new function 
+ * Register the old AdcMcuReadChannel function to the new function
  * which makes an additional parameter available to select the read out channel
  */
-#define AdcMcuReadChannel( obj ) AdcMcuRead( obj, ADC_Channel_8 )
+#define AdcMcuReadChannel( obj ) AdcMcuRead( obj, 0 )
 
 /*!
  * ADC resolution

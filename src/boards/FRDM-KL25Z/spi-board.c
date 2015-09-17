@@ -13,8 +13,6 @@
  * MCU SPI peripherals enumeration
  */
 
-SPI_InitTypeDef SPI_InitStructure;
-
 void SpiInit(Spi_t *obj, PinNames mosi, PinNames miso, PinNames sclk,
         PinNames nss)
 {
