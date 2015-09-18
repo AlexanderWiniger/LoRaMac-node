@@ -35,14 +35,14 @@ int main(void)
 
     // Target board initialisation
     BoardInitMcu();
-    BoardInitPeriph();
+//    BoardInitPeriph();
 
-    TimerInit(&Led1Timer, OnLed1TimerEvent);
-    TimerSetValue(&Led1Timer, 90000);
-
-    // Switch LED 1 ON
-    GpioWrite(&Led1, 0);
-    TimerStart(&Led1Timer);
+//    TimerInit(&Led1Timer, OnLed1TimerEvent);
+//    TimerSetValue(&Led1Timer, 90000);
+//
+//    // Switch LED 1 ON
+//    GpioWrite(&Led1, 0);
+//    TimerStart(&Led1Timer);
 
     // Print the initial banner
     PRINTF("\r\nHello World!\n\n\r");

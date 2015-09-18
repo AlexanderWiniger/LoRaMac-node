@@ -39,7 +39,7 @@
 void PORTA_IRQHandler(void)
 {
     /* Clear interrupt flag.*/
-    PORT_HAL_ClearPortIntFlag(PORTA_BASE_PTR);
+	PORT_HAL_ClearPortIntFlag(PORTA_BASE_PTR);
 }
 
 #if defined (KL16Z4_SERIES) || defined (KL26Z4_SERIES) || defined (KL46Z4_SERIES) || defined (KW01Z4_SERIES)

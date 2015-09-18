@@ -9,8 +9,6 @@
 #include "board.h"
 #include "fsl_clock_manager.h"
 #include "fsl_smc_hal.h"
-#include "fsl_debug_console.h"
-
 /*!
  * LED GPIO pins objects
  */
@@ -29,7 +27,7 @@ Gpio_t Irq2Mma8451;
  */
 Adc_t Adc;
 I2c_t I2c;
-Uart_t Uart1;
+Uart_t Uart0;
 #if defined( USE_USB_CDC )
 Uart_t UartUsb;
 #endif
@@ -118,8 +116,6 @@ static bool McuInitialized = false;
 void BoardInitPeriph(void)
 {
     /* Init the GPIO extender pins */
-    GpioInit(&Irq1Mma8451, IRQ_1_MMA8451, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
-    GpioInit(&Irq2Mma8451, IRQ_2_MMA8451, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
     GpioInit(&Led2, LED_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
     GpioInit(&Led3, LED_3, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
@@ -132,17 +128,24 @@ void BoardInitPeriph(void)
 
 void BoardInitMcu(void)
 {
-    Gpio_t ioPin;
-
     if (McuInitialized == false) {
+
+    	/************************************************************
+    	 *                       MCU clock config                   *
+    	 ***********************************************************/
+		/* enable clock for PORTs */
+		CLOCK_SYS_EnablePortClock(PORTA_IDX);
+		CLOCK_SYS_EnablePortClock(PORTC_IDX);
+		CLOCK_SYS_EnablePortClock(PORTE_IDX);
+
         /* Set allowed power mode, allow all. */
         SMC_HAL_SetProtection(SMC, kAllowPowerModeAll);
 
         /* Setup board clock source. */
         // Setup OSC0 if used.
         // Configure OSC0 pin mux.
-        GpioInit(&ioPin, OSC_EXTAL0, PIN_ANALOGIC, PIN_PUSH_PULL, PIN_NO_PULL, 1);
-        GpioInit(&ioPin, OSC_XTAL0, PIN_ANALOGIC, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+        PORT_HAL_SetMuxMode(EXTAL0_PORT, EXTAL0_PIN, EXTAL0_PINMUX);
+        PORT_HAL_SetMuxMode(XTAL0_PORT, XTAL0_PIN, XTAL0_PINMUX);
 
         /* Function to initialize OSC0 base on board configuration. */
         osc_user_config_t
@@ -160,30 +163,6 @@ void BoardInitMcu(void)
 
         CLOCK_SYS_OscInit(0U, &osc0Config);
 
-        // Setup RTC external clock if used.
-#if RTC_XTAL_FREQ
-        // If RTC_CLKIN is connected, need to set pin mux. Another way for
-        // RTC clock is set RTC_OSC_ENABLE_CONFIG to use OSC0, please check
-        // reference manual for datails.
-        PORT_HAL_SetMuxMode(RTC_CLKIN_PORT, RTC_CLKIN_PIN, RTC_CLKIN_PINMUX);
-#endif
-#if ((OSC0_XTAL_FREQ != 32768U) && (RTC_OSC_ENABLE_CONFIG))
-#error Set RTC_OSC_ENABLE_CONFIG will override OSC0 configuration and OSC0 must be 32k.
-#endif
-        rtc_osc_user_config_t
-        rtcOscConfig =
-        {
-            .freq = RTC_XTAL_FREQ,
-            .enableCapacitor2p = RTC_SC2P_ENABLE_CONFIG,
-            .enableCapacitor4p = RTC_SC4P_ENABLE_CONFIG,
-            .enableCapacitor8p = RTC_SC8P_ENABLE_CONFIG,
-            .enableCapacitor16p = RTC_SC16P_ENABLE_CONFIG,
-            .enableOsc = RTC_OSC_ENABLE_CONFIG,
-            .enableClockOutput = RTC_CLK_OUTPUT_ENABLE_CONFIG,
-        };
-
-        CLOCK_SYS_RtcOscInit(0U, &rtcOscConfig);
-
         /* Set system clock configuration. */
 #if (CLOCK_INIT_CONFIG == CLOCK_VLPR)
         CLOCK_SYS_SetConfiguration (&g_defaultClockConfigVlpr);
@@ -191,15 +170,36 @@ void BoardInitMcu(void)
         CLOCK_SYS_SetConfiguration(&g_defaultClockConfigRun);
 #endif
 
-        TimerSetLowPowerEnable(false);
+        I2cInit( &I2c, I2C_SCL, I2C_SDA );
 
+		SpiInit( &SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, NC );
+		SX1276IoInit( );
+
+#if defined( USE_USB_CDC )
+        UartInit( &UartUsb, UART_USB_CDC, NC, NC );
+		UartConfig( &UartUsb, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL );
+#elif( LOW_POWER_MODE_ENABLE )
+        TimerSetLowPowerEnable( true );
+#else
+        UartInit( &Uart0, UART_0, UART0_TX, UART0_RX );
+#if defined( DEBUG )
+        DbgConsole_Init(UART_0, 115200, kDebugConsoleLPSCI);
+#else
+		UartConfig( &Uart0, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL );
+#endif /* DEBUG */
+		TimerSetLowPowerEnable( false );
+#endif /* USE_USB_CDC */
         BoardUnusedIoInit();
 
-        if (TimerGetLowPowerEnable() == true) {
-            RtcInit();
-        } else {
-            TimerHwInit();
-        }
+        if( TimerGetLowPowerEnable( ) == true )
+		{
+			RtcInit( );
+		}
+		else
+		{
+			TimerHwInit( );
+		}
+
         McuInitialized = true;
     }
 }
@@ -220,10 +220,10 @@ void BoardDeInitMcu(void)
 
 void BoardGetUniqueId(uint8_t *id)
 {
-
+	// \todo Read out kinetis id KL25 RM p.213
 }
 
 static void BoardUnusedIoInit(void)
 {
-
+	// \todo Initialize unused gpio to knwon state
 }
