@@ -9,6 +9,21 @@
 #ifndef __GPIO_MCU_H__
 #define __GPIO_MCU_H__
 
+/*******************************************************************************
+ * Definitions
+ ******************************************************************************/
+/*! \brief Offset between port base addresses */
+#define PORT_BASE_OFFSET    0x00001000
+
+/*! \brief Calculates the port base pointer address of a port with the given idx */
+#define PORT_BASE_ADDRESS(idx)  ((PORT_Type *)(PORTA_BASE + (PORT_BASE_OFFSET * idx)))
+
+/*! \brief Offset between gpio base addresses */
+#define GPIO_BASE_OFFSET    0x00000040
+
+/*! \brief Calculates the gpio base pointer address of a port with the given idx */
+#define GPIO_BASE_ADDRESS(idx)  ((GPIO_Type *)(GPIOA_BASE + (GPIO_BASE_OFFSET * idx)))
+
 /*!
  * \brief Initializes the given GPIO object
  *
@@ -19,9 +34,11 @@
  * \param [IN] config Pin config [PIN_PUSH_PULL, PIN_OPEN_DRAIN]
  * \param [IN] type   Pin type [PIN_NO_PULL, PIN_PULL_UP, PIN_PULL_DOWN]
  * \param [IN] value  Default output value at initialisation
+ *
+ * \remark Open drain configuration isn't supported by KL25Z4
  */
-void GpioMcuInit(Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config,
-        PinTypes type, uint32_t value);
+void GpioMcuInit( Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, PinTypes type,
+        uint32_t value );
 
 /*!
  * \brief GPIO IRQ Initialization
@@ -34,15 +51,15 @@ void GpioMcuInit(Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config,
  *                                       IRQ_VERY_HIGH_PRIORITY]
  * \param [IN] irqHandler  Callback function pointer
  */
-void GpioMcuSetInterrupt(Gpio_t *obj, IrqModes irqMode,
-        IrqPriorities irqPriority, GpioIrqHandler *irqHandler);
+void GpioMcuSetInterrupt( Gpio_t *obj, IrqModes irqMode, IrqPriorities irqPriority,
+        GpioIrqHandler *irqHandler );
 
 /*!
  * \brief GPIO IRQ DeInitialization
  *
  * \param [IN] obj         Pointer to the GPIO object to be Deinitialized
  */
-void GpioMcuRemoveInterrupt(Gpio_t *obj);
+void GpioMcuRemoveInterrupt( Gpio_t *obj );
 
 /*!
  * \brief Writes the given value to the GPIO output
@@ -50,7 +67,7 @@ void GpioMcuRemoveInterrupt(Gpio_t *obj);
  * \param [IN] obj    Pointer to the GPIO object
  * \param [IN] value  New GPIO output value
  */
-void GpioMcuWrite(Gpio_t *obj, uint32_t value);
+void GpioMcuWrite( Gpio_t *obj, uint32_t value );
 
 /*!
  * \brief Reads the current GPIO input value
@@ -58,6 +75,6 @@ void GpioMcuWrite(Gpio_t *obj, uint32_t value);
  * \param [IN] obj    Pointer to the GPIO object
  * \retval value  Current GPIO input value
  */
-uint32_t GpioMcuRead(Gpio_t *obj);
+uint32_t GpioMcuRead( Gpio_t *obj );
 
 #endif // __GPIO_MCU_H__

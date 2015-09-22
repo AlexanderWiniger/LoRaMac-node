@@ -6,14 +6,20 @@
  *
  */
 
-#include <lptimer-board.h>
+#include <time.h>
 #include "board.h"
+#include "lptimer-board.h"
 #include "fsl_lptmr_driver.h"
 
 /*!
  * Low-power timer tmie base in us
  */
 #define LPTMR_TIME_BASE         100U
+
+/*!
+ * \brief Low-power timer interrupt call back function.
+ */
+void lptmr_call_back( void );
 
 /*!
  * Low-power timer configuration
@@ -74,9 +80,6 @@ void LptmrRecoverMcuStatus( void ) {
 
 }
 
-/*!
- * \brief Low-power timer interrupt call back function.
- */
 void lptmr_call_back( void ) {
     TimerIrqHandler();
 }

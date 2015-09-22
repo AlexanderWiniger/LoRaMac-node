@@ -127,7 +127,7 @@ void BoardInitPeriph( void ) {
 
 void BoardInitMcu( void ) {
     if ( McuInitialized == false ) {
-        /* enable clock for PORTs */
+        /* Enable clock for PORTs */
         CLOCK_SYS_EnablePortClock (PORTA_IDX);
         CLOCK_SYS_EnablePortClock (PORTC_IDX);
         CLOCK_SYS_EnablePortClock (PORTE_IDX);
@@ -186,7 +186,7 @@ void BoardInitMcu( void ) {
         BoardUnusedIoInit();
 
         if ( TimerGetLowPowerEnable() == true ) {
-            LpTimerInit();
+            RtcInit();
         } else {
             TimerHwInit();
         }

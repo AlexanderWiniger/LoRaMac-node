@@ -184,8 +184,13 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash.1805728155.676050433" name="Create flash image" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash.1805728155"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize.524097042.1034971963" name="Print size" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize.524097042"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.2010186413.1918323703" name="Enable all common warnings (-Wall)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.2010186413"/>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.257371641" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.1525874512"/>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.536589321" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.747907658"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform" isAbstract="false" osList="all" superClass="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform"/>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.257371641" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.1525874512">
+								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input.1033741116" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input"/>
+							</tool>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.536589321" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.747907658">
+								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.400848332" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input"/>
+							</tool>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.2016368999" name="Cross ARM C++ Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.43416784"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.971328340" name="Cross ARM C Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.249514355"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.1368054798" name="Cross ARM C++ Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.1678291322"/>

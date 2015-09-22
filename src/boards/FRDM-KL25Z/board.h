@@ -26,6 +26,7 @@
 #include "sx1276/sx1276.h"
 #include "mma8451.h"
 #include "lptimer-board.h"
+#include "rtc-board.h"
 #include "timer-board.h"
 #include "sx1276-board.h"
 #include "uart-board.h"
@@ -34,10 +35,6 @@
 #include "usb-cdc-board.h"
 #endif
 
-/*!
- * Define indicating if an external IO expander is to be used
- */
-//#define BOARD_IOE_EXT
 /*!
  * NULL definition
  */
@@ -180,7 +177,7 @@ extern Uart_t UartUsb;
 #define XTAL0_PINMUX                   kPortPinDisabled
 
 /* RTC external clock configuration. */
-#define RTC_XTAL_FREQ   0U
+#define RTC_XTAL_FREQ                  0U
 #define RTC_SC2P_ENABLE_CONFIG         false
 #define RTC_SC4P_ENABLE_CONFIG         false
 #define RTC_SC8P_ENABLE_CONFIG         false

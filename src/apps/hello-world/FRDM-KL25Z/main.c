@@ -19,29 +19,27 @@ volatile bool Led1TimerEvent = false;
 /*!
  * \brief Function executed on Led 1 Timeout event
  */
-void OnLed1TimerEvent(void)
-{
+void OnLed1TimerEvent( void ) {
     Led1TimerEvent = true;
 }
 
 /*!
  * \brief Main application entry point.
  */
-int main(void)
-{
+int main( void ) {
     // RX buffers
     //! @param receiveBuff Buffer used to hold received data
     uint8_t receiveBuff;
 
     // Target board initialisation
     BoardInitMcu();
-//    BoardInitPeriph();
+    BoardInitPeriph();
 
 //    TimerInit(&Led1Timer, OnLed1TimerEvent);
 //    TimerSetValue(&Led1Timer, 90000);
-//
-//    // Switch LED 1 ON
-//    GpioWrite(&Led1, 0);
+
+    // Switch LED 1 ON
+    GpioWrite(&Led1, 0);
 //    TimerStart(&Led1Timer);
 
     // Print the initial banner
