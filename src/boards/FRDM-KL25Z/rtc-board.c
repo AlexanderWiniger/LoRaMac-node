@@ -1,11 +1,10 @@
 /**
  * \file rtc-board.c
  * \author Alexander Winiger (alexander.winiger@hslu.ch)
- * \date 15.09.2015
+ * \date 21.09.2015
  * \brief MCU RTC timer and low power modes management
  *
  */
-
 #include <math.h>
 #include <time.h>
 #include "board.h"
@@ -24,29 +23,29 @@
 /*!
  * \brief Configure the Rtc hardware
  */
-static void RtcSetConfig(void);
+static void RtcSetConfig( void );
 
 /*!
  * \brief Configure the Rtc Alarm
  */
-static void RtcSetAlarmConfig(void);
+static void RtcSetAlarmConfig( void );
 
 /*!
  * \brief Start the Rtc Alarm (time base 1s)
  */
-static void RtcStartWakeUpAlarm(uint32_t timeoutValue);
+static void RtcStartWakeUpAlarm( uint32_t timeoutValue );
 
 /*!
  * \brief Read the MCU internal Calendar value
  *
  * \retval Calendar value
  */
-static TimerTime_t RtcGetCalendarValue(void);
+static TimerTime_t RtcGetCalendarValue( void );
 
 /*!
  * \brief Clear the RTC flags and Stop all IRQs
  */
-static void RtcClearStatus(void);
+static void RtcClearStatus( void );
 
 /*!
  * \brief Indicates if the RTC is already Initalized or not
@@ -108,14 +107,12 @@ static const double DaysInCentury = 36524.219;
 /*!
  * Number of days in each month on a normal year
  */
-static const uint8_t DaysInMonth[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31,
-        30, 31 };
+static const uint8_t DaysInMonth[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
 /*!
  * Number of days in each month on a leap year
  */
-static const uint8_t DaysInMonthLeapYear[] = { 31, 29, 31, 30, 31, 30, 31, 31,
-        30, 31, 30, 31 };
+static const uint8_t DaysInMonthLeapYear[] = { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
 /*!
  * Hold the previous year value to detect the turn of a century
@@ -127,84 +124,71 @@ static uint8_t PreviousYear = 0;
  */
 static uint8_t Century = 0;
 
-void RtcInit(void)
-{
+void RtcInit( void ) {
+    if ( RtcInitalized == false ) {
+        RtcInitalized = true;
+    }
+}
+
+static void RtcSetConfig( void ) {
 
 }
 
-static void RtcSetConfig(void)
-{
+static void RtcSetAlarmConfig( void ) {
 
 }
 
-static void RtcSetAlarmConfig(void)
-{
+void RtcStopTimer( void ) {
+    RtcClearStatus();
+}
+
+uint32_t RtcGetMinimumTimeout( void ) {
+    return (ceil(3 * RTC_ALARM_TIME_BASE));
+}
+
+void RtcSetTimeout( uint32_t timeout ) {
 
 }
 
-void RtcStopTimer(void)
-{
-}
-
-uint32_t RtcGetMinimumTimeout(void)
-{
+uint32_t RtcGetTimerElapsedTime( void ) {
     return 0;
 }
 
-void RtcSetTimeout(uint32_t timeout)
-{
-
-}
-
-uint32_t RtcGetTimerElapsedTime(void)
-{
+TimerTime_t RtcGetTimerValue( void ) {
     return 0;
 }
 
-TimerTime_t RtcGetTimerValue(void)
-{
-    return 0;
-}
-
-static void RtcClearStatus(void)
-{
+static void RtcClearStatus( void ) {
 
 }
 
-static void RtcStartWakeUpAlarm(uint32_t timeoutValue)
-{
+static void RtcStartWakeUpAlarm( uint32_t timeoutValue ) {
 
 }
 
-void RtcEnterLowPowerStopMode(void)
-{
+void RtcEnterLowPowerStopMode( void ) {
 
 }
 
-void RtcRecoverMcuStatus(void)
-{
+void RtcRecoverMcuStatus( void ) {
 
 }
 
 /*!
  * \brief RTC IRQ Handler on the RTC Alarm
  */
-void RTC_Alarm_IRQHandler(void)
-{
+void RTC_Alarm_IRQHandler( void ) {
 
 }
 
-void BlockLowPowerDuringTask(bool status)
-{
+void BlockLowPowerDuringTask( bool status ) {
 
 }
 
-void RtcDelayMs(uint32_t delay)
-{
+void RtcDelayMs( uint32_t delay ) {
 
 }
 
-TimerTime_t RtcGetCalendarValue(void)
-{
-    return 0;
+TimerTime_t RtcGetCalendarValue( void ) {
+    return (TimerTime_t) 0;
 }

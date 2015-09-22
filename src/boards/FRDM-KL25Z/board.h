@@ -25,7 +25,7 @@
 #include "radio.h"
 #include "sx1276/sx1276.h"
 #include "mma8451.h"
-#include "rtc-board.h"
+#include "lptimer-board.h"
 #include "timer-board.h"
 #include "sx1276-board.h"
 #include "uart-board.h"
@@ -191,24 +191,24 @@ extern Uart_t UartUsb;
 /*!
  * \brief Initializes the target board peripherals.
  */
-void BoardInitMcu(void);
+void BoardInitMcu( void );
 
 /*!
  * \brief Initializes the boards peripherals.
  */
-void BoardInitPeriph(void);
+void BoardInitPeriph( void );
 
 /*!
  * \brief De-initializes the target board peripherals to decrease power
  *        consumption.
  */
-void BoardDeInitMcu(void);
+void BoardDeInitMcu( void );
 
 /*!
  * \brief Gets the board 64 bits unique ID 
  *
  * \param [IN] id Pointer to an array that will contain the Unique ID
  */
-void BoardGetUniqueId(uint8_t *id);
+void BoardGetUniqueId( uint8_t *id );
 
 #endif // __BOARD_H__

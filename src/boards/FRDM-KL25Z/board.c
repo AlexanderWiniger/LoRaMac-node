@@ -106,15 +106,14 @@ const clock_manager_user_config_t g_defaultClockConfigRun =
 /*!
  * Initializes the unused GPIO to a known status
  */
-static void BoardUnusedIoInit(void);
+static void BoardUnusedIoInit( void );
 
 /*!
  * Flag to indicate if the MCU is Initialized
  */
 static bool McuInitialized = false;
 
-void BoardInitPeriph(void)
-{
+void BoardInitPeriph( void ) {
     /* Init the GPIO extender pins */
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
     GpioInit(&Led2, LED_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
@@ -126,17 +125,12 @@ void BoardInitPeriph(void)
     GpioWrite(&Led3, 1);
 }
 
-void BoardInitMcu(void)
-{
-    if (McuInitialized == false) {
-
-    	/************************************************************
-    	 *                       MCU clock config                   *
-    	 ***********************************************************/
-		/* enable clock for PORTs */
-		CLOCK_SYS_EnablePortClock(PORTA_IDX);
-		CLOCK_SYS_EnablePortClock(PORTC_IDX);
-		CLOCK_SYS_EnablePortClock(PORTE_IDX);
+void BoardInitMcu( void ) {
+    if ( McuInitialized == false ) {
+        /* enable clock for PORTs */
+        CLOCK_SYS_EnablePortClock (PORTA_IDX);
+        CLOCK_SYS_EnablePortClock (PORTC_IDX);
+        CLOCK_SYS_EnablePortClock (PORTE_IDX);
 
         /* Set allowed power mode, allow all. */
         SMC_HAL_SetProtection(SMC, kAllowPowerModeAll);
@@ -170,42 +164,38 @@ void BoardInitMcu(void)
         CLOCK_SYS_SetConfiguration(&g_defaultClockConfigRun);
 #endif
 
-        I2cInit( &I2c, I2C_SCL, I2C_SDA );
+        I2cInit(&I2c, I2C_SCL, I2C_SDA);
 
-		SpiInit( &SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, NC );
-		SX1276IoInit( );
+        SpiInit(&SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, NC);
+        SX1276IoInit();
 
 #if defined( USE_USB_CDC )
         UartInit( &UartUsb, UART_USB_CDC, NC, NC );
-		UartConfig( &UartUsb, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL );
+        UartConfig( &UartUsb, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL );
 #elif( LOW_POWER_MODE_ENABLE )
         TimerSetLowPowerEnable( true );
 #else
-        UartInit( &Uart0, UART_0, UART0_TX, UART0_RX );
+        UartInit(&Uart0, UART_0, UART0_TX, UART0_RX);
 #if defined( DEBUG )
         DbgConsole_Init(UART_0, 115200, kDebugConsoleLPSCI);
 #else
-		UartConfig( &Uart0, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL );
+        UartConfig(&Uart0, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL);
 #endif /* DEBUG */
-		TimerSetLowPowerEnable( false );
+        TimerSetLowPowerEnable(false);
 #endif /* USE_USB_CDC */
         BoardUnusedIoInit();
 
-        if( TimerGetLowPowerEnable( ) == true )
-		{
-			RtcInit( );
-		}
-		else
-		{
-			TimerHwInit( );
-		}
+        if ( TimerGetLowPowerEnable() == true ) {
+            LpTimerInit();
+        } else {
+            TimerHwInit();
+        }
 
         McuInitialized = true;
     }
 }
 
-void BoardDeInitMcu(void)
-{
+void BoardDeInitMcu( void ) {
     Gpio_t ioPin;
 
     I2cDeInit(&I2c);
@@ -218,12 +208,10 @@ void BoardDeInitMcu(void)
     McuInitialized = false;
 }
 
-void BoardGetUniqueId(uint8_t *id)
-{
-	// \todo Read out kinetis id KL25 RM p.213
+void BoardGetUniqueId( uint8_t *id ) {
+    // \todo Read out kinetis id KL25 RM p.213
 }
 
-static void BoardUnusedIoInit(void)
-{
-	// \todo Initialize unused gpio to knwon state
+static void BoardUnusedIoInit( void ) {
+    // \todo Initialize unused gpio to knwon state
 }

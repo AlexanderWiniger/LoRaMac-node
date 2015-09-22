@@ -12,8 +12,8 @@ License: Revised BSD License, see LICENSE.TXT file include in the project
 
 Maintainer: Miguel Luis and Gregory Cristian
 */
+#include <lptimer-board.h>
 #include "board.h"
-#include "rtc-board.h"
 #include "timer-board.h"
 
 static bool LowPowerModeEnable = true;
