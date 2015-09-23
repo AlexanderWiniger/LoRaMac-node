@@ -42,7 +42,7 @@
 		<link>
 			<name>src/radio</name>
 			<type>2</type>
-			<location>C:/workspace/LoRaMac-node/src/radio</location>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/src/radio</locationURI>
 		</link>
 		<link>
 			<name>src/system</name>

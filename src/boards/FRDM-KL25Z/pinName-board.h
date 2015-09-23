@@ -22,5 +22,6 @@
     PD_0, PD_1, PD_2, PD_3, PD_4, PD_5, PD_6, PD_7, PD_8, PD_9, PD_10, PD_11, PD_12, PD_13, PD_14, PD_15,               \
     PD_16, PD_17, PD_18, PD_19, PD_20, PD_21, PD_22, PD_23, PD_24, PD_25, PD_26, PD_27, PD_28, PD_29, PD_30, PD_31,     \
     PE_0, PE_1, PE_2, PE_3, PE_4, PE_5, PE_6, PE_7, PE_8, PE_9, PE_10, PE_11, PE_12, PE_13, PE_14, PE_15,               \
-    PE_16, PE_17, PE_18, PE_19, PE_20, PE_21, PE_22, PE_23, PE_24, PE_25, PE_26, PE_27, PE_28, PE_29, PE_30, PE_31
+    PE_16, PE_17, PE_18, PE_19, PE_20, PE_21, PE_22, PE_23, PE_24, PE_25, PE_26, PE_27, PE_28, PE_29, PE_30, PE_31,     \
+    PIN_OUT_OF_RANGE
 #endif // __PIN_NAME_MCU_H__

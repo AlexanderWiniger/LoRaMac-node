@@ -11,9 +11,6 @@
 #include <stdbool.h>
 #include "fsl_device_registers.h"
 #include "fsl_port_hal.h"
-#if defined( DEBUG )
-#include "fsl_debug_console.h"
-#endif
 #include "utilities.h"
 #include "timer.h"
 #include "delay.h"
@@ -107,8 +104,8 @@
 #define IRQ_1_MMA8451                  PA_14
 #define IRQ_2_MMA8451                  PA_15
 
-#define UART0_TX                       PA_1
-#define UART0_RX                       PA_2
+#define UART0_TX                       PA_2
+#define UART0_RX                       PA_1
 
 #define TSIO_CH9                       PB_16
 #define TSIO_CH10                      PB_17
@@ -140,6 +137,8 @@ extern Gpio_t Irq2Mma8451;
 extern Adc_t Adc;
 extern I2c_t I2c;
 extern Uart_t Uart0;
+extern Uart_t Uart1;
+extern Uart_t Uart2;
 #if defined( USE_USB_CDC )
 extern Uart_t UartUsb;
 #endif
@@ -188,24 +187,24 @@ extern Uart_t UartUsb;
 /*!
  * \brief Initializes the target board peripherals.
  */
-void BoardInitMcu( void );
+void BoardInitMcu(void);
 
 /*!
  * \brief Initializes the boards peripherals.
  */
-void BoardInitPeriph( void );
+void BoardInitPeriph(void);
 
 /*!
  * \brief De-initializes the target board peripherals to decrease power
  *        consumption.
  */
-void BoardDeInitMcu( void );
+void BoardDeInitMcu(void);
 
 /*!
  * \brief Gets the board 64 bits unique ID 
  *
  * \param [IN] id Pointer to an array that will contain the Unique ID
  */
-void BoardGetUniqueId( uint8_t *id );
+void BoardGetUniqueId(uint8_t *id);
 
 #endif // __BOARD_H__

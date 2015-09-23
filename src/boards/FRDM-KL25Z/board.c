@@ -9,6 +9,7 @@
 #include "board.h"
 #include "fsl_clock_manager.h"
 #include "fsl_smc_hal.h"
+
 /*!
  * LED GPIO pins objects
  */
@@ -28,6 +29,8 @@ Gpio_t Irq2Mma8451;
 Adc_t Adc;
 I2c_t I2c;
 Uart_t Uart0;
+Uart_t Uart1;
+Uart_t Uart2;
 #if defined( USE_USB_CDC )
 Uart_t UartUsb;
 #endif
@@ -106,18 +109,23 @@ const clock_manager_user_config_t g_defaultClockConfigRun =
 /*!
  * Initializes the unused GPIO to a known status
  */
-static void BoardUnusedIoInit( void );
+static void BoardUnusedIoInit(void);
 
 /*!
  * Flag to indicate if the MCU is Initialized
  */
 static bool McuInitialized = false;
 
-void BoardInitPeriph( void ) {
-    /* Init the GPIO extender pins */
-    GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
-    GpioInit(&Led2, LED_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
-    GpioInit(&Led3, LED_3, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
+void BoardInitPeriph(void)
+{
+    /* Init the GPIO pins */
+    GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+    GpioInit(&Led2, LED_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+    GpioInit(&Led3, LED_3, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+
+    /* Init the IRQ GPIO pins*/
+    GpioInit(&Irq1Mma8451, PA_14, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+    GpioInit(&Irq2Mma8451, PA_15, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
     // Switch LED 1, 2, 3 OFF
     GpioWrite(&Led1, 1);
@@ -125,8 +133,9 @@ void BoardInitPeriph( void ) {
     GpioWrite(&Led3, 1);
 }
 
-void BoardInitMcu( void ) {
-    if ( McuInitialized == false ) {
+void BoardInitMcu(void)
+{
+    if (McuInitialized == false) {
         /* Enable clock for PORTs */
         CLOCK_SYS_EnablePortClock (PORTA_IDX);
         CLOCK_SYS_EnablePortClock (PORTC_IDX);
@@ -176,16 +185,12 @@ void BoardInitMcu( void ) {
         TimerSetLowPowerEnable( true );
 #else
         UartInit(&Uart0, UART_0, UART0_TX, UART0_RX);
-#if defined( DEBUG )
-        DbgConsole_Init(UART_0, 115200, kDebugConsoleLPSCI);
-#else
         UartConfig(&Uart0, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL);
-#endif /* DEBUG */
         TimerSetLowPowerEnable(false);
 #endif /* USE_USB_CDC */
         BoardUnusedIoInit();
 
-        if ( TimerGetLowPowerEnable() == true ) {
+        if (TimerGetLowPowerEnable() == true) {
             RtcInit();
         } else {
             TimerHwInit();
@@ -195,7 +200,8 @@ void BoardInitMcu( void ) {
     }
 }
 
-void BoardDeInitMcu( void ) {
+void BoardDeInitMcu(void)
+{
     Gpio_t ioPin;
 
     I2cDeInit(&I2c);
@@ -208,10 +214,12 @@ void BoardDeInitMcu( void ) {
     McuInitialized = false;
 }
 
-void BoardGetUniqueId( uint8_t *id ) {
+void BoardGetUniqueId(uint8_t *id)
+{
     // \todo Read out kinetis id KL25 RM p.213
 }
 
-static void BoardUnusedIoInit( void ) {
+static void BoardUnusedIoInit(void)
+{
     // \todo Initialize unused gpio to knwon state
 }
