@@ -10,21 +10,6 @@
 #define __GPIO_MCU_H__
 
 /*******************************************************************************
- * Definitions
- ******************************************************************************/
-/*! \brief Offset between port base addresses */
-#define PORT_BASE_OFFSET    0x00001000
-
-/*! \brief Calculates the port base pointer address of a port with the given idx */
-#define PORT_BASE_ADDRESS(idx)  ((PORT_Type *)(PORTA_BASE + (PORT_BASE_OFFSET * idx)))
-
-/*! \brief Offset between gpio base addresses */
-#define GPIO_BASE_OFFSET    0x00000040
-
-/*! \brief Calculates the gpio base pointer address of a port with the given idx */
-#define GPIO_BASE_ADDRESS(idx)  ((GPIO_Type *)(GPIOA_BASE + (GPIO_BASE_OFFSET * idx)))
-
-/*******************************************************************************
  * Variables
  ******************************************************************************/
 /* Table of base addresses for GPIO instances. */
