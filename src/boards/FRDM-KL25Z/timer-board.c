@@ -9,11 +9,33 @@
 #include <math.h>
 #include "board.h"
 #include "timer-board.h"
+#include "fsl_hwtimer.h"
+
+/*------------------------- Local Defines --------------------------------*/
+/*!
+ * Hardware Timer device
+ */
+#define HWTIMER_LL_DEVIF        kSystickDevif
 
 /*!
- * Hardware Time base in us
+ * Hardware Timer device ID
+ */
+#define HWTIMER_LL_ID           0
+/*!
+ * Hardware Timer time base in us
  */
 #define HW_TIMER_TIME_BASE                              100 //us 
+
+/*------------------------ Local Variables -------------------------------*/
+/*!
+ * Hardware Timer device struct
+ */
+extern const hwtimer_devif_t kSystickDevif;
+
+/*!
+ * Hardware Timer struct
+ */
+hwtimer_t hwtimer;
 
 /*!
  * Hardware Timer tick counter
@@ -30,6 +52,7 @@ static TimerTime_t TimerTickCounterContext = 0;
  */
 volatile TimerTime_t TimeoutCntValue = 0;
 
+/*------------------------ Local Functions -------------------------------*/
 /*!
  * Increment the Hardware Timer tick counter
  */
@@ -41,7 +64,7 @@ void TimerIncrementTickCounter(void);
 volatile uint32_t TimerDelayCounter = 0;
 
 /*!
- * Retunr the value of the counter used for a Delay
+ * Return the value of the counter used for a Delay
  */
 uint32_t TimerHwGetDelayValue(void);
 
@@ -50,14 +73,32 @@ uint32_t TimerHwGetDelayValue(void);
  */
 void TimerIncrementDelayCounter(void);
 
+/*!
+ * HWTimer callback function (see Kinetis SDK v.1.2 API Reference Manual)
+ */
+void hwtimer_callback(void* data);
+
 void TimerHwInit(void)
 {
+    /*!
+     *  Hwtimer initialization
+     *  \remark Uses ARM SysTick
+     */
+//    HWTIMER_SYS_Init(&hwtimer, &HWTIMER_LL_DEVIF, HWTIMER_LL_ID, NULL);
+//    NVIC_SetPriority(SysTick_IRQn, 1);
+//    HWTIMER_SYS_SetPeriod(&hwtimer, HW_TIMER_TIME_BASE);
+//    HWTIMER_SYS_RegisterCallback(&hwtimer, hwtimer_callback, NULL);
+//    HWTIMER_SYS_Start(&hwtimer);
+    /*!
+     * TPM0 initialization
+     * \remark Only used for delay
+     */
 
 }
 
 void TimerHwDeInit(void)
 {
-
+    HWTIMER_SYS_Deinit(&hwtimer);
 }
 
 uint32_t TimerHwGetMinimumTimeout(void)
@@ -87,36 +128,61 @@ TimerTime_t TimerHwGetElapsedTime(void)
 
 TimerTime_t TimerHwGetTimerValue(void)
 {
+    TimerTime_t val = 0;
 
+    INT_SYS_DisableIRQGlobal();
+
+    val = TimerTickCounter;
+
+    INT_SYS_EnableIRQGlobal();
+
+    return (val);
 }
 
 TimerTime_t TimerHwGetTime(void)
 {
 
-    return 0;
+    return TimerHwGetTimerValue() * HW_TIMER_TIME_BASE;
 }
 
 uint32_t TimerHwGetDelayValue(void)
 {
-    return 0;
+    uint32_t val = 0;
+
+    INT_SYS_DisableIRQGlobal();
+
+    val = TimerDelayCounter;
+
+    INT_SYS_EnableIRQGlobal();
+
+    return (val);
 }
 
 void TimerIncrementTickCounter(void)
 {
+    INT_SYS_DisableIRQGlobal();
 
+    TimerTickCounter++;
+
+    INT_SYS_EnableIRQGlobal();
 }
 
 void TimerIncrementDelayCounter(void)
+{
+    INT_SYS_DisableIRQGlobal();
+
+    TimerDelayCounter++;
+
+    INT_SYS_EnableIRQGlobal();
+}
+
+void hwtimer_callback(void* data)
 {
 
 }
 
 /*!
- * Timer IRQ handler
- */
-
-/*!
- * Timer IRQ handler
+ *
  */
 
 void TimerHwEnterLowPowerStopMode(void)

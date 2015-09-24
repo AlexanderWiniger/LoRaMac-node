@@ -13,9 +13,6 @@
 #include "fsl_clock_manager.h"
 #include "fsl_interrupt_manager.h"
 
-/*******************************************************************************
- * Definitions
- ******************************************************************************/
 /*!
  * \remark  For chip-specific alternate function see KL25 sub-family data sheet
  *          p. 44 - KL25 Signal Multiplexing and Pin Assignments.

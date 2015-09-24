@@ -124,8 +124,8 @@ void BoardInitPeriph(void)
     GpioInit(&Led3, LED_3, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
     /* Init the IRQ GPIO pins*/
-    GpioInit(&Irq1Mma8451, PA_14, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
-    GpioInit(&Irq2Mma8451, PA_15, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+    GpioInit(&Irq1Mma8451, IRQ_1_MMA8451, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+    GpioInit(&Irq2Mma8451, IRQ_2_MMA8451, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
     // Switch LED 1, 2, 3 OFF
     GpioWrite(&Led1, 1);

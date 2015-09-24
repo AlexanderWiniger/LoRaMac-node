@@ -22,7 +22,6 @@
 #include "radio.h"
 #include "sx1276/sx1276.h"
 #include "mma8451.h"
-#include "lptimer-board.h"
 #include "rtc-board.h"
 #include "timer-board.h"
 #include "sx1276-board.h"
