@@ -108,15 +108,14 @@ const clock_manager_user_config_t g_defaultClockConfigRun =
 /*!
  * Initializes the unused GPIO to a known status
  */
-static void BoardUnusedIoInit(void);
+static void BoardUnusedIoInit( void );
 
 /*!
  * Flag to indicate if the MCU is Initialized
  */
 static bool McuInitialized = false;
 
-void BoardInitPeriph(void)
-{
+void BoardInitPeriph( void ) {
     /* Init the GPIO pins */
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Led2, LED_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
@@ -130,9 +129,8 @@ void BoardInitPeriph(void)
     GpioWrite(&Led2, 1);
 }
 
-void BoardInitMcu(void)
-{
-    if (McuInitialized == false) {
+void BoardInitMcu( void ) {
+    if ( McuInitialized == false ) {
         /* Enable clock for PORTs */
         CLOCK_SYS_EnablePortClock (PORTA_IDX);
         CLOCK_SYS_EnablePortClock (PORTC_IDX);
@@ -171,11 +169,11 @@ void BoardInitMcu(void)
 #endif
 
         /*! I2C channel to be used by digital 3D accelerometer */
-        I2c.I2c = I2C_FXOS8700CQ;
+        I2c.I2c = FXOS8700CQ_I2C_DEVICE;
         I2cInit(&I2c, I2C_SCL, I2C_SDA);
 
         /*! SPI channel to be used by Semtech SX1276 */
-        SX1276.Spi.Spi = SPI0_BASE;
+        SX1276.Spi.Spi = RADIO_SPI_DEVICE;
         SpiInit(&SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, NC);
         SX1276IoInit();
 
@@ -191,7 +189,7 @@ void BoardInitMcu(void)
 #endif /* USE_USB_CDC */
         BoardUnusedIoInit();
 
-        if (TimerGetLowPowerEnable() == true) {
+        if ( TimerGetLowPowerEnable() == true ) {
             RtcInit();
         } else {
             TimerHwInit();
@@ -201,8 +199,7 @@ void BoardInitMcu(void)
     }
 }
 
-void BoardDeInitMcu(void)
-{
+void BoardDeInitMcu( void ) {
     Gpio_t ioPin;
 
     I2cDeInit(&I2c);
@@ -215,12 +212,10 @@ void BoardDeInitMcu(void)
     McuInitialized = false;
 }
 
-void BoardGetUniqueId(uint8_t *id)
-{
+void BoardGetUniqueId( uint8_t *id ) {
     // \todo Read out kinetis id KL25 RM p.213
 }
 
-static void BoardUnusedIoInit(void)
-{
+static void BoardUnusedIoInit( void ) {
     // \todo Initialize unused gpio to knwon state
 }

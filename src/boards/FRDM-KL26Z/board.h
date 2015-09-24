@@ -70,13 +70,14 @@
 
 #define RADIO_RESET                    PC_1
 
+#define RADIO_SPI_DEVICE               SPI0
 #define RADIO_MOSI                     PD_6
 #define RADIO_MISO                     PD_7
 #define RADIO_SCLK                     PD_5
 #define RADIO_NSS                      PD_4
 
 #define RADIO_DIO_0                    PA_13
-#define RADIO_DIO_1                    P2_2
+#define RADIO_DIO_1                    PD_2
 #define RADIO_DIO_2                    PB_0
 #define RADIO_DIO_3                    PB_2
 #define RADIO_DIO_4                    PB_3
@@ -91,7 +92,7 @@
 #define USB_DM                         USB0_DM
 #define USB_DP                         USB0_DP
 
-#define I2C_FXOS8700CQ                 I2C0
+#define FXOS8700CQ_I2C_DEVICE          I2C0
 #define I2C_SCL                        PE_24
 #define I2C_SDA                        PE_25
 
@@ -181,24 +182,24 @@ extern Uart_t UartUsb;
 /*!
  * \brief Initializes the target board peripherals.
  */
-void BoardInitMcu(void);
+void BoardInitMcu( void );
 
 /*!
  * \brief Initializes the boards peripherals.
  */
-void BoardInitPeriph(void);
+void BoardInitPeriph( void );
 
 /*!
  * \brief De-initializes the target board peripherals to decrease power
  *        consumption.
  */
-void BoardDeInitMcu(void);
+void BoardDeInitMcu( void );
 
 /*!
  * \brief Gets the board 64 bits unique ID 
  *
  * \param [IN] id Pointer to an array that will contain the Unique ID
  */
-void BoardGetUniqueId(uint8_t *id);
+void BoardGetUniqueId( uint8_t *id );
 
 #endif // __BOARD_H__

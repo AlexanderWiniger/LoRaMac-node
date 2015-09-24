@@ -39,7 +39,7 @@ typedef enum {
  * Internal device address size
  */
 typedef enum {
-    I2C_ADDR_SIZE_7 = 0, I2C_ADDR_SIZE_10,
+    I2C_ADDR_SIZE_8 = 0, I2C_ADDR_SIZE_16,
 } I2cAddrSize;
 
 /*!
@@ -49,7 +49,7 @@ typedef enum {
  * \param [IN] scl  I2C Scl pin name to be used
  * \param [IN] sda  I2C Sda pin name to be used
  */
-void I2cMcuInit(I2c_t *obj, PinNames scl, PinNames sda);
+void I2cMcuInit( I2c_t *obj, PinNames scl, PinNames sda );
 
 /*!
  * \brief Initializes the I2C object and MCU peripheral
@@ -61,15 +61,15 @@ void I2cMcuInit(I2c_t *obj, PinNames scl, PinNames sda);
  * \param [IN] AckAddrMode      7bit or 10 bit addressing
  * \param [IN] I2cFrequency     I2C bus clock frequency
  */
-void I2cMcuFormat(I2c_t *obj, I2cMode mode, I2cDutyCycle dutyCycle, bool I2cAckEnable,
-        I2cAckAddrMode AckAddrMode, uint32_t I2cFrequency);
+void I2cMcuFormat( I2c_t *obj, I2cMode mode, I2cDutyCycle dutyCycle, bool I2cAckEnable,
+        I2cAckAddrMode AckAddrMode, uint32_t I2cFrequency );
 
 /*!
  * \brief DeInitializes the I2C object and MCU peripheral
  *
  * \param [IN] obj  I2C object
  */
-void I2cMcuDeInit(I2c_t *obj);
+void I2cMcuDeInit( I2c_t *obj );
 
 /*!
  * \brief Write several data to the I2C device
@@ -80,8 +80,8 @@ void I2cMcuDeInit(I2c_t *obj);
  * \param [IN] buffer           data buffer to write
  * \param [IN] size             number of data byte to write
  */
-uint8_t I2cMcuWriteBuffer(I2c_t *obj, uint8_t deviceAddr, uint16_t addr, uint8_t *buffer,
-        uint16_t size);
+uint8_t I2cMcuWriteBuffer( I2c_t *obj, uint8_t deviceAddr, uint16_t addr, uint8_t *buffer,
+        uint16_t size );
 
 /*!
  * \brief Read several data byte from the I2C device
@@ -92,8 +92,8 @@ uint8_t I2cMcuWriteBuffer(I2c_t *obj, uint8_t deviceAddr, uint16_t addr, uint8_t
  * \param [IN] buffer           data buffer used to store the data read
  * \param [IN] size             number of data byte to read
  */
-uint8_t I2cMcuReadBuffer(I2c_t *obj, uint8_t deviceAddr, uint16_t addr, uint8_t *buffer,
-        uint16_t size);
+uint8_t I2cMcuReadBuffer( I2c_t *obj, uint8_t deviceAddr, uint16_t addr, uint8_t *buffer,
+        uint16_t size );
 
 /*!
  * \brief Waits until the given device is in standby mode
@@ -101,7 +101,7 @@ uint8_t I2cMcuReadBuffer(I2c_t *obj, uint8_t deviceAddr, uint16_t addr, uint8_t 
  * \param [IN] obj              I2C object
  * \param [IN] deviceAddr       device address
  */
-uint8_t I2cMcuWaitStandbyState(I2c_t *obj, uint8_t deviceAddr);
+uint8_t I2cMcuWaitStandbyState( I2c_t *obj, uint8_t deviceAddr );
 
 /*!
  * \brief Sets the internal device address size
@@ -109,6 +109,6 @@ uint8_t I2cMcuWaitStandbyState(I2c_t *obj, uint8_t deviceAddr);
  * \param [IN] obj              I2C object
  * \param [IN] addrSize         Internal address size
  */
-void I2cSetAddrSize(I2c_t *obj, I2cAddrSize addrSize);
+void I2cSetAddrSize( I2c_t *obj, I2cAddrSize addrSize );
 
 #endif // __I2C_MCU_H__

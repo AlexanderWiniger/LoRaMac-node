@@ -24,8 +24,7 @@ uint8_t RxBuffer[FIFO_RX_SIZE];
 /*!
  * \brief Main application entry point.
  */
-int main(void)
-{
+int main( void ) {
     // RX buffers
     //! @param receiveBuff Buffer used to hold received data
     uint8_t receiveBuff;
@@ -45,11 +44,11 @@ int main(void)
 //    TimerStart(&Led1Timer);
 
     // Print the initial banner
-    UartPutBuffer(&Uart0, "Hello World!\n\r", sizeof("Hello World!\n\r"));
+    UartPutBuffer(&Uart0, (uint8_t*) "Hello World!\n\r", sizeof("Hello World!\n\r"));
 
     while (1) {
         // Main routine that simply echoes received characters forever
-        if (!UartGetChar(&Uart0, &receiveBuff)) {
+        if ( !UartGetChar(&Uart0, &receiveBuff) ) {
             // Now echo the received character
             UartPutChar(&Uart0, receiveBuff);
         }
