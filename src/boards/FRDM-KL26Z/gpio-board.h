@@ -9,25 +9,6 @@
 #ifndef __GPIO_MCU_H__
 #define __GPIO_MCU_H__
 
-/*---------------------------- Definitions ----------------------------------*/
-/*! Alternative pin function configuration struct */
-typedef struct {
-    PinNames pinName;
-    port_mux_t muxConfig;
-} gpio_alternate_fct_user_config_t;
-
-extern gpio_alternate_fct_user_config_t alternateFctConfigs[];
-
-/*----------------------------- Variables -----------------------------------*/
-/*! Table of base addresses for GPIO instances. */
-GPIO_Type * const g_gpioBase[GPIO_INSTANCE_COUNT] = GPIO_BASE_PTRS;
-
-/*! Table of base addresses for PORT instances. */
-PORT_Type * const g_portBase[PORT_INSTANCE_COUNT] = PORT_BASE_PTRS;
-
-/*! Table to save port IRQ enum numbers defined in CMSIS files. */
-const IRQn_Type g_portIrqId[PORT_INSTANCE_COUNT] = PORT_IRQS;
-
 /*!
  * \brief Initializes the given GPIO object
  *

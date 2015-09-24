@@ -19,8 +19,8 @@ Gpio_t Led2;
 /*!
  * IRQ GPIO pins objects
  */
-Gpio_t Irq1Mma8451;
-Gpio_t Irq2Mma8451;
+Gpio_t Irq1Fxos8700cq;
+Gpio_t Irq2Fxos8700cq;
 
 /*!
  * MCU objects
@@ -117,15 +117,13 @@ static bool McuInitialized = false;
 
 void BoardInitPeriph(void)
 {
-    Gpio_t io;
-
     /* Init the GPIO pins */
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Led2, LED_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
     /* Init the IRQ GPIO pins*/
-    GpioInit(&Irq1Mma8451, IRQ_1_MMA8451, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
-    GpioInit(&Irq2Mma8451, IRQ_2_MMA8451, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+    GpioInit(&Irq1Fxos8700cq, IRQ_1_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+    GpioInit(&Irq2Fxos8700cq, IRQ_2_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
     // Switch LED 1, 2 OFF
     GpioWrite(&Led1, 1);
@@ -172,8 +170,12 @@ void BoardInitMcu(void)
         CLOCK_SYS_SetConfiguration(&g_defaultClockConfigRun);
 #endif
 
+        /*! I2C channel to be used by digital 3D accelerometer */
+        I2c.I2c = I2C_FXOS8700CQ;
         I2cInit(&I2c, I2C_SCL, I2C_SDA);
 
+        /*! SPI channel to be used by Semtech SX1276 */
+        SX1276.Spi.Spi = SPI0_BASE;
         SpiInit(&SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, NC);
         SX1276IoInit();
 

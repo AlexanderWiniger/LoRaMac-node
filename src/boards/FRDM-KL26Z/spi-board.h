@@ -10,6 +10,11 @@
 #define __SPI_MCU_H__
 
 /*!
+ * LoRaMac SPI typedef
+ */
+typedef SPI_Type SPI_TypeDef;
+
+/*!
  * SPI driver structure definition
  */
 struct Spi_s {

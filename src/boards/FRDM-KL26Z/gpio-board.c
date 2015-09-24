@@ -14,6 +14,14 @@
 #include "fsl_interrupt_manager.h"
 
 /*----------------------- Local Definitions ------------------------------*/
+/*! Alternative pin function configuration struct */
+typedef struct {
+    PinNames pinName;
+    port_mux_t muxConfig;
+} gpio_alternate_fct_user_config_t;
+
+extern gpio_alternate_fct_user_config_t alternateFctConfigs[];
+
 /*!
  * Number of Pins per Port
  */
@@ -27,6 +35,14 @@
 #define NR_OF_PINS_PORTE        11
 #define NR_OF_PINS_PORTABCDE    (NR_OF_PINS_PORTA+NR_OF_PINS_PORTB+NR_OF_PINS_PORTC+NR_OF_PINS_PORTD+NR_OF_PINS_PORTE)
 /*------------------------ Local Variables -------------------------------*/
+/*! Table of base addresses for GPIO instances. */
+GPIO_Type * const g_gpioBase[GPIO_INSTANCE_COUNT] = GPIO_BASE_PTRS;
+
+/*! Table of base addresses for PORT instances. */
+PORT_Type * const g_portBase[PORT_INSTANCE_COUNT] = PORT_BASE_PTRS;
+
+/*! Table to save port IRQ enum numbers defined in CMSIS files. */
+const IRQn_Type g_portIrqId[PORT_INSTANCE_COUNT] = PORT_IRQS;
 /*!
  * Alternate pin configuration
  * \remark  For chip-specific alternate function see KL25 sub-family data sheet
@@ -194,7 +210,7 @@ void GpioMcuSetInterrupt(Gpio_t *obj, IrqModes irqMode, IrqPriorities irqPriorit
     /* Configure NVIC */
     if ((interruptCfg) && (g_portIrqId[obj->portIndex])) {
         /* Enable GPIO interrupt.*/
-        INT_SYS_EnableIRQ (g_portIrqId[obj->portIndex]);
+        INT_SYS_EnableIRQ(g_portIrqId[obj->portIndex]);
     }
 }
 

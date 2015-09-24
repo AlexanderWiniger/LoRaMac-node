@@ -21,7 +21,6 @@
 #include "uart.h"
 #include "radio.h"
 #include "sx1276/sx1276.h"
-#include "mma8451.h"
 #include "rtc-board.h"
 #include "timer-board.h"
 #include "sx1276-board.h"
@@ -92,11 +91,12 @@
 #define USB_DM                         USB0_DM
 #define USB_DP                         USB0_DP
 
+#define I2C_FXOS8700CQ                 I2C0
 #define I2C_SCL                        PE_24
 #define I2C_SDA                        PE_25
 
-#define IRQ_1_MMA8451                  PD_0
-#define IRQ_2_MMA8451                  PD_1
+#define IRQ_1_FXOS8700CQ               PD_0
+#define IRQ_2_FXOS8700CQ               PD_1
 
 #define UART0_RX                       PA_1
 #define UART0_TX                       PA_2

@@ -10,6 +10,11 @@
 #define __I2C_MCU_H__
 
 /*!
+ * LoRaMac I2C typedef
+ */
+typedef I2C_Type I2C_TypeDef;
+
+/*!
  * Operation Mode for the I2C
  */
 typedef enum {
@@ -34,7 +39,7 @@ typedef enum {
  * Internal device address size
  */
 typedef enum {
-    I2C_ADDR_SIZE_8 = 0, I2C_ADDR_SIZE_16,
+    I2C_ADDR_SIZE_7 = 0, I2C_ADDR_SIZE_10,
 } I2cAddrSize;
 
 /*!
@@ -56,8 +61,8 @@ void I2cMcuInit(I2c_t *obj, PinNames scl, PinNames sda);
  * \param [IN] AckAddrMode      7bit or 10 bit addressing
  * \param [IN] I2cFrequency     I2C bus clock frequency
  */
-void I2cMcuFormat(I2c_t *obj, I2cMode mode, I2cDutyCycle dutyCycle,
-        bool I2cAckEnable, I2cAckAddrMode AckAddrMode, uint32_t I2cFrequency);
+void I2cMcuFormat(I2c_t *obj, I2cMode mode, I2cDutyCycle dutyCycle, bool I2cAckEnable,
+        I2cAckAddrMode AckAddrMode, uint32_t I2cFrequency);
 
 /*!
  * \brief DeInitializes the I2C object and MCU peripheral
@@ -75,8 +80,8 @@ void I2cMcuDeInit(I2c_t *obj);
  * \param [IN] buffer           data buffer to write
  * \param [IN] size             number of data byte to write
  */
-uint8_t I2cMcuWriteBuffer(I2c_t *obj, uint8_t deviceAddr, uint16_t addr,
-        uint8_t *buffer, uint16_t size);
+uint8_t I2cMcuWriteBuffer(I2c_t *obj, uint8_t deviceAddr, uint16_t addr, uint8_t *buffer,
+        uint16_t size);
 
 /*!
  * \brief Read several data byte from the I2C device
@@ -87,8 +92,8 @@ uint8_t I2cMcuWriteBuffer(I2c_t *obj, uint8_t deviceAddr, uint16_t addr,
  * \param [IN] buffer           data buffer used to store the data read
  * \param [IN] size             number of data byte to read
  */
-uint8_t I2cMcuReadBuffer(I2c_t *obj, uint8_t deviceAddr, uint16_t addr,
-        uint8_t *buffer, uint16_t size);
+uint8_t I2cMcuReadBuffer(I2c_t *obj, uint8_t deviceAddr, uint16_t addr, uint8_t *buffer,
+        uint16_t size);
 
 /*!
  * \brief Waits until the given device is in standby mode
