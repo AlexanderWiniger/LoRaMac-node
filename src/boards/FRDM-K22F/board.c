@@ -109,15 +109,14 @@ const clock_manager_user_config_t g_defaultClockConfigRun =
 /*!
  * Initializes the unused GPIO to a known status
  */
-static void BoardUnusedIoInit(void);
+static void BoardUnusedIoInit( void );
 
 /*!
  * Flag to indicate if the MCU is Initialized
  */
 static bool McuInitialized = false;
 
-void BoardInitPeriph(void)
-{
+void BoardInitPeriph( void ) {
     /* Init the GPIO pins */
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Led2, LED_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
@@ -131,9 +130,8 @@ void BoardInitPeriph(void)
     GpioWrite(&Led2, 1);
 }
 
-void BoardInitMcu(void)
-{
-    if (McuInitialized == false) {
+void BoardInitMcu( void ) {
+    if ( McuInitialized == false ) {
         /* Enable clock for PORTs */
         CLOCK_SYS_EnablePortClock (PORTA_IDX);
         CLOCK_SYS_EnablePortClock (PORTC_IDX);
@@ -192,7 +190,7 @@ void BoardInitMcu(void)
 #endif /* USE_USB_CDC */
         BoardUnusedIoInit();
 
-        if (TimerGetLowPowerEnable() == true) {
+        if ( TimerGetLowPowerEnable() == true ) {
             RtcInit();
         } else {
             TimerHwInit();
@@ -202,26 +200,20 @@ void BoardInitMcu(void)
     }
 }
 
-void BoardDeInitMcu(void)
-{
+void BoardDeInitMcu( void ) {
     Gpio_t ioPin;
 
     I2cDeInit(&I2c);
     SpiDeInit(&SX1276.Spi);
     SX1276IoDeInit();
 
-    GpioInit(&ioPin, OSC_EXTAL0, PIN_ANALOGIC, PIN_PUSH_PULL, PIN_NO_PULL, 1);
-    GpioInit(&ioPin, OSC_XTAL0, PIN_ANALOGIC, PIN_PUSH_PULL, PIN_NO_PULL, 1);
-
     McuInitialized = false;
 }
 
-void BoardGetUniqueId(uint8_t *id)
-{
+void BoardGetUniqueId( uint8_t *id ) {
     // \todo Read out kinetis id KL25 RM p.213
 }
 
-static void BoardUnusedIoInit(void)
-{
+static void BoardUnusedIoInit( void ) {
     // \todo Initialize unused gpio to knwon state
 }
