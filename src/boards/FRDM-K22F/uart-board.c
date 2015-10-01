@@ -45,7 +45,10 @@ void UartMcuConfig(Uart_t *obj, UartMode_t mode, uint32_t baudrate, WordLength_t
 {
     uint32_t uartSourceClock;
 
-    if (obj->UartId == LPUART0) {
+    if (obj->UartId == LPUART) {
+        LPUART_Type *base = g_lpuartBase[0];
+        IRQn_Type irq = g_lpuartIrqId[0];
+
         uartSourceClock = CLOCK_SYS_GetLpuartFreq(0);
 
         lpuart_parity_mode_t parityMode;
@@ -65,34 +68,37 @@ void UartMcuConfig(Uart_t *obj, UartMode_t mode, uint32_t baudrate, WordLength_t
         else bitCntPerCh = kLpuart8BitsPerChar;
 
         /* Initialize LPSCI baud rate, bit count, parity and stop bit. */
-        LPUART_HAL_SetBaudRate(g_lpuartBase[0], uartSourceClock, baudrate);
-        LPUART_HAL_SetBitCountPerChar(g_lpuartBase[0], bitCntPerCh);
-        LPUART_HAL_SetParityMode(g_lpuartBase[0], parityMode);
+        LPUART_HAL_SetBaudRate(base, uartSourceClock, baudrate);
+        LPUART_HAL_SetBitCountPerChar(base, bitCntPerCh);
+        LPUART_HAL_SetParityMode(base, parityMode);
 #if FSL_FEATURE_LPUART_HAS_STOP_BIT_CONFIG_SUPPORT
-        LPUART_HAL_SetStopBitCount(g_lpuartBase[0], stopBitCnt);
+        LPUART_HAL_SetStopBitCount(base, stopBitCnt);
 #endif
 
         /* Enable interrupt for LPUART0 */
-        INT_SYS_EnableIRQ (g_lpuartIrqId[0]);
+        INT_SYS_EnableIRQ(irq);
 
         /* Finally, enable the LPSCI transmitter and receiver*/
         if (mode == TX_ONLY) {
-            LPUART_HAL_SetTransmitterCmd(g_lpuartBase[0], true);
+            LPUART_HAL_SetTransmitterCmd(base, true);
         } else if (mode == RX_ONLY) {
-            LPUART_HAL_SetIntMode(g_lpuartBase[0], kLpuartIntRxDataRegFull, true); /* Enable receiver interrupt */
-            LPUART_HAL_SetReceiverCmd(g_lpuartBase[0], true);
+            LPUART_HAL_SetIntMode(base, kLpuartIntRxDataRegFull, true); /* Enable receiver interrupt */
+            LPUART_HAL_SetReceiverCmd(base, true);
         } else {
-            LPUART_HAL_SetTransmitterCmd(g_lpuartBase[0], true);
-            LPUART_HAL_SetIntMode(g_lpuartBase[0], kLpuartIntRxDataRegFull, true); /* Enable receiver interrupt */
-            LPUART_HAL_SetReceiverCmd(g_lpuartBase[0], true);
+            LPUART_HAL_SetTransmitterCmd(base, true);
+            LPUART_HAL_SetIntMode(base, kLpuartIntRxDataRegFull, true); /* Enable receiver interrupt */
+            LPUART_HAL_SetReceiverCmd(base, true);
         }
     } else {
+        UART_Type *base = g_uartBase[obj->UartId];
+        IRQn_Type irq = g_uartIrqId[obj->UartId];
+
         /* UART clock source is either system or bus clock depending on instance */
         uartSourceClock = CLOCK_SYS_GetUartFreq(obj->UartId);
 
         /* Disable receiver & transmitter before config procedure */
-        UART_HAL_DisableTransmitter (g_uartBase[obj->UartId]);
-        UART_HAL_DisableReceiver(g_uartBase[obj->UartId]);
+        UART_HAL_DisableTransmitter(base);
+        UART_HAL_DisableReceiver(base);
 
         uart_parity_mode_t parityMode;
         if (parity == NO_PARITY) parityMode = kUartParityDisabled;
@@ -108,27 +114,26 @@ void UartMcuConfig(Uart_t *obj, UartMode_t mode, uint32_t baudrate, WordLength_t
 #endif
 
         /* Initialize UART baud rate, bit count, parity and stop bit. */
-        UART_HAL_SetBaudRate(g_uartBase[obj->UartId], uartSourceClock, baudrate);
-        UART_HAL_SetBitCountPerChar(g_uartBase[obj->UartId],
-                (uart_bit_count_per_char_t) wordLength);
-        UART_HAL_SetParityMode(g_uartBase[obj->UartId], parityMode);
+        UART_HAL_SetBaudRate(base, uartSourceClock, baudrate);
+        UART_HAL_SetBitCountPerChar(base, (uart_bit_count_per_char_t) wordLength);
+        UART_HAL_SetParityMode(base, parityMode);
 #if FSL_FEATURE_UART_HAS_STOP_BIT_CONFIG_SUPPORT
-        UART_HAL_SetStopBitCount(g_uartBase[obj->UartId], stopBitCnt);
+        UART_HAL_SetStopBitCount(base, stopBitCnt);
 #endif
 
         /* Enable interrupt for UART1/UART2 */
-        INT_SYS_EnableIRQ (g_uartIrqId[obj->UartId]);
+        INT_SYS_EnableIRQ(irq);
 
         /* Finally, enable the UART transmitter and receiver*/
         if (mode == TX_ONLY) {
-            UART_HAL_EnableTransmitter(g_uartBase[obj->UartId]);
+            UART_HAL_EnableTransmitter(base);
         } else if (mode == RX_ONLY) {
-            UART_HAL_SetIntMode(g_uartBase[obj->UartId], kUartIntRxDataRegFull, true); /* Enable receiver interrupt */
-            UART_HAL_EnableReceiver(g_uartBase[obj->UartId]);
+            UART_HAL_SetIntMode(base, kUartIntRxDataRegFull, true); /* Enable receiver interrupt */
+            UART_HAL_EnableReceiver(base);
         } else {
-            UART_HAL_EnableTransmitter(g_uartBase[obj->UartId]);
-            UART_HAL_SetIntMode(g_uartBase[obj->UartId], kUartIntRxDataRegFull, true); /* Enable receiver interrupt */
-            UART_HAL_EnableReceiver(g_uartBase[obj->UartId]);
+            UART_HAL_EnableTransmitter(base);
+            UART_HAL_SetIntMode(base, kUartIntRxDataRegFull, true); /* Enable receiver interrupt */
+            UART_HAL_EnableReceiver(base);
         }
     }
 }
@@ -241,7 +246,7 @@ void UartInterruptHandler(Uart_t *obj)
 /*!
  * LPUART IRQ Handler
  */
-void LPUART_IRQHandler(void)
+void LPUART0_IRQHandler(void)
 {
     uint8_t data;
     LPUART_Type *base = g_lpuartBase[0];
@@ -282,7 +287,7 @@ void LPUART_IRQHandler(void)
 /*!
  * UART0 IRQ handler
  */
-void UART0_IRQHandler(void)
+void UART0_RX_TX_IRQHandler(void)
 {
     UartInterruptHandler (&Uart0);
 }
@@ -290,7 +295,7 @@ void UART0_IRQHandler(void)
 /*!
  * UART1 IRQ handler
  */
-void UART1_IRQHandler(void)
+void UART1_RX_TX_IRQHandler(void)
 {
     UartInterruptHandler (&Uart1);
 }
@@ -298,7 +303,7 @@ void UART1_IRQHandler(void)
 /*!
  * UART2 IRQ handler
  */
-void UART2_IRQHandler(void)
+void UART2_RX_TX_IRQHandler(void)
 {
     UartInterruptHandler (&Uart2);
 }

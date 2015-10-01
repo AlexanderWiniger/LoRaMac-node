@@ -92,6 +92,12 @@
 									<listOptionValue builtIn="false" value="nosys"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.other.1519664713" name="Other linker flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.other" value="-Xlinker -z  -Xlinker muldefs   --specs=nano.specs          -Wall  -fno-common  -ffunction-sections  -fdata-sections  -ffreestanding  -fno-builtin  -Os  -mapcs  -Xlinker -static  -Xlinker --defsym=__stack_size__=0x2000  -Xlinker --defsym=__heap_size__=0x2000 " valueType="string"/>
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.otherobjs.1665328401" name="Other objects" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.otherobjs" valueType="userObjs">
+									<listOptionValue builtIn="false" value="&quot;..\..\..\..\src\boards\mcu\k22f\platform\lib\libksdk_hal.a&quot;"/>
+								</option>
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.scriptfile.1832008880" name="Script files (-T)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.scriptfile" valueType="stringList">
+									<listOptionValue builtIn="false" value="&quot;../../../../src/boards/mcu/k22f/MK22F51212/linker/MK22FN512xxx12_flash.ld&quot;"/>
+								</option>
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.input.1052189761" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -141,8 +147,13 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.fpu.abi.1743752296.1290811750" name="Float ABI" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.fpu.abi.1743752296"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.fpu.unit.826418114.1294450647" name="FPU Type" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.fpu.unit.826418114"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.825438169.200197386" name="Enable all common warnings (-Wall)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.825438169"/>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.479988400" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.1362375008"/>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.15564333" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.477811851"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform" isAbstract="false" osList="all" superClass="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform"/>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.479988400" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.1362375008">
+								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input.1992335919" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input"/>
+							</tool>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.15564333" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.477811851">
+								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.28247567" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input"/>
+							</tool>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1006329782" name="Cross ARM C++ Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.810478526"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.1510462348" name="Cross ARM C Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.1772823009"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.863607502" name="Cross ARM C++ Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.8180508"/>
@@ -152,8 +163,11 @@
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.printsize.1530998005" name="Cross ARM GNU Print Size" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.printsize.64282321"/>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.1856130542.1409563811" name="fsl_hwtimer_pit_irq.c" rcbsApplicability="disable" resourcePath="src/boards/mcu/k22f/platform/system/src/hwtimer/fsl_hwtimer_pit_irq.c" toolsToInvoke="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.477811851.1407181982">
+						<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.477811851.1407181982" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.477811851"/>
+					</fileInfo>
 					<sourceEntries>
-						<entry excluding="src/boards/mcu/k22f/platform/hal/src/mpu|src/boards/mcu/k22f/platform/system/src/power|src/boards/mcu/k22f/platform/utilities/src|src/apps/hello-world/FRDM-KL26Z|src/apps/hello-world/FRDM-KL25Z|src/apps/ping-pong|src/apps/tx-cw|src/apps/rx-sensi|src/apps/LoRaMac|src/apps/BootLoader|src/boards/SK-iM880A|src/boards/SensorNode|src/boards/mcu/kl26z|src/boards/mcu/stm32|src/boards/mcu/kl25z|src/boards/LoRaMote|src/boards/FRDM-KL26Z|src/boards/FRDM-KL25Z|src/boards/Bleeper-76|src/boards/Bleeper-72|src/peripherals|src/radio/sx1272" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/boards/mcu/k22f/platform/system/src/hwtimer/fsl_hwtimer_pit_irq.c|src/boards/mcu/k22f/platform/system/src/hwtimer/fsl_hwtimer_pit.c|src/boards/mcu/k22f/platform/hal/src/mpu|src/boards/mcu/k22f/platform/system/src/power|src/boards/mcu/k22f/platform/utilities/src|src/apps/hello-world/FRDM-KL26Z|src/apps/hello-world/FRDM-KL25Z|src/apps/ping-pong|src/apps/tx-cw|src/apps/rx-sensi|src/apps/LoRaMac|src/apps/BootLoader|src/boards/SK-iM880A|src/boards/SensorNode|src/boards/mcu/kl26z|src/boards/mcu/stm32|src/boards/mcu/kl25z|src/boards/LoRaMote|src/boards/FRDM-KL26Z|src/boards/FRDM-KL25Z|src/boards/Bleeper-76|src/boards/Bleeper-72|src/peripherals|src/radio/sx1272" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
