@@ -345,6 +345,7 @@
 		<configuration configurationName="debug">
 			<resource resourceType="PROJECT" workspacePath="/hello-world"/>
 		</configuration>
+		<configuration configurationName="release"/>
 		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/hello-world"/>
 		</configuration>
@@ -352,4 +353,5 @@
 			<resource resourceType="PROJECT" workspacePath="/hello-world"/>
 		</configuration>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

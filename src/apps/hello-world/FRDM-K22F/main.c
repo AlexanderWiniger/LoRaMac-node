@@ -27,7 +27,6 @@ uint8_t RxBuffer[FIFO_RX_SIZE];
 int main(void)
 {
     // RX buffers
-    //! @param receiveBuff Buffer used to hold received data
     uint8_t receiveBuff;
 
     FifoInit(&Uart1.FifoTx, TxBuffer, FIFO_TX_SIZE);
@@ -40,11 +39,11 @@ int main(void)
 //    TimerInit(&Led1Timer, OnLed1TimerEvent);
 //    TimerSetValue(&Led1Timer, 90000);
 
-    // Switch LED 1 ON
+// Switch LED 1 ON
     GpioWrite(&Led1, 0);
 //    TimerStart(&Led1Timer);
 
-    // Print the initial banner
+// Print the initial banner
     UartPutBuffer(&Uart1, "Hello World!\n\r", sizeof("Hello World!\n\r"));
 
     while (1) {
