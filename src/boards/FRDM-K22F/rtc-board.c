@@ -9,7 +9,11 @@
 #include <time.h>
 #include "board.h"
 #include "rtc-board.h"
+#include "fsl_rtc_hal.h"
+#include "fsl_clock_manager.h"
+#include "fsl_interrupt_manager.h"
 
+/*----------------------- Local Definitions ------------------------------*/
 /*!
  * RTC Time base in us
  */
@@ -20,16 +24,7 @@
  */
 #define MCU_WAKE_UP_TIME                                3400
 
-/*!
- * \brief Configure the Rtc hardware
- */
-static void RtcSetConfig( void );
-
-/*!
- * \brief Configure the Rtc Alarm
- */
-static void RtcSetAlarmConfig( void );
-
+/*----------------------- Local Functions ------------------------------*/
 /*!
  * \brief Start the Rtc Alarm (time base 1s)
  */
@@ -46,6 +41,10 @@ static TimerTime_t RtcGetCalendarValue( void );
  * \brief Clear the RTC flags and Stop all IRQs
  */
 static void RtcClearStatus( void );
+
+/*------------------------ Local Variables -------------------------------*/
+/* Table of base addresses for RTC instances. */
+RTC_Type * const g_rtcBase[RTC_INSTANCE_COUNT] = RTC_BASE_PTRS;
 
 /*!
  * \brief Indicates if the RTC is already Initalized or not
@@ -124,18 +123,39 @@ static uint8_t PreviousYear = 0;
  */
 static uint8_t Century = 0;
 
+/*!
+ * RTC external clock configuration
+ */
+rtc_osc_user_config_t rtcOscConfig =
+{
+    .freq = RTC_XTAL_FREQ,
+    .enableCapacitor2p = RTC_SC2P_ENABLE_CONFIG,
+    .enableCapacitor4p = RTC_SC4P_ENABLE_CONFIG,
+    .enableCapacitor8p = RTC_SC8P_ENABLE_CONFIG,
+    .enableCapacitor16p = RTC_SC16P_ENABLE_CONFIG,
+    .enableOsc = RTC_OSC_ENABLE_CONFIG,
+};
+
 void RtcInit( void ) {
     if ( RtcInitalized == false ) {
+        /* Enable clock gate to RTC module */
+        CLOCK_SYS_EnableRtcClock(0U);
+
+        /* Initialize the general configuration for RTC module.*/
+        RTC_HAL_Init (RTC_BASE_PTR);
+
+        NVIC_ClearPendingIRQ (RTC_IRQn);
+        NVIC_ClearPendingIRQ (RTC_Seconds_IRQn);
+        INT_SYS_EnableIRQ(RTC_IRQn);
+        INT_SYS_EnableIRQ(RTC_Seconds_IRQn);
+
+        /* Enable the RTC Clock output */
+        RTC_HAL_SetClockOutCmd(RTC_BASE_PTR, true);
+
+        /* Configure RTC external clock */
+        CLOCK_SYS_RtcOscInit(0U, &rtcOscConfig);
         RtcInitalized = true;
     }
-}
-
-static void RtcSetConfig( void ) {
-
-}
-
-static void RtcSetAlarmConfig( void ) {
-
 }
 
 void RtcStopTimer( void ) {

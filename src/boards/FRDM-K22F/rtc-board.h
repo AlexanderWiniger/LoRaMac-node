@@ -8,6 +8,11 @@
 #ifndef __RTC_BOARD_H__
 #define __RTC_BOARD_H__
 
+/*---------------------------- Definitions ------------------------------*/
+
+/*! @brief Table of base addresses for RTC instances. */
+extern RTC_Type * const g_rtcBase[RTC_INSTANCE_COUNT];
+
 /*!
  * \brief Timer time variable definition
  */

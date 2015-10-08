@@ -157,13 +157,14 @@ extern Uart_t UartUsb;
 #define XTAL0_PINMUX                   kPortPinDisabled
 
 /* RTC external clock configuration. */
-#define RTC_XTAL_FREQ                  0U
+#define RTC_XTAL_FREQ                  32768U
 #define RTC_SC2P_ENABLE_CONFIG         false
 #define RTC_SC4P_ENABLE_CONFIG         false
 #define RTC_SC8P_ENABLE_CONFIG         false
 #define RTC_SC16P_ENABLE_CONFIG        false
-#define RTC_OSC_ENABLE_CONFIG          false
-#define RTC_CLK_OUTPUT_ENABLE_CONFIG   false
+#define RTC_OSC_ENABLE_CONFIG          true
+
+#define BOARD_RTC_CLK_FREQUENCY        32768U;
 
 /*!
  * \brief Initializes the target board peripherals.
