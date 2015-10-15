@@ -109,14 +109,15 @@ const clock_manager_user_config_t g_defaultClockConfigRun =
 /*!
  * Initializes the unused GPIO to a known status
  */
-static void BoardUnusedIoInit( void );
+static void BoardUnusedIoInit(void);
 
 /*!
  * Flag to indicate if the MCU is Initialized
  */
 static bool McuInitialized = false;
 
-void BoardInitPeriph( void ) {
+void BoardInitPeriph(void)
+{
     /* Init the GPIO pins */
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Led2, LED_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
@@ -130,8 +131,9 @@ void BoardInitPeriph( void ) {
     GpioWrite(&Led2, 1);
 }
 
-void BoardInitMcu( void ) {
-    if ( McuInitialized == false ) {
+void BoardInitMcu(void)
+{
+    if (McuInitialized == false) {
         /* Enable clock for PORTs */
         CLOCK_SYS_EnablePortClock (PORTA_IDX);
         CLOCK_SYS_EnablePortClock (PORTC_IDX);
@@ -181,16 +183,19 @@ void BoardInitMcu( void ) {
 #if defined( USE_USB_CDC )
         UartInit( &UartUsb, UART_USB_CDC, NC, NC );
         UartConfig( &UartUsb, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL );
-#elif( LOW_POWER_MODE_ENABLE )
-        TimerSetLowPowerEnable( true );
 #else
         UartInit(&Uart1, UART_1, UART1_TX, UART1_RX);
         UartConfig(&Uart1, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL);
-        TimerSetLowPowerEnable(false);
 #endif /* USE_USB_CDC */
+
+#if( LOW_POWER_MODE_ENABLE )
+        TimerSetLowPowerEnable( true );
+#else
+        TimerSetLowPowerEnable(false);
+#endif
         BoardUnusedIoInit();
 
-        if ( TimerGetLowPowerEnable() == true ) {
+        if (TimerGetLowPowerEnable() == true) {
             RtcInit();
         } else {
             TimerHwInit();
@@ -200,7 +205,8 @@ void BoardInitMcu( void ) {
     }
 }
 
-void BoardDeInitMcu( void ) {
+void BoardDeInitMcu(void)
+{
     Gpio_t ioPin;
 
     I2cDeInit(&I2c);
@@ -210,10 +216,12 @@ void BoardDeInitMcu( void ) {
     McuInitialized = false;
 }
 
-void BoardGetUniqueId( uint8_t *id ) {
+void BoardGetUniqueId(uint8_t *id)
+{
     // \todo Read out kinetis id KL25 RM p.213
 }
 
-static void BoardUnusedIoInit( void ) {
+static void BoardUnusedIoInit(void)
+{
     // \todo Initialize unused gpio to knwon state
 }

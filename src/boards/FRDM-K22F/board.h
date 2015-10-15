@@ -30,6 +30,10 @@
 #include "usb-cdc-board.h"
 #endif
 
+#if defined(USE_LOW_POWER_MODE)
+#define LOW_POWER_MODE_ENABLE   1
+#endif
+
 /*!
  * NULL definition
  */
@@ -108,8 +112,8 @@ extern Gpio_t Led2;
 /*!
  * IRQ GPIO pins objects
  */
-extern Gpio_t Irq1Mma8451;
-extern Gpio_t Irq2Mma8451;
+extern Gpio_t Irq1Fxos8700;
+extern Gpio_t Irq2Fxos8700;
 
 /*!
  * MCU objects
@@ -169,24 +173,24 @@ extern Uart_t UartUsb;
 /*!
  * \brief Initializes the target board peripherals.
  */
-void BoardInitMcu( void );
+void BoardInitMcu(void);
 
 /*!
  * \brief Initializes the boards peripherals.
  */
-void BoardInitPeriph( void );
+void BoardInitPeriph(void);
 
 /*!
  * \brief De-initializes the target board peripherals to decrease power
  *        consumption.
  */
-void BoardDeInitMcu( void );
+void BoardDeInitMcu(void);
 
 /*!
  * \brief Gets the board 64 bits unique ID 
  *
  * \param [IN] id Pointer to an array that will contain the Unique ID
  */
-void BoardGetUniqueId( uint8_t *id );
+void BoardGetUniqueId(uint8_t *id);
 
 #endif // __BOARD_H__
