@@ -55,16 +55,18 @@
 /*!
  * Unique Devices IDs register set
  */
-#define         ID1                    ( 0x1FF80050 )
-#define         ID2                    ( 0x1FF80054 )
-#define         ID3                    ( 0x1FF80064 )
+#define         ID1                    ( SIM_UIDH )
+#define         ID2                    ( SIM_UIDMH )
+#define         ID3                    ( SIM_UIDML )
+#define         ID4                    ( SIM_UIDL )
 
 /*!
  * Random seed generated using the MCU Unique ID
  */
 #define RAND_SEED                      ( ( *( uint32_t* )ID1 ) ^ \
                                          ( *( uint32_t* )ID2 ) ^ \
-                                         ( *( uint32_t* )ID3 ) )
+                                         ( *( uint32_t* )ID3 ) ^ \
+                                         ( *( uint32_t* )ID4 ) )
 
 /*!
  * Board MCU pins definitions
@@ -89,9 +91,6 @@
 #define RADIO_DIO_5                    PA_1
 
 #define RADIO_ANT_SWITCH_RX_TX         PB_3
-
-#define USB_DM                         USB0_DM
-#define USB_DP                         USB0_DP
 
 #define FXOS8700CQ_I2C_DEVICE          I2C0
 #define I2C_SCL                        PB_2

@@ -21,13 +21,27 @@
 uint8_t TxBuffer[FIFO_TX_SIZE];
 uint8_t RxBuffer[FIFO_RX_SIZE];
 
+static TimerEvent_t Led1Timer;
+volatile bool Led1TimerEvent = false;
+
+/*!
+ * \brief Function executed on Led 1 Timeout event
+ */
+void OnLed1TimerEvent(void)
+{
+    Led1TimerEvent = true;
+}
+
 /*!
  * \brief Main application entry point.
  */
-int main( void ) {
+int main(void)
+{
     // RX buffers
-    //! @param receiveBuff Buffer used to hold received data
     uint8_t receiveBuff;
+
+    // LED state
+    bool Led1On;
 
     FifoInit(&Uart0.FifoTx, TxBuffer, FIFO_TX_SIZE);
     FifoInit(&Uart0.FifoRx, RxBuffer, FIFO_RX_SIZE);
@@ -36,21 +50,29 @@ int main( void ) {
     BoardInitMcu();
     BoardInitPeriph();
 
-//    TimerInit(&Led1Timer, OnLed1TimerEvent);
-//    TimerSetValue(&Led1Timer, 90000);
+    TimerInit(&Led1Timer, OnLed1TimerEvent);
+    TimerSetValue(&Led1Timer, 500000);
 
     // Switch LED 1 ON
     GpioWrite(&Led1, 0);
-//    TimerStart(&Led1Timer);
+    TimerStart(&Led1Timer);
 
     // Print the initial banner
     UartPutBuffer(&Uart0, (uint8_t*) "Hello World!\n\r", sizeof("Hello World!\n\r"));
 
     while (1) {
         // Main routine that simply echoes received characters forever
-        if ( !UartGetChar(&Uart0, &receiveBuff) ) {
+        if (!UartGetChar(&Uart0, &receiveBuff)) {
             // Now echo the received character
             UartPutChar(&Uart0, receiveBuff);
+        }
+        if (Led1TimerEvent == true) {
+            Led1TimerEvent = false;
+
+            if (Led1On) GpioWrite(&Led1, 1);
+            else GpioWrite(&Led1, 0);
+            Led1On = !Led1On;
+            TimerStart(&Led1Timer);
         }
     }
 }

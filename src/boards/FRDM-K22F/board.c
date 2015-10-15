@@ -218,7 +218,14 @@ void BoardDeInitMcu(void)
 
 void BoardGetUniqueId(uint8_t *id)
 {
-    // \todo Read out kinetis id KL25 RM p.213
+    id[0] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3)) >> 24;
+    id[1] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3)) >> 16;
+    id[2] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3)) >> 8;
+    id[3] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3));
+    id[4] = ((*(uint32_t*) ID2) + (*(uint32_t*) ID4)) >> 24;
+    id[5] = ((*(uint32_t*) ID2) + (*(uint32_t*) ID4)) >> 16;
+    id[6] = ((*(uint32_t*) ID2) + (*(uint32_t*) ID4)) >> 8;
+    id[7] = ((*(uint32_t*) ID2) + (*(uint32_t*) ID4));
 }
 
 static void BoardUnusedIoInit(void)

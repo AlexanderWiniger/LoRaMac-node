@@ -27,26 +27,27 @@ SPI_Type * const g_spiBase[SPI_INSTANCE_COUNT] = SPI_BASE_PTRS;
 /*! Table to save port IRQ enum numbers defined in CMSIS files. */
 const IRQn_Type g_spiIrqId[SPI_INSTANCE_COUNT] = SPI_IRQS;
 
-void SpiInit( Spi_t *obj, PinNames mosi, PinNames miso, PinNames sclk, PinNames nss ) {
+void SpiInit(Spi_t *obj, PinNames mosi, PinNames miso, PinNames sclk, PinNames nss)
+{
     /* Check if a proper channel was selected */
-    if ( obj->Spi == NULL ) return;
+    if (obj->Spi == NULL) return;
 
     GpioInit(&obj->Mosi, mosi, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_DOWN, 0);
     GpioInit(&obj->Miso, miso, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_DOWN, 0);
     GpioInit(&obj->Sclk, sclk, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_DOWN, 0);
 
-    if ( nss != NC ) {
+    if (nss != NC) {
         GpioInit(&obj->Nss, nss, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
     }
 
     /* Disable clock for SPI.*/
-    if ( obj->Spi == g_spiBase[0] ) CLOCK_SYS_EnableSpiClock(0);
+    if (obj->Spi == g_spiBase[0]) CLOCK_SYS_EnableSpiClock(0);
     else CLOCK_SYS_EnableSpiClock(1);
 
     // Initialize the DSPI module registers to default value, which disables the module
     DSPI_HAL_Init(obj->Spi);
 
-    if ( nss == NC ) {
+    if (nss == NC) {
         // 8 bits, CPOL = 0, CPHA = 0, MASTER
         SpiFormat(obj, 8, 0, 0, 0);
     } else {
@@ -59,12 +60,13 @@ void SpiInit( Spi_t *obj, PinNames mosi, PinNames miso, PinNames sclk, PinNames 
     DSPI_HAL_Enable(obj->Spi);
 }
 
-void SpiDeInit( Spi_t *obj ) {
+void SpiDeInit(Spi_t *obj)
+{
     /* Disable Spi module */
     DSPI_HAL_Disable(obj->Spi);
 
     /* Disable clock for SPI.*/
-    if ( obj->Spi == g_spiBase[0] ) CLOCK_SYS_DisableSpiClock(0);
+    if (obj->Spi == g_spiBase[0]) CLOCK_SYS_DisableSpiClock(0);
     else CLOCK_SYS_DisableSpiClock(1);
 
     GpioInit(&obj->Mosi, obj->Mosi.pin, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
@@ -73,7 +75,8 @@ void SpiDeInit( Spi_t *obj ) {
     GpioInit(&obj->Nss, obj->Nss.pin, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 }
 
-void SpiFormat( Spi_t *obj, int8_t bits, int8_t cpol, int8_t cpha, int8_t slave ) {
+void SpiFormat(Spi_t *obj, int8_t bits, int8_t cpol, int8_t cpha, int8_t slave)
+{
     dspi_data_format_config_t dataFormat;
     dspi_master_slave_mode_t slaveMode;
 
@@ -105,11 +108,12 @@ void SpiFormat( Spi_t *obj, int8_t bits, int8_t cpol, int8_t cpha, int8_t slave 
     DSPI_HAL_Enable(obj->Spi);
 }
 
-void SpiFrequency( Spi_t *obj, uint32_t hz ) {
+void SpiFrequency(Spi_t *obj, uint32_t hz)
+{
     uint32_t spiSourceClock;
 //    dspi_ctar_selection_t whichCtar;
 
-    if ( obj->Spi == g_spiBase[0] ) spiSourceClock = CLOCK_SYS_GetSpiFreq(0);
+    if (obj->Spi == g_spiBase[0]) spiSourceClock = CLOCK_SYS_GetSpiFreq(0);
     else spiSourceClock = CLOCK_SYS_GetSpiFreq(1);
 
     /* Disable Spi module */
@@ -121,17 +125,35 @@ void SpiFrequency( Spi_t *obj, uint32_t hz ) {
     DSPI_HAL_Enable(obj->Spi);
 }
 
-uint16_t SpiInOut( Spi_t *obj, uint16_t outData ) {
+uint16_t SpiInOut(Spi_t *obj, uint16_t outData)
+{
     uint16_t data;
-    if ( (obj == NULL) || (obj->Spi) == NULL ) {
+    uint32_t cmd;
+    dspi_command_config_t command;
+
+    if ((obj == NULL) || (obj->Spi) == NULL) {
         while (1)
             ;
     }
 
+    /* Before sending the data, we first need to initialize the data command struct
+     * Configure the data command attributes for the desired PCS, CTAR, and continuous PCS
+     * which are derived from the run-time state struct
+     */
+    command.whichPcs = kDspiPcs0;
+    command.whichCtar = kDspiCtar0;
+    command.isChipSelectContinuous = true;
+    command.isEndOfQueue = 0;
+    command.clearTransferCount = 0;
+
+    /* "Build" the command word. Only do this once since the commad word members don't
+     * change until the last word sent (which is when the end of queue flag gets set).
+     */
+    cmd = DSPI_HAL_GetFormattedCommand(obj->Spi, &command);
+
     while (SPI_HAL_IsTxBuffEmptyPending(obj->Spi))
         ;
-    SPI_HAL_WriteDataHigh(obj->Spi, ((outData & 0xFF00) >> 8));
-    SPI_HAL_WriteDataLow(obj->Spi, (outData & 0xFF));
+    DSPI_HAL_WriteCmdDataMastermode(obj->Spi, cmd | data);
 
     while (DSPI_HAL_GetStatusFlag(obj->Spi, kDspiRxFifoDrainRequest) == false) {
     }

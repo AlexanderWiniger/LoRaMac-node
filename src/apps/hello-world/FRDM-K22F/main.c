@@ -59,7 +59,7 @@ int main(void)
     TimerStart(&Led1Timer);
 
     // Print the initial banner
-    UartPutBuffer(&Uart1, "Hello World!\n\r", sizeof("Hello World!\n\r"));
+    UartPutBuffer(&Uart1, (uint8_t*) "Hello World!\n\r", sizeof("Hello World!\n\r"));
 
     while (1) {
         // Main routine that simply echoes received characters forever

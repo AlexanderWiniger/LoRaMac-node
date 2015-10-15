@@ -13,10 +13,6 @@
 #include "fsl_interrupt_manager.h"
 #include "fsl_clock_manager.h"
 
-// \todo Only for debugging purposes
-#include "fsl_port_hal.h"
-#include "fsl_gpio_hal.h"
-
 /*------------------------- Local Defines --------------------------------*/
 /*!
  * Hardware Timer time base in us
@@ -99,7 +95,7 @@ void TimerHwInit(void)
     PIT_HAL_SetIntCmd(PIT_BASE_PTR, HWTIMER_TIMER_CHANNEL, true);
 
     /* Enable PIT interrupt.*/
-    INT_SYS_EnableIRQ((IRQn_Type)(PIT0_IRQn + HWTIMER_TIMER_CHANNEL));
+    INT_SYS_EnableIRQ(g_pitIrqId[HWTIMER_TIMER_CHANNEL]);
 
     /* Start timer HWTIMER_TIMER_CHANNEL */
     PIT_HAL_StartTimer(PIT_BASE_PTR, HWTIMER_TIMER_CHANNEL);
@@ -114,26 +110,21 @@ void TimerHwInit(void)
     PIT_HAL_SetTimerPeriodByCount(PIT_BASE_PTR, HWTIMER_DELAY_CHANNEL, count);
 
     /* Enable PIT interrupt.*/
-    INT_SYS_EnableIRQ((IRQn_Type)(PIT0_IRQn + HWTIMER_DELAY_CHANNEL));
-
-    // \todo Only for debugging purposes
-    PORT_HAL_SetMuxMode(PORTD_BASE_PTR, 3, kPortMuxAsGpio); // Configure pin muxing to gpio
-    GPIO_HAL_WritePinOutput(PTD_BASE_PTR, 3, 0); // Set default output level
-    GPIO_HAL_SetPinDir(PTD_BASE_PTR, 3, kGpioDigitalOutput); // Set pin direction to output
+    INT_SYS_EnableIRQ(g_pitIrqId[HWTIMER_DELAY_CHANNEL]);
 }
 
 void TimerHwDeInit(void)
 {
     /* Disable PIT timer HWTIMER_TIMER_CHANNEL interrupt. Clear the chain bit if available */
     PIT_HAL_SetIntCmd(PIT_BASE_PTR, HWTIMER_TIMER_CHANNEL, false);
-    INT_SYS_DisableIRQ((IRQn_Type)(PIT0_IRQn + HWTIMER_TIMER_CHANNEL));
+    INT_SYS_DisableIRQ(g_pitIrqId[HWTIMER_TIMER_CHANNEL]);
 #if FSL_FEATURE_PIT_HAS_CHAIN_MODE
     PIT_HAL_SetTimerChainCmd(PIT_BASE_PTR, HWTIMER_TIMER_CHANNEL, false);
 #endif
 
     /* Disable PIT timer 1 interrupt. Clear the chain bit if available */
     PIT_HAL_SetIntCmd(PIT_BASE_PTR, HWTIMER_DELAY_CHANNEL, false);
-    INT_SYS_DisableIRQ((IRQn_Type)(PIT0_IRQn + HWTIMER_DELAY_CHANNEL));
+    INT_SYS_DisableIRQ(g_pitIrqId[HWTIMER_DELAY_CHANNEL]);
 #if FSL_FEATURE_PIT_HAS_CHAIN_MODE
     PIT_HAL_SetTimerChainCmd(PIT_BASE_PTR, HWTIMER_DELAY_CHANNEL, false);
 #endif
@@ -245,13 +236,12 @@ void TimerIncrementDelayCounter(void)
  */
 void PIT0_IRQHandler(void)
 {
-    if (PIT_HAL_IsIntPending(PIT_BASE_PTR, 0U)) {
+    if (PIT_HAL_IsIntPending(PIT_BASE_PTR, HWTIMER_TIMER_CHANNEL)) {
         /* Clear interrupt flag.*/
-        PIT_HAL_ClearIntFlag(PIT_BASE_PTR, 0U);
+        PIT_HAL_ClearIntFlag(PIT_BASE_PTR, HWTIMER_TIMER_CHANNEL);
         TimerIncrementTickCounter();
 
         if (TimerTickCounter == TimeoutCntValue) {
-            GPIO_HAL_TogglePinOutput(PTD_BASE_PTR, 3);
             TimerIrqHandler();
         }
     }
@@ -262,9 +252,9 @@ void PIT0_IRQHandler(void)
  */
 void PIT1_IRQHandler(void)
 {
-    if (PIT_HAL_IsIntPending(PIT_BASE_PTR, 1U)) {
+    if (PIT_HAL_IsIntPending(PIT_BASE_PTR, HWTIMER_DELAY_CHANNEL)) {
         /* Clear interrupt flag.*/
-        PIT_HAL_ClearIntFlag(PIT_BASE_PTR, 1U);
+        PIT_HAL_ClearIntFlag(PIT_BASE_PTR, HWTIMER_DELAY_CHANNEL);
         TimerIncrementDelayCounter();
     }
 }

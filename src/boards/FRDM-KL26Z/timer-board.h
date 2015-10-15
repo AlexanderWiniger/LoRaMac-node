@@ -9,12 +9,24 @@
 #ifndef __TIMER_BOARD_H__
 #define __TIMER_BOARD_H__
 
+/*------------------------------ Defines ---------------------------------*/
+/*!
+ * Used PIT channels used for hwtimer and delay functions
+ */
+#define HWTIMER_TIMER_CHANNEL       0
+#define HWTIMER_DELAY_CHANNEL       1
 /*!
  * \brief Timer time variable definition
  */
 #ifndef TimerTime_t
 typedef uint64_t TimerTime_t;
 #endif
+/*----------------------------- Variables -------------------------------*/
+/*! @brief Table of base addresses for pit instances. */
+extern PIT_Type * const g_pitBase[];
+
+/* Table to save pit IRQ enumeration numbers defined in the CMSIS header file */
+extern const IRQn_Type g_pitIrqId[];
 
 /*!
  * \brief Initializes the timer

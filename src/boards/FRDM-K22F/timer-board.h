@@ -11,7 +11,7 @@
 
 /*------------------------------ Defines ---------------------------------*/
 /*!
- *
+ * Used PIT channels used for hwtimer and delay functions
  */
 #define HWTIMER_TIMER_CHANNEL       0
 #define HWTIMER_DELAY_CHANNEL       1
