@@ -1,0 +1,11 @@
+eclipse.preferences.version=1
+environment/project/ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.506236642/KSDK_PATH/delimiter=;
+environment/project/ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.506236642/KSDK_PATH/operation=replace
+environment/project/ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.506236642/KSDK_PATH/value=C\:/dev/Freescale/KSDK_1.3.0
+environment/project/ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.506236642/append=true
+environment/project/ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.506236642/appendContributed=true
+environment/project/ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.956206463/KSDK_PATH/delimiter=;
+environment/project/ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.956206463/KSDK_PATH/operation=append
+environment/project/ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.956206463/KSDK_PATH/value=C\:\\dev\\Freescale\\KSDK_1.3.0
+environment/project/ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.956206463/append=true
+environment/project/ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.956206463/appendContributed=true

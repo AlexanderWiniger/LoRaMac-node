@@ -176,7 +176,7 @@ void BoardInitMcu(void)
         I2cInit(&I2c, I2C_SCL, I2C_SDA);
 
         /*! SPI channel to be used by Semtech SX1276 */
-        SX1276.Spi.Spi = RADIO_SPI_DEVICE;
+        SX1276.Spi.instance = RADIO_SPI_INSTANCE;
         SpiInit(&SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, NC);
         SX1276IoInit();
 
@@ -207,8 +207,6 @@ void BoardInitMcu(void)
 
 void BoardDeInitMcu(void)
 {
-    Gpio_t ioPin;
-
     I2cDeInit(&I2c);
     SpiDeInit(&SX1276.Spi);
     SX1276IoDeInit();

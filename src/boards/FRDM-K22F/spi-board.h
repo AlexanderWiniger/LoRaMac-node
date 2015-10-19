@@ -9,16 +9,33 @@
 #ifndef __SPI_MCU_H__
 #define __SPI_MCU_H__
 
+#include "fsl_dspi_master_driver.h"
+#include "fsl_dspi_slave_driver.h"
+
 /*!
- * LoRaMac SPI typedef
+ *  SPI master driver configuration
  */
-typedef SPI_Type SPI_TypeDef;
+typedef struct {
+    dspi_device_t device;
+    dspi_master_state_t state;
+    dspi_master_user_config_t userConfig;
+} SPI_MasterType;
+
+/*!
+ *  SPI slave driver configuration
+ */
+typedef struct {
+    dspi_slave_state_t state;
+    dspi_slave_user_config_t userConfig;
+} SPI_SlaveType;
 
 /*!
  * SPI driver structure definition
  */
 struct Spi_s {
-    SPI_Type *Spi;
+    uint32_t instance;
+    uint32_t *Spi;
+    bool isSlave;
     Gpio_t Mosi;
     Gpio_t Miso;
     Gpio_t Sclk;

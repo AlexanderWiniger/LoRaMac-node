@@ -76,7 +76,7 @@
 
 #define RADIO_RESET                    PB_0
 
-#define RADIO_SPI_DEVICE               SPI0
+#define RADIO_SPI_INSTANCE             0
 #define RADIO_MOSI                     PD_6
 #define RADIO_MISO                     PD_7
 #define RADIO_SCLK                     PD_5

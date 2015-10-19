@@ -70,9 +70,45 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/src/apps/hello-world/FRDM-KL26Z</locationURI>
 		</link>
 		<link>
-			<name>src/boards/mcu/kl26z</name>
+			<name>src/boards/mcu/kinetis</name>
 			<type>2</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/src/boards/mcu/kl26z</locationURI>
+			<location>C:/workspace/eclipse/LoRaMac-node/src/boards/mcu/kinetis</location>
+		</link>
+		<link>
+			<name>src/boards/mcu/startup</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>src/boards/mcu/startup/startup.c</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/platform/devices/startup.c</locationURI>
+		</link>
+		<link>
+			<name>src/boards/mcu/startup/startup.h</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/platform/devices/startup.h</locationURI>
+		</link>
+		<link>
+			<name>src/boards/mcu/startup/startup_MKL26Z4.S</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/platform/devices/MKL26Z4/startup/gcc/startup_MKL26Z4.S</locationURI>
+		</link>
+		<link>
+			<name>src/boards/mcu/startup/system_MKL26Z4.c</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/platform/devices/MKL26Z4/startup/system_MKL26Z4.c</locationURI>
+		</link>
+		<link>
+			<name>src/boards/mcu/startup/system_MKL26Z4.h</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/platform/devices/MKL26Z4/startup/system_MKL26Z4.h</locationURI>
 		</link>
 	</linkedResources>
+	<variableList>
+		<variable>
+			<name>KSDK_LOC</name>
+			<value>file:/C:/dev/Freescale/KSDK_1.3.0</value>
+		</variable>
+	</variableList>
 </projectDescription>

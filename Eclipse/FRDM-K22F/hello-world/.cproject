@@ -5,16 +5,16 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.1856130542" moduleId="org.eclipse.cdt.core.settings" name="Debug">
 				<externalSettings/>
 				<extensions>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="${cross_rm} -rf" description="" errorParsers="org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GASErrorParser;org.eclipse.cdt.core.GLDErrorParser" id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.1856130542" name="Debug" parent="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug" postannouncebuildStep="" postbuildStep="" preannouncebuildStep="" prebuildStep="">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="${cross_rm} -rf" description="" errorParsers="org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GASErrorParser;org.eclipse.cdt.core.GLDErrorParser" id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.1856130542" name="Debug" parent="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug" postannouncebuildStep="" postbuildStep="" preannouncebuildStep="" prebuildStep="">
 					<folderInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.1856130542." name="/" resourcePath="">
 						<toolChain errorParsers="" id="ilg.gnuarmeclipse.managedbuild.cross.toolchain.elf.debug.2068972073" name="Cross ARM GCC" superClass="ilg.gnuarmeclipse.managedbuild.cross.toolchain.elf.debug">
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.26865250" name="Optimization Level" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level" value="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.none" valueType="enumerated"/>
@@ -61,14 +61,16 @@
 									<listOptionValue builtIn="false" value="../../../../src/mac"/>
 									<listOptionValue builtIn="false" value="../../../../src/peripherals"/>
 									<listOptionValue builtIn="false" value="../../../../src/boards/FRDM-K22F"/>
-									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/k22f"/>
-									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/k22f/MK22F51212/startup"/>
-									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/k22f/MK22F51212/include"/>
-									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/k22f/platform/hal/inc"/>
-									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/k22f/platform/system/inc"/>
-									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/k22f/platform/utilities/inc"/>
-									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/k22f/platform/osa/inc"/>
-									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/cmsis"/>
+									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis"/>
+									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/devices"/>
+									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/devices/MK22F51212/startup"/>
+									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/devices/MK22F51212/include"/>
+									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/hal/inc"/>
+									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/drivers/inc"/>
+									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/system/inc"/>
+									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/utilities/inc"/>
+									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/osa/inc"/>
+									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/CMSIS/Include"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs.1151380480" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="USE_BAND_868"/>
@@ -94,10 +96,10 @@
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.other.1519664713" name="Other linker flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.other" value="-Xlinker -z  -Xlinker muldefs   --specs=nano.specs          -Wall  -fno-common  -ffunction-sections  -fdata-sections  -ffreestanding  -fno-builtin  -Os  -mapcs  -Xlinker -static  -Xlinker --defsym=__stack_size__=0x2000  -Xlinker --defsym=__heap_size__=0x2000 " valueType="string"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.otherobjs.1665328401" name="Other objects" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.otherobjs" valueType="userObjs">
-									<listOptionValue builtIn="false" value="&quot;..\..\..\..\src\boards\mcu\k22f\platform\lib\libksdk_hal.a&quot;"/>
+									<listOptionValue builtIn="false" value="${KSDK_PATH}/lib/ksdk_platform_lib/armgcc/K22F51212/debug/libksdk_platform.a"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.scriptfile.1832008880" name="Script files (-T)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.scriptfile" valueType="stringList">
-									<listOptionValue builtIn="false" value="&quot;../../../../src/boards/mcu/k22f/MK22F51212/linker/MK22FN512xxx12_flash.ld&quot;"/>
+									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/devices/MK22F51212/linker/gcc/MK22FN512xxx12_flash.ld"/>
 								</option>
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.input.1052189761" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -148,13 +150,13 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.fpu.abi.1743752296.1290811750" name="Float ABI" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.fpu.abi.1743752296"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.fpu.unit.826418114.1294450647" name="FPU Type" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.fpu.unit.826418114"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.825438169.200197386" name="Enable all common warnings (-Wall)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.825438169"/>
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.1291844063" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level" value="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.none" valueType="enumerated"/>
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.messagelength.1470327077" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.messagelength" value="true" valueType="boolean"/>
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.signedchar.602435098" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.signedchar" value="true" valueType="boolean"/>
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.functionsections.1135162586" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.functionsections" value="true" valueType="boolean"/>
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.datasections.520459417" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.datasections" value="true" valueType="boolean"/>
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level.1362799908" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level" value="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level.max" valueType="enumerated"/>
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.format.1479973660" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.format"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.1291844063" name="Optimization Level" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level" value="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.none" valueType="enumerated"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.messagelength.1470327077" name="Message length (-fmessage-length=0)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.messagelength" value="true" valueType="boolean"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.signedchar.602435098" name="'char' is signed (-fsigned-char)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.signedchar" value="true" valueType="boolean"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.functionsections.1135162586" name="Function sections (-ffunction-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.functionsections" value="true" valueType="boolean"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.datasections.520459417" name="Data sections (-fdata-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.datasections" value="true" valueType="boolean"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level.1362799908" name="Debug level" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level" value="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level.max" valueType="enumerated"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.format.1479973660" name="Debug format" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.format"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform" isAbstract="false" osList="all" superClass="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform"/>
 							<tool errorParsers="org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GASErrorParser" id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.479988400" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.1362375008">
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input.1992335919" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input"/>
@@ -172,7 +174,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="src/boards/mcu/k22f/platform/system/src/hwtimer/fsl_hwtimer_pit_irq.c|src/boards/mcu/k22f/platform/system/src/hwtimer/fsl_hwtimer_pit.c|src/boards/mcu/k22f/platform/hal/src/mpu|src/boards/mcu/k22f/platform/system/src/power|src/boards/mcu/k22f/platform/utilities/src|src/apps/hello-world/FRDM-KL26Z|src/apps/hello-world/FRDM-KL25Z|src/apps/ping-pong|src/apps/tx-cw|src/apps/rx-sensi|src/apps/LoRaMac|src/apps/BootLoader|src/boards/SK-iM880A|src/boards/SensorNode|src/boards/mcu/kl26z|src/boards/mcu/stm32|src/boards/mcu/kl25z|src/boards/LoRaMote|src/boards/FRDM-KL26Z|src/boards/FRDM-KL25Z|src/boards/Bleeper-76|src/boards/Bleeper-72|src/peripherals|src/radio/sx1272" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/apps/LoRaMac|src/boards/mcu/k22f/platform/osa/src|src/apps/hello-world/FRDM-KL25Z|src/boards/mcu/k22f/platform/system/src|src/boards/SK-iM880A|src/boards/SensorNode|src/boards/LoRaMote|src/apps/ping-pong|src/boards/FRDM-KL26Z|src/boards/mcu/k22f/platform/system/src/hwtimer/fsl_hwtimer_pit.c|src/boards/mcu/stm32|src/boards/mcu/k22f/platform/system/src/hwtimer/fsl_hwtimer_pit_irq.c|src/apps/tx-cw|src/boards/mcu/k22f/platform/drivers/src|src/apps/rx-sensi|src/boards/mcu/k22f/platform/hal/src|src/boards/mcu/kl26z|src/boards/FRDM-KL25Z|src/apps/BootLoader|src/boards/mcu/k22f/platform/system/src/power|src/radio/sx1272|src/boards/mcu/k22f/platform/hal/src/mpu|src/apps/hello-world/FRDM-KL26Z|src/boards/mcu/k22f/platform/utilities/src|src/boards/mcu/kl25z|src/boards/Bleeper-76|src/boards/Bleeper-72|src/peripherals" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -183,12 +185,12 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.964887554" moduleId="org.eclipse.cdt.core.settings" name="Release">
 				<externalSettings/>
 				<extensions>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
