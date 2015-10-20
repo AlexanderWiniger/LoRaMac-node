@@ -12,15 +12,6 @@
 /*------------------------- Local Defines --------------------------------*/
 
 /*------------------------ Local Variables -------------------------------*/
-/*!
- * FIFO buffers size
- */
-#define FIFO_TX_SIZE                                128
-#define FIFO_RX_SIZE                                128
-
-uint8_t TxBuffer[FIFO_TX_SIZE];
-uint8_t RxBuffer[FIFO_RX_SIZE];
-
 static TimerEvent_t Led1Timer;
 volatile bool Led1TimerEvent = false;
 
@@ -37,14 +28,8 @@ void OnLed1TimerEvent(void)
  */
 int main(void)
 {
-    // RX buffers
-    uint8_t receiveBuff;
-
     // LED state
     bool Led1On;
-
-    FifoInit(&Uart0.FifoTx, TxBuffer, FIFO_TX_SIZE);
-    FifoInit(&Uart0.FifoRx, RxBuffer, FIFO_RX_SIZE);
 
     // Target board initialisation
     BoardInitMcu();
@@ -58,14 +43,9 @@ int main(void)
     TimerStart(&Led1Timer);
 
     // Print the initial banner
-    UartPutBuffer(&Uart0, (uint8_t*) "Hello World!\n\r", sizeof("Hello World!\n\r"));
+    PRINTF("\r\nHello World!\r\n\r\n");
 
     while (1) {
-        // Main routine that simply echoes received characters forever
-        if (!UartGetChar(&Uart0, &receiveBuff)) {
-            // Now echo the received character
-            UartPutChar(&Uart0, receiveBuff);
-        }
         if (Led1TimerEvent == true) {
             Led1TimerEvent = false;
 

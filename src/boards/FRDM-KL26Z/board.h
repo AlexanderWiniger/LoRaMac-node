@@ -10,6 +10,7 @@
 
 #include <stdbool.h>
 #include "fsl_device_registers.h"
+#include "fsl_debug_console.h"
 #include "fsl_port_hal.h"
 #include "utilities.h"
 #include "timer.h"
@@ -67,12 +68,15 @@
  */
 #define LED_1                          PE_31
 #define LED_2                          PE_29
+#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
+#define LED_3                          PD_5
+#endif /* SX1276_BOARD_AVAILABLE */
 
-#if defined(SX1276_FREEDOM_BOARD)
+#if defined(SX1276_BOARD_FREEDOM)
 
 #define RADIO_RESET                    PC_1
 
-#define RADIO_SPI_DEVICE               SPI0
+#define RADIO_SPI_INSTANCE             1
 #define RADIO_MOSI                     PD_6
 #define RADIO_MISO                     PD_7
 #define RADIO_SCLK                     PD_5
@@ -88,11 +92,11 @@
 #define RADIO_ANT_SWITCH_HF            PE_1
 #define RADIO_ANT_SWITCH_LF            PE_0
 
-#elif defined(SX1276_EMBED_BOARD)
+#elif defined(SX1276_BOARD_EMBED)
 
 #define RADIO_RESET                    PB_0
 
-#define RADIO_SPI_DEVICE               SPI0
+#define RADIO_SPI_INSTANCE             1
 #define RADIO_MOSI                     PD_6
 #define RADIO_MISO                     PD_7
 #define RADIO_SCLK                     PD_5
@@ -109,8 +113,26 @@
 #define RADIO_ANT_SWITCH_RX_TX         PC_2
 
 #else
-#error "Please define a SX1276 board in the compiler options."
-#endif
+
+#define RADIO_RESET                    NC
+
+#define RADIO_SPI_INSTANCE             -1
+#define RADIO_MOSI                     NC
+#define RADIO_MISO                     NC
+#define RADIO_SCLK                     NC
+#define RADIO_NSS                      NC
+
+#define RADIO_DIO_0                    NC
+#define RADIO_DIO_1                    NC
+#define RADIO_DIO_2                    NC
+#define RADIO_DIO_3                    NC
+#define RADIO_DIO_4_A                  NC
+#define RADIO_DIO_4_B                  NC
+#define RADIO_DIO_5                    NC
+
+#define RADIO_ANT_SWITCH_RX_TX         NC
+
+#endif /* SX1276_BOARD */
 
 #define FXOS8700CQ_I2C_DEVICE          I2C0
 #define I2C_SCL                        PE_24
@@ -138,7 +160,9 @@
  */
 extern Gpio_t Led1;
 extern Gpio_t Led2;
+#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
 extern Gpio_t Led3;
+#endif
 
 /*!
  * IRQ GPIO pins objects

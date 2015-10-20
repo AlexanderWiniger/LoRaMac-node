@@ -63,15 +63,15 @@ gpio_alternate_fct_user_config_t alternateFctConfigs[] = {
     },
     {
         .pinName = PD_5,
-        .muxConfig = kPortMuxAlt2, ///> SPI0_SCK
+        .muxConfig = kPortMuxAlt2, ///> SPI1_SCK
     },
     {
         .pinName = PD_6,
-        .muxConfig = kPortMuxAlt2, ///> SPI0_MOSI
+        .muxConfig = kPortMuxAlt2, ///> SPI1_MOSI
     },
     {
         .pinName = PD_7,
-        .muxConfig = kPortMuxAlt2, ///> SPI0_MISO
+        .muxConfig = kPortMuxAlt2, ///> SPI1_MISO
     },
     {
         .pinName = PE_0,

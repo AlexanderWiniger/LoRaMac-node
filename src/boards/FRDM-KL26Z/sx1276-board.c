@@ -28,10 +28,10 @@ const struct Radio_s Radio = { SX1276Init, SX1276GetStatus, SX1276SetModem, SX12
 /*!
  * Antenna switch GPIO pins objects
  */
-#if defined(SX1276_FREEDOM_BOARD)
+#if defined(SX1276_BOARD_FREEDOM)
 Gpio_t AntSwitchLf;
 Gpio_t AntSwitchHf;
-#elif defined(SX1276_EMBED_BOARD)
+#elif defined(SX1276_BOARD_EMBED)
 Gpio_t AntSwitchRxTx;
 #endif
 
@@ -43,9 +43,9 @@ void SX1276IoInit(void)
     GpioInit(&SX1276.DIO1, RADIO_DIO_1, PIN_INPUT, PIN_PUSH_PULL, PIN_PULL_UP, 0);
     GpioInit(&SX1276.DIO2, RADIO_DIO_2, PIN_INPUT, PIN_PUSH_PULL, PIN_PULL_UP, 0);
     GpioInit(&SX1276.DIO3, RADIO_DIO_3, PIN_INPUT, PIN_PUSH_PULL, PIN_PULL_UP, 0);
-#if defined(SX1276_FREEDOM_BOARD)
+#if defined(SX1276_BOARD_FREEDOM)
     GpioInit(&SX1276.DIO4, RADIO_DIO_4, PIN_INPUT, PIN_PUSH_PULL, PIN_PULL_UP, 0);
-#elif defined(SX1276_EMBED_BOARD)
+#elif defined(SX1276_BOARD_EMBED)
     GpioInit(&SX1276.DIO4, RADIO_DIO_4_A, PIN_INPUT, PIN_PUSH_PULL, PIN_PULL_UP, 0);
 #endif
     GpioInit(&SX1276.DIO5, RADIO_DIO_5, PIN_INPUT, PIN_PUSH_PULL, PIN_PULL_UP, 0);
@@ -69,9 +69,9 @@ void SX1276IoDeInit(void)
     GpioInit(&SX1276.DIO1, RADIO_DIO_1, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
     GpioInit(&SX1276.DIO2, RADIO_DIO_2, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
     GpioInit(&SX1276.DIO3, RADIO_DIO_3, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
-#if defined(SX1276_FREEDOM_BOARD)
+#if defined(SX1276_BOARD_FREEDOM)
     GpioInit(&SX1276.DIO4, RADIO_DIO_4, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
-#elif defined(SX1276_EMBED_BOARD)
+#elif defined(SX1276_BOARD_EMBED)
     GpioInit(&SX1276.DIO4, RADIO_DIO_4_A, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
 #endif
     GpioInit(&SX1276.DIO5, RADIO_DIO_5, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
@@ -101,20 +101,20 @@ void SX1276SetAntSwLowPower(bool status)
 
 void SX1276AntSwInit(void)
 {
-#if defined(SX1276_FREEDOM_BOARD)
+#if defined(SX1276_BOARD_FREEDOM)
     GpioInit(&AntSwitchLf, RADIO_ANT_SWITCH_LF, PIN_OUTPUT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
     GpioInit(&AntSwitchHf, RADIO_ANT_SWITCH_HF, PIN_OUTPUT, PIN_PUSH_PULL, PIN_PULL_UP, 0);
-#elif defined(SX1276_EMBED_BOARD)
+#elif defined(SX1276_BOARD_EMBED)
     GpioInit(&AntSwitchRxTx, RADIO_ANT_SWITCH_RX_TX, PIN_OUTPUT, PIN_OPEN_DRAIN, PIN_NO_PULL, 0);
 #endif
 }
 
 void SX1276AntSwDeInit(void)
 {
-#if defined(SX1276_FREEDOM_BOARD)
+#if defined(SX1276_BOARD_FREEDOM)
     GpioInit(&AntSwitchLf, RADIO_ANT_SWITCH_LF, PIN_OUTPUT, PIN_OPEN_DRAIN, PIN_NO_PULL, 0);
     GpioInit(&AntSwitchHf, RADIO_ANT_SWITCH_HF, PIN_OUTPUT, PIN_OPEN_DRAIN, PIN_NO_PULL, 0);
-#elif defined(SX1276_EMBED_BOARD)
+#elif defined(SX1276_BOARD_EMBED)
     GpioInit(&AntSwitchRxTx, RADIO_ANT_SWITCH_RX_TX, PIN_OUTPUT, PIN_OPEN_DRAIN, PIN_NO_PULL, 0);
 #endif
 }
@@ -128,17 +128,17 @@ void SX1276SetAntSw(uint8_t rxTx)
     SX1276.RxTx = rxTx;
 
     if (rxTx != 0) { // 1: TX, 0: RX
-#if defined(SX1276_FREEDOM_BOARD)
+#if defined(SX1276_BOARD_FREEDOM)
             GpioWrite(&AntSwitchLf, 0);
             GpioWrite(&AntSwitchHf, 1);
-#elif defined(SX1276_EMBED_BOARD)
+#elif defined(SX1276_BOARD_EMBED)
             GpioWrite(&AntSwitchRxTx, 1);
 #endif
     } else {
-#if defined(SX1276_FREEDOM_BOARD)
+#if defined(SX1276_BOARD_FREEDOM)
         GpioWrite(&AntSwitchLf, 1);
         GpioWrite(&AntSwitchHf, 0);
-#elif defined(SX1276_EMBED_BOARD)
+#elif defined(SX1276_BOARD_EMBED)
         GpioWrite(&AntSwitchRxTx, 0);
 #endif
     }

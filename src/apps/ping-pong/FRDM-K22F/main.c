@@ -174,9 +174,8 @@ int main(void)
                 if (isMaster == true) {
                     if (BufferSize > 0) {
                         if (strncmp((const char*) Buffer, (const char*) PongMsg, 4) == 0) {
-                            // Indicates on a LED that the received frame is a PONG
-                            GpioWrite(&Led1, GpioRead(&Led1) ^ 1);
-
+                            // Indicates that the received frame is a PONG
+                            PRINTF("Received %s\r\n", PongMsg);
                             // Send the next PING frame
                             Buffer[0] = 'P';
                             Buffer[1] = 'I';
@@ -190,7 +189,6 @@ int main(void)
                             Radio.Send(Buffer, BufferSize);
                         } else if (strncmp((const char*) Buffer, (const char*) PingMsg, 4) == 0) { // A master already exists then become a slave
                             isMaster = false;
-                            GpioWrite(&Led2, 1); // Set LED off
                             Radio.Rx( RX_TIMEOUT_VALUE);
                         } else // valid reception but neither a PING or a PONG message
                         {    // Set device as master ans start again
@@ -201,9 +199,8 @@ int main(void)
                 } else {
                     if (BufferSize > 0) {
                         if (strncmp((const char*) Buffer, (const char*) PingMsg, 4) == 0) {
-                            // Indicates on a LED that the received frame is a PING
-                            GpioWrite(&Led1, GpioRead(&Led1) ^ 1);
-
+                            // Indicates that the received frame is a PING
+                            PRINTF("Received %s\r\n", PingMsg);
                             // Send the reply to the PONG string
                             Buffer[0] = 'P';
                             Buffer[1] = 'O';
@@ -225,9 +222,8 @@ int main(void)
                 State = LOWPOWER;
                 break;
             case TX:
-                // Indicates on a LED that we have sent a PING [Master]
-                // Indicates on a LED that we have sent a PONG [Slave]
-                GpioWrite(&Led2, GpioRead(&Led2) ^ 1);
+                // Indicates that we have sent a PING
+                PRINTF("Sent %s\r\n", Buffer);
                 Radio.Rx( RX_TIMEOUT_VALUE);
                 State = LOWPOWER;
                 break;

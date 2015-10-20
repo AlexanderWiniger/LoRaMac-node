@@ -10,6 +10,7 @@
 #include "spi-board.h"
 #include "fsl_clock_manager.h"
 #include "fsl_interrupt_manager.h"
+#include <stdlib.h>
 
 /*----------------------- Local Definitions ------------------------------*/
 /*!
@@ -33,21 +34,23 @@ void SpiInit(Spi_t *obj, PinNames mosi, PinNames miso, PinNames sclk, PinNames n
 
     if (nss != NC) {
         GpioInit(&obj->Nss, nss, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
-        obj->isSlave = false;
-    } else {
+        obj->Spi = malloc(sizeof(SPI_SlaveType));
         obj->isSlave = true;
+    } else {
+        obj->Spi = malloc(sizeof(SPI_MasterType));
+        obj->isSlave = false;
     }
 
     if (nss == NC) {
         // 8 bits, CPOL = 0, CPHA = 0, MASTER
         SpiFormat(obj, 8, 0, 0, 0);
-        ((SPI_MasterType*) obj->Spi)->userConfig.isChipSelectContinuous = false;
-        ((SPI_MasterType*) obj->Spi)->userConfig.isSckContinuous = false;
-        ((SPI_MasterType*) obj->Spi)->userConfig.pcsPolarity = kDspiPcs_ActiveLow;
-        ((SPI_MasterType*) obj->Spi)->userConfig.whichCtar = kDspiCtar0;
-        ((SPI_MasterType*) obj->Spi)->userConfig.whichPcs = kDspiPcs0;
-        DSPI_DRV_MasterInit(obj->instance, &((SPI_MasterType*) obj->Spi)->state,
-                &((SPI_MasterType*) obj->Spi)->userConfig);
+        SPI_MasterType * master = ((SPI_MasterType *) obj->Spi);
+        master->userConfig.isChipSelectContinuous = false;
+        master->userConfig.isSckContinuous = false;
+        master->userConfig.pcsPolarity = kDspiPcs_ActiveLow;
+        master->userConfig.whichCtar = kDspiCtar0;
+        master->userConfig.whichPcs = kDspiPcs0;
+        DSPI_DRV_MasterInit(obj->instance, &master->state, &master->userConfig);
     } else {
         // 8 bits, CPOL = 0, CPHA = 0, SLAVE
         SpiFormat(obj, 8, 0, 0, 1);
@@ -68,26 +71,6 @@ void SpiDeInit(Spi_t *obj)
     GpioInit(&obj->Nss, obj->Nss.pin, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 }
 
-dspi_status_t SpiInitAsMaster(void)
-{
-    dspi_master_state_t masterState;
-    dspi_master_user_config_t
-    masterUserConfig = {
-        .isChipSelectContinuous = false,
-        .isSckContinuous = false,
-        .pcsPolarity = kDspiPcs_ActiveLow,
-        .whichCtar = kDspiCtar0,
-        .whichPcs = kDspiPcs0
-    };
-
-    return DSPI_DRV_MasterInit(RADIO_SPI_INSTANCE, &masterState, &masterUserConfig);
-}
-
-dspi_status_t SpiInitAsSlave(void)
-{
-    return kStatus_DSPI_Success;
-}
-
 void SpiFormat(Spi_t *obj, int8_t bits, int8_t cpol, int8_t cpha, int8_t slave)
 {
     dspi_data_format_config_t dataConfig;
@@ -101,7 +84,8 @@ void SpiFormat(Spi_t *obj, int8_t bits, int8_t cpol, int8_t cpha, int8_t slave)
     if (obj->isSlave) {
         ((SPI_SlaveType *) obj->Spi)->userConfig.dataConfig = dataConfig;
     } else {
-        ((SPI_MasterType *) obj->Spi)->device.dataBusConfig = dataConfig;
+        SPI_MasterType * master = ((SPI_MasterType *) obj->Spi);
+        master->device.dataBusConfig = dataConfig;
     }
 }
 
@@ -110,7 +94,8 @@ void SpiFrequency(Spi_t *obj, uint32_t hz)
     uint32_t calculatedBaudRate;
 
     if (!(obj->isSlave)) {
-        ((SPI_MasterType *) obj->Spi)->device.bitsPerSec = hz;
+        SPI_MasterType * master = ((SPI_MasterType *) obj->Spi);
+        master->device.bitsPerSec = hz;
         DSPI_DRV_MasterConfigureBus(obj->instance, &((SPI_MasterType*) obj->Spi)->device,
                 &calculatedBaudRate);
     }

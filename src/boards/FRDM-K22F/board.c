@@ -13,8 +13,10 @@
 /*!
  * LED GPIO pins objects
  */
+#if !defined(SX1276_BOARD_AVAILABLE)
 Gpio_t Led1;
 Gpio_t Led2;
+#endif
 
 /*!
  * IRQ GPIO pins objects
@@ -119,16 +121,20 @@ static bool McuInitialized = false;
 void BoardInitPeriph(void)
 {
     /* Init the GPIO pins */
+#if !defined(SX1276_BOARD_AVAILABLE)
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Led2, LED_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+#endif
 
     /* Init the IRQ GPIO pins*/
     GpioInit(&Irq1Fxos8700cq, IRQ_1_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Irq2Fxos8700cq, IRQ_2_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
     // Switch LED 1, 2 OFF
+#if !defined(SX1276_BOARD_AVAILABLE)
     GpioWrite(&Led1, 1);
     GpioWrite(&Led2, 1);
+#endif
 }
 
 void BoardInitMcu(void)
@@ -176,19 +182,20 @@ void BoardInitMcu(void)
         I2cInit(&I2c, I2C_SCL, I2C_SDA);
 
         /*! SPI channel to be used by Semtech SX1276 */
+#if defined(SX1276_BOARD_AVAILABLE)
         SX1276.Spi.instance = RADIO_SPI_INSTANCE;
         SpiInit(&SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, NC);
         SX1276IoInit();
+#endif
 
 #if defined( USE_USB_CDC )
         UartInit( &UartUsb, UART_USB_CDC, NC, NC );
         UartConfig( &UartUsb, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL );
-#else
-        UartInit(&Uart1, UART_1, UART1_TX, UART1_RX);
-        UartConfig(&Uart1, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL);
-#endif /* USE_USB_CDC */
-
-#if( LOW_POWER_MODE_ENABLE )
+#elif defined(DEBUG)
+        GpioInit(&Uart1.Tx, UART1_TX, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
+        GpioInit(&Uart1.Rx, UART1_RX, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
+        DbgConsole_Init(1, 115200, kDebugConsoleUART);
+#elif( LOW_POWER_MODE_ENABLE )
         TimerSetLowPowerEnable( true );
 #else
         TimerSetLowPowerEnable(false);
@@ -208,8 +215,10 @@ void BoardInitMcu(void)
 void BoardDeInitMcu(void)
 {
     I2cDeInit(&I2c);
+#if defined(SX1276_BOARD_AVAILABLE)
     SpiDeInit(&SX1276.Spi);
     SX1276IoDeInit();
+#endif
 
     McuInitialized = false;
 }

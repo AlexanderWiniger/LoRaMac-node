@@ -15,6 +15,9 @@
  */
 Gpio_t Led1;
 Gpio_t Led2;
+#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
+Gpio_t Led3;
+#endif
 
 /*!
  * IRQ GPIO pins objects
@@ -120,6 +123,9 @@ void BoardInitPeriph(void)
     /* Init the GPIO pins */
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Led2, LED_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
+    GpioInit(&Led3, LED_3, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+#endif
 
     /* Init the IRQ GPIO pins*/
     GpioInit(&Irq1Fxos8700cq, IRQ_1_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
@@ -128,6 +134,9 @@ void BoardInitPeriph(void)
     // Switch LED 1, 2 OFF
     GpioWrite(&Led1, 1);
     GpioWrite(&Led2, 1);
+#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
+    GpioWrite(&Led2, 1);
+#endif
 }
 
 void BoardInitMcu(void)
@@ -175,18 +184,25 @@ void BoardInitMcu(void)
         I2cInit(&I2c, I2C_SCL, I2C_SDA);
 
         /*! SPI channel to be used by Semtech SX1276 */
-        SX1276.Spi.Spi = RADIO_SPI_DEVICE;
-        SpiInit(&SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, NC);
+#if defined(SX1276_BOARD_FREEDOM) || defined(SX1276_BOARD_EMBED)
+        SX1276.Spi.instance = RADIO_SPI_INSTANCE;
+        SX1276.Spi.isSlave = false;
+        SpiInit(&SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, RADIO_NSS);
         SX1276IoInit();
+#endif
 
 #if defined( USE_USB_CDC )
         UartInit( &UartUsb, UART_USB_CDC, NC, NC );
         UartConfig( &UartUsb, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL );
+#elif defined(DEBUG)
+        GpioInit(&Uart0.Tx, UART0_TX, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
+        GpioInit(&Uart0.Rx, UART0_RX, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
+        CLOCK_SYS_SetLpsciSrc(0, kClockLpsciSrcPllFllSel);
+        DbgConsole_Init(0, 115200, kDebugConsoleLPSCI);
+        TimerSetLowPowerEnable(false);
 #elif( LOW_POWER_MODE_ENABLE )
         TimerSetLowPowerEnable( true );
 #else
-        UartInit(&Uart0, UART_0, UART0_TX, UART0_RX);
-        UartConfig(&Uart0, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL);
         TimerSetLowPowerEnable(false);
 #endif /* USE_USB_CDC */
         BoardUnusedIoInit();
@@ -203,11 +219,11 @@ void BoardInitMcu(void)
 
 void BoardDeInitMcu(void)
 {
-    Gpio_t ioPin;
-
     I2cDeInit(&I2c);
+#if defined(SX1276_BOARD_FREEDOM) || defined(SX1276_BOARD_EMBED)
     SpiDeInit(&SX1276.Spi);
     SX1276IoDeInit();
+#endif
 
     McuInitialized = false;
 }

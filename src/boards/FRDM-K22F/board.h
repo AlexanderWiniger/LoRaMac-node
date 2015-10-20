@@ -10,6 +10,7 @@
 
 #include <stdbool.h>
 #include "fsl_device_registers.h"
+#include "fsl_debug_console.h"
 #include "fsl_port_hal.h"
 #include "utilities.h"
 #include "timer.h"
@@ -28,6 +29,10 @@
 
 #if defined( USE_USB_CDC )
 #include "usb-cdc-board.h"
+#endif
+
+#if defined(SX1276_BOARD_FREEDOM) ||  defined(SX1276_BOARD_EMBED)
+#define SX1276_BOARD_AVAILABLE
 #endif
 
 #if defined(USE_LOW_POWER_MODE)
@@ -71,12 +76,16 @@
 /*!
  * Board MCU pins definitions
  */
+#if !defined(SX1276_BOARD_AVAILABLE)
 #define LED_1                          PA_1
 #define LED_2                          PA_2
+#endif
+
+#if defined(SX1276_BOARD_EMBED)
 
 #define RADIO_RESET                    PB_0
 
-#define RADIO_SPI_INSTANCE             0
+#define RADIO_SPI_INSTANCE             1
 #define RADIO_MOSI                     PD_6
 #define RADIO_MISO                     PD_7
 #define RADIO_SCLK                     PD_5
@@ -92,6 +101,48 @@
 
 #define RADIO_ANT_SWITCH_RX_TX         PB_3
 
+#elif defined(SX1276_BOARD_FREEDOM)
+
+#define RADIO_RESET                    PB_0
+
+#define RADIO_SPI_INSTANCE             1
+#define RADIO_MOSI                     PD_6
+#define RADIO_MISO                     PD_7
+#define RADIO_SCLK                     PD_5
+#define RADIO_NSS                      PD_4
+
+#define RADIO_DIO_0                    PB_16
+#define RADIO_DIO_1                    PA_2
+#define RADIO_DIO_2                    PA_4
+#define RADIO_DIO_3                    PB_18
+#define RADIO_DIO_4_A                  PB_19
+#define RADIO_DIO_4_B                  PC_2
+#define RADIO_DIO_5                    PA_1
+
+#define RADIO_ANT_SWITCH_RX_TX         PB_3
+
+#else
+
+#define RADIO_RESET                    NC
+
+#define RADIO_SPI_INSTANCE             -1
+#define RADIO_MOSI                     NC
+#define RADIO_MISO                     NC
+#define RADIO_SCLK                     NC
+#define RADIO_NSS                      NC
+
+#define RADIO_DIO_0                    NC
+#define RADIO_DIO_1                    NC
+#define RADIO_DIO_2                    NC
+#define RADIO_DIO_3                    NC
+#define RADIO_DIO_4_A                  NC
+#define RADIO_DIO_4_B                  NC
+#define RADIO_DIO_5                    NC
+
+#define RADIO_ANT_SWITCH_RX_TX         NC
+
+#endif /* SX1276_BOARD */
+
 #define FXOS8700CQ_I2C_DEVICE          I2C0
 #define I2C_SCL                        PB_2
 #define I2C_SDA                        PB_3
@@ -105,8 +156,10 @@
 /*!
  * LED GPIO pins objects
  */
+#if !defined(SX1276_BOARD_EMBED)
 extern Gpio_t Led1;
 extern Gpio_t Led2;
+#endif
 
 /*!
  * IRQ GPIO pins objects

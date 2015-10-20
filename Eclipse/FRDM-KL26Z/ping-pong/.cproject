@@ -59,7 +59,7 @@
 									<listOptionValue builtIn="false" value="../../../../src/mac"/>
 									<listOptionValue builtIn="false" value="../../../../src/peripherals"/>
 									<listOptionValue builtIn="false" value="../../../../src/boards/FRDM-KL26Z"/>
-									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis"/>
+									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis/utilities"/>
 									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/devices"/>
 									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/devices/MKL26Z4/startup"/>
 									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/devices/MKL26Z4/include"/>
@@ -71,7 +71,7 @@
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs.578103155" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="USE_BAND_868"/>
-									<listOptionValue builtIn="false" value="SX1276_EMBED_BOARD"/>
+									<listOptionValue builtIn="false" value="SX1276_BOARD_EMBED"/>
 									<listOptionValue builtIn="false" value="USE_MODEM_LORA"/>
 									<listOptionValue builtIn="false" value="USE_DEBUGGER"/>
 									<listOptionValue builtIn="false" value="DEBUG"/>
@@ -122,7 +122,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="src/boards/mcu/kl26z/platform/hal/src/lpuart|src/boards/mcu/kl26z/platform/system/src/hwtimer/fsl_hwtimer_pit_irq.c|src/boards/mcu/kl26z/platform/system/src/hwtimer/fsl_hwtimer_pit.c|src/boards/mcu/kl26z/platform/system/src/power|src/boards/mcu/kl26z/platform/utilities/src|src/radio/sx1272" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/boards/mcu/kinetis/k22f|src/boards/mcu/kl26z/platform/hal/src/lpuart|src/boards/mcu/kl26z/platform/system/src/hwtimer/fsl_hwtimer_pit_irq.c|src/boards/mcu/kl26z/platform/system/src/hwtimer/fsl_hwtimer_pit.c|src/boards/mcu/kl26z/platform/system/src/power|src/boards/mcu/kl26z/platform/utilities/src|src/radio/sx1272" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

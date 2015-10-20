@@ -18,7 +18,9 @@ typedef SPI_Type SPI_TypeDef;
  * SPI driver structure definition
  */
 struct Spi_s {
-    SPI_Type *Spi;
+    uint32_t instance;
+    SPI_TypeDef *Spi;
+    bool isSlave;
     Gpio_t Mosi;
     Gpio_t Miso;
     Gpio_t Sclk;

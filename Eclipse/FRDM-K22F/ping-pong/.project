@@ -80,6 +80,11 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>src/boards/mcu/utilities</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
 			<name>src/boards/mcu/startup/startup.c</name>
 			<type>1</type>
 			<locationURI>KSDK_LOC/platform/devices/startup.c</locationURI>
@@ -103,6 +108,26 @@
 			<name>src/boards/mcu/startup/system_MK22F51212.h</name>
 			<type>1</type>
 			<locationURI>KSDK_LOC/platform/devices/MK22F51212/startup/system_MK22F51212.h</locationURI>
+		</link>
+		<link>
+			<name>src/boards/mcu/utilities/fsl_debug_console.c</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/platform/utilities/src/fsl_debug_console.c</locationURI>
+		</link>
+		<link>
+			<name>src/boards/mcu/utilities/fsl_debug_console.h</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/platform/utilities/inc/fsl_debug_console.h</locationURI>
+		</link>
+		<link>
+			<name>src/boards/mcu/utilities/print_scan.c</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/platform/utilities/src/print_scan.c</locationURI>
+		</link>
+		<link>
+			<name>src/boards/mcu/utilities/print_scan.h</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/platform/utilities/src/print_scan.h</locationURI>
 		</link>
 	</linkedResources>
 	<variableList>
