@@ -141,7 +141,7 @@ uint16_t SpiInOut(Spi_t *obj, uint16_t outData)
 
     SPI_HAL_WriteDataBlocking(obj->Spi, kSpi8BitMode, 0, (uint8_t)(outData & 0xFF));
 
-    DelayMs(50);
+    DelayMs(10);
 
     // Wait for slave send data back
     while(SPI_HAL_IsReadBuffFullPending(obj->Spi)==0) {}
