@@ -38,30 +38,42 @@ void SpiInit(Spi_t *obj, PinNames mosi, PinNames miso, PinNames sclk, PinNames n
     GpioInit(&obj->Nss, nss, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
 
     if (!obj->isSlave) {
-        obj->deviceDriver = malloc(sizeof(SPI_MasterDriverType));
-        // 8 bits, CPOL = 0, CPHA = 0, MASTER
-        SpiFormat(obj, 8, 0, 0, 0);
-        SPI_MasterDriverType * master = ((SPI_MasterDriverType *) obj->deviceDriver);
-        master->userConfig.isChipSelectContinuous = false;
-        master->userConfig.isSckContinuous = false;
-        master->userConfig.pcsPolarity = kDspiPcs_ActiveLow;
-        master->userConfig.whichCtar = kDspiCtar0;
-        master->userConfig.whichPcs = kDspiPcs0;
-        DSPI_DRV_MasterInit(obj->instance, &master->state, &master->userConfig);
+        // Enable DSPI clock.
+        CLOCK_SYS_EnableSpiClock(obj->instance);
+        // Initialize the DSPI module registers to default value, which disables the module
+        DSPI_HAL_Init(obj->Spi);
+        // Set to master mode.
+        DSPI_HAL_SetMasterSlaveMode(obj->Spi, kDspiMaster);
+        // Configure for continuous SCK operation
+        DSPI_HAL_SetContinuousSckCmd(obj->Spi, false);
+        // Configure for peripheral chip select polarity
+        DSPI_HAL_SetPcsPolarityMode(obj->Spi, kDspiPcs0, kDspiPcs_ActiveLow);
+        // Disable FIFO operation.
+        DSPI_HAL_SetFifoCmd(obj->Spi, false, false);
+        // Initialize the configurable delays: PCS-to-SCK, prescaler = 0, scaler = 1
+        DSPI_HAL_SetDelay(obj->Spi, kDspiCtar0, 0, 1, kDspiPcsToSck);
+        // DSPI system enable
+        DSPI_HAL_Enable(obj->Spi);
     } else {
-        obj->Spi = malloc(sizeof(SPI_SlaveDriverType));
         // 8 bits, CPOL = 0, CPHA = 0, SLAVE
         SpiFormat(obj, 8, 0, 0, 1);
-        DSPI_DRV_SlaveInit(obj->instance, &((SPI_SlaveDriverType*) obj->deviceDriver)->state,
-                &((SPI_SlaveDriverType*) obj->deviceDriver)->userConfig);
     }
     SpiFrequency(obj, 10000000);
 }
 
 void SpiDeInit(Spi_t *obj)
 {
-    if (obj->isSlave) DSPI_DRV_SlaveDeinit(obj->instance);
-    else DSPI_DRV_MasterDeinit(obj->instance);
+    /* First stop transfers */
+    DSPI_HAL_StopTransfer(obj->Spi);
+
+    /* Restore the module to defaults then power it down. This also disables the DSPI module.*/
+    DSPI_HAL_Init(obj->Spi);
+
+    /* disable the interrupt*/
+    INT_SYS_DisableIRQ (g_dspiIrqId[obj->instance]);
+
+    /* Gate the clock for DSPI.*/
+    CLOCK_SYS_DisableSpiClock(obj->instance);
 
     GpioInit(&obj->Mosi, obj->Mosi.pin, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
     GpioInit(&obj->Miso, obj->Miso.pin, PIN_OUTPUT, PIN_PUSH_PULL, PIN_PULL_DOWN, 0);
@@ -80,115 +92,95 @@ void SpiFormat(Spi_t *obj, int8_t bits, int8_t cpol, int8_t cpha, int8_t slave)
     dataConfig.bitsPerFrame = bits;
 
     if (obj->isSlave) {
-        ((SPI_SlaveDriverType *) obj->deviceDriver)->userConfig.dataConfig = dataConfig;
+
     } else {
-        SPI_MasterDriverType * master = ((SPI_MasterDriverType *) obj->deviceDriver);
-        master->device.dataBusConfig = dataConfig;
+        DSPI_HAL_SetDataFormat(obj->Spi, kDspiCtar0, &dataConfig);
     }
 }
 
 void SpiFrequency(Spi_t *obj, uint32_t hz)
 {
+    uint32_t dspiSourceClock;
     uint32_t calculatedBaudRate;
 
     if (!(obj->isSlave)) {
-        SPI_MasterDriverType * master = ((SPI_MasterDriverType *) obj->deviceDriver);
-        master->device.bitsPerSec = hz;
-        DSPI_DRV_MasterConfigureBus(obj->instance,
-                &((SPI_MasterDriverType*) obj->deviceDriver)->device, &calculatedBaudRate);
+        // Get DSPI source clock.
+        dspiSourceClock = CLOCK_SYS_GetSpiFreq(obj->instance);
+        calculatedBaudRate = DSPI_HAL_SetBaudRate(obj->Spi, kDspiCtar0, hz, dspiSourceClock);
+        PRINTF("Transfer at baudrate %lu \r\n", calculatedBaudRate);
     }
 }
 
 uint16_t SpiInOut(Spi_t *obj, uint16_t outData)
 {
-    dspi_status_t dspiResult;
-    uint16_t data;
-    uint8_t receiveBuffer[TRANSFER_SIZE];
-    uint32_t wordsTransfered;
+    uint16_t data = 0x00;
 
     if ((obj == NULL) || (obj->Spi) == NULL) {
         while (1)
             ;
     }
 
-    // Reset the receive buffer.
-    for (uint8_t i = 0; i < TRANSFER_SIZE; i++) {
-        receiveBuffer[i] = 0;
-    }
-
     if (obj->isSlave) {
-        // Receive the data.
-        dspiResult = DSPI_DRV_SlaveTransfer(obj->instance, NULL, receiveBuffer,
-        TRANSFER_SIZE);
-        if (dspiResult != kStatus_DSPI_Success) {
-            PRINTF("ERROR: slave receives error \r\n");
-            return -1;
-        }
-        // Wait until the transfer is complete.
-        while (DSPI_DRV_SlaveGetTransferStatus(obj->instance, &wordsTransfered) == kStatus_DSPI_Busy) {
-        }
 
-        // Transfer the data back to master.
-        dspiResult = DSPI_DRV_SlaveTransfer(obj->instance, receiveBuffer, NULL,
-        TRANSFER_SIZE);
-        if (dspiResult != kStatus_DSPI_Success) {
-            PRINTF("ERROR: slave sends error \r\n");
-            return -1;
-        }
-        // Wait until the transfer is complete.
-        while (DSPI_DRV_SlaveGetTransferStatus(obj->instance, &wordsTransfered) == kStatus_DSPI_Busy) {
-        }
     } else {
-        // Send the data.
-        dspiResult = DSPI_DRV_MasterTransfer(obj->instance, NULL, (uint8_t*) &outData, NULL,
-        TRANSFER_SIZE);
-        if (dspiResult != kStatus_DSPI_Success) {
-            PRINTF("ERROR: send data error \r\n");
-            return -1;
-        }
-        // Wait until the transfer is complete.
-        while (DSPI_DRV_MasterGetTransferStatus(obj->instance, &wordsTransfered)
-                == kStatus_DSPI_Busy) {
-        }
+        dspi_command_config_t
+        commandConfig =
+        {
+            .isChipSelectContinuous = false,
+            .whichCtar = kDspiCtar0,
+            .whichPcs = kDspiPcs0,
+            .clearTransferCount = true,
+            .isEndOfQueue = false
+        };
 
-        // Wait until slave is ready to send.
-        DelayMs(50);
+        if (outData == 0x00) {
+            // Restart the transfer by stop then start again, this will clear out the shift register
+            DSPI_HAL_StopTransfer(obj->Spi);
+            // Flush the FIFOs
+            DSPI_HAL_SetFlushFifoCmd(obj->Spi, true, true);
+            //Clear status flags that may have been set from previous transfers.
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiTxComplete);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiEndOfQueue);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiTxFifoUnderflow);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiTxFifoFillRequest);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiRxFifoOverflow);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiRxFifoDrainRequest);
+            // Clear the transfer count.
+            DSPI_HAL_PresetTransferCount(obj->Spi, 0);
+            // Start the transfer process in the hardware
+            DSPI_HAL_StartTransfer(obj->Spi);
+            // Receive the data from slave.
 
-        // Receive the data.
-        dspiResult = DSPI_DRV_MasterTransfer(obj->instance, NULL, NULL, receiveBuffer,
-        TRANSFER_SIZE);
-        if (dspiResult != kStatus_DSPI_Success) {
-            PRINTF("\r\nERROR: receive data error \r\n");
-            return -1;
-        }
-        // Wait until the transfer is complete.
-        while (DSPI_DRV_MasterGetTransferStatus(obj->instance, &wordsTransfered)
-                == kStatus_DSPI_Busy) {
+            // Write command to PUSHR.
+            DSPI_HAL_WriteDataMastermode(obj->Spi, &commandConfig, 0);
+            // Check RFDR flag
+            while (DSPI_HAL_GetStatusFlag(obj->Spi, kDspiRxFifoDrainRequest) == false) {
+            }
+            // Read data from POPR
+            data = DSPI_HAL_ReadData(obj->Spi);
+            // Clear RFDR flag
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiRxFifoDrainRequest);
+        } else {
+            // Restart the transfer by stop then start again, this will clear out the shift register
+            DSPI_HAL_StopTransfer(obj->Spi);
+            // Flush the FIFOs
+            DSPI_HAL_SetFlushFifoCmd(obj->Spi, true, true);
+            // Clear status flags that may have been set from previous transfers.
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiTxComplete);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiEndOfQueue);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiTxFifoUnderflow);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiTxFifoFillRequest);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiRxFifoOverflow);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiRxFifoDrainRequest);
+            // Clear the transfer count.
+            DSPI_HAL_PresetTransferCount(obj->Spi, 0);
+            // Start the transfer process in the hardware
+            DSPI_HAL_StartTransfer(obj->Spi);
+            // Send the data to slave.
+            // Write data to PUSHR
+            DSPI_HAL_WriteDataMastermode(obj->Spi, &commandConfig, outData);
         }
     }
-
-    data = (uint16_t) receiveBuffer[0];
-    data |= (uint16_t)(receiveBuffer[1] << 8);
     return data;
-}
-
-/*!
- * @brief This function is the implementation of SPI0 handler named in startup code.
- *
- * It passes the instance to the shared DSPI IRQ handler.
- */
-void SPI0_IRQHandler(void)
-{
-    DSPI_DRV_IRQHandler (SPI0_IDX);
-}
-
-/*!
- * @brief This function is the implementation of SPI1 handler named in startup code.
- *
- * It passes the instance to the shared DSPI IRQ handler.
- */
-void SPI1_IRQHandler(void)
-{
-    DSPI_DRV_IRQHandler (SPI1_IDX);
 }
 

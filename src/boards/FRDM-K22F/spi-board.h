@@ -18,29 +18,11 @@
 typedef SPI_Type SPI_TypeDef;
 
 /*!
- *  SPI master driver configuration
- */
-typedef struct {
-    dspi_device_t device;
-    dspi_master_state_t state;
-    dspi_master_user_config_t userConfig;
-} SPI_MasterDriverType;
-
-/*!
- *  SPI slave driver configuration
- */
-typedef struct {
-    dspi_slave_state_t state;
-    dspi_slave_user_config_t userConfig;
-} SPI_SlaveDriverType;
-
-/*!
  * SPI driver structure definition
  */
 struct Spi_s {
     uint32_t instance;
     SPI_TypeDef *Spi;
-    uint32_t *deviceDriver;
     bool isSlave;
     Gpio_t Mosi;
     Gpio_t Miso;
