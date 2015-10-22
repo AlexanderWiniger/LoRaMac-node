@@ -8,12 +8,13 @@
 
 #include "board.h"
 #include "fsl_clock_manager.h"
+#include "fsl_wdog_hal.h"
 #include "fsl_smc_hal.h"
 
 /*!
  * LED GPIO pins objects
  */
-#if !defined(SX1276_BOARD_AVAILABLE)
+#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
 Gpio_t Led1;
 Gpio_t Led2;
 #endif
@@ -121,7 +122,7 @@ static bool McuInitialized = false;
 void BoardInitPeriph(void)
 {
     /* Init the GPIO pins */
-#if !defined(SX1276_BOARD_AVAILABLE)
+#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Led2, LED_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 #endif
@@ -131,7 +132,7 @@ void BoardInitPeriph(void)
     GpioInit(&Irq2Fxos8700cq, IRQ_2_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
     // Switch LED 1, 2 OFF
-#if !defined(SX1276_BOARD_AVAILABLE)
+#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
     GpioWrite(&Led1, 1);
     GpioWrite(&Led2, 1);
 #endif
@@ -140,6 +141,9 @@ void BoardInitPeriph(void)
 void BoardInitMcu(void)
 {
     if (McuInitialized == false) {
+        /* Disable watchdog */
+        WDOG_HAL_Disable (WDOG_BASE_PTR);
+
         /* Enable clock for PORTs */
         CLOCK_SYS_EnablePortClock (PORTA_IDX);
         CLOCK_SYS_EnablePortClock (PORTC_IDX);
@@ -182,9 +186,10 @@ void BoardInitMcu(void)
         I2cInit(&I2c, I2C_SCL, I2C_SDA);
 
         /*! SPI channel to be used by Semtech SX1276 */
-#if defined(SX1276_BOARD_AVAILABLE)
+#if defined(SX1276_BOARD_FREEDOM) || defined(SX1276_BOARD_EMBED)
         SX1276.Spi.instance = RADIO_SPI_INSTANCE;
-        SpiInit(&SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, NC);
+        SX1276.Spi.isSlave = false;
+        SpiInit(&SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, RADIO_NSS);
         SX1276IoInit();
 #endif
 
@@ -195,6 +200,7 @@ void BoardInitMcu(void)
         GpioInit(&Uart1.Tx, UART1_TX, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
         GpioInit(&Uart1.Rx, UART1_RX, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
         DbgConsole_Init(1, 115200, kDebugConsoleUART);
+        TimerSetLowPowerEnable(false);
 #elif( LOW_POWER_MODE_ENABLE )
         TimerSetLowPowerEnable( true );
 #else
@@ -215,7 +221,7 @@ void BoardInitMcu(void)
 void BoardDeInitMcu(void)
 {
     I2cDeInit(&I2c);
-#if defined(SX1276_BOARD_AVAILABLE)
+#if defined(SX1276_BOARD_FREEDOM) || defined(SX1276_BOARD_EMBED)
     SpiDeInit(&SX1276.Spi);
     SX1276IoDeInit();
 #endif

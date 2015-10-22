@@ -125,7 +125,9 @@ int main(void)
 
     // Target board initialisation
     BoardInitMcu();
+    PRINTF("\r\n\r\nTRACE: Mcu initialized.\r\n");
     BoardInitPeriph();
+    PRINTF("TRACE: Peripherals initialized.\r\n");
 
     // Radio initialization
     RadioEvents.TxDone = OnTxDone;
@@ -135,6 +137,7 @@ int main(void)
     RadioEvents.RxError = OnRxError;
 
     Radio.Init(&RadioEvents);
+    PRINTF("TRACE: Radio initialized.\r\n");
 
     Radio.SetChannel(RF_FREQUENCY);
 
@@ -168,6 +171,8 @@ int main(void)
 
     Radio.Rx( RX_TIMEOUT_VALUE);
 
+    PRINTF("\r\nPingPong Application starting...\r\n");
+
     while (1) {
         switch (State) {
             case RX:
@@ -175,7 +180,7 @@ int main(void)
                     if (BufferSize > 0) {
                         if (strncmp((const char*) Buffer, (const char*) PongMsg, 4) == 0) {
                             // Indicates that the received frame is a PONG
-                            PRINTF("Received %s\r\n", PongMsg);
+                            PRINTF("DEBUG: Received %s\r\n", PongMsg);
                             // Send the next PING frame
                             Buffer[0] = 'P';
                             Buffer[1] = 'I';
@@ -200,7 +205,7 @@ int main(void)
                     if (BufferSize > 0) {
                         if (strncmp((const char*) Buffer, (const char*) PingMsg, 4) == 0) {
                             // Indicates that the received frame is a PING
-                            PRINTF("Received %s\r\n", PingMsg);
+                            PRINTF("DEBUG: Received %s\r\n", PingMsg);
                             // Send the reply to the PONG string
                             Buffer[0] = 'P';
                             Buffer[1] = 'O';
@@ -223,13 +228,15 @@ int main(void)
                 break;
             case TX:
                 // Indicates that we have sent a PING
-                PRINTF("Sent %s\r\n", Buffer);
+                PRINTF("DEBUG: Sent %s\r\n", Buffer);
                 Radio.Rx( RX_TIMEOUT_VALUE);
                 State = LOWPOWER;
                 break;
             case RX_TIMEOUT:
             case RX_ERROR:
+                PRINTF("DEBUG: Rx timeout occured!\r\n");
                 if (isMaster == true) {
+                    PRINTF("DEBUG: Send next ping frame.\r\n");
                     // Send the next PING frame
                     Buffer[0] = 'P';
                     Buffer[1] = 'I';

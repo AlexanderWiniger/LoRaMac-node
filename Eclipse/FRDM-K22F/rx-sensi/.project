@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>FRDM-K22F_hello-world</name>
+	<name>FRDM-K22F_rx-sensi</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -50,7 +50,7 @@
 			<locationURI>PARENT-3-PROJECT_LOC/src/system</locationURI>
 		</link>
 		<link>
-			<name>src/apps/hello-world</name>
+			<name>src/apps/rx-sensi</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
@@ -65,9 +65,9 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
-			<name>src/apps/hello-world/FRDM-K22F</name>
+			<name>src/apps/rx-sensi/FRDM-K22F</name>
 			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/src/apps/hello-world/FRDM-K22F</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/src/apps/rx-sensi/FRDM-K22F</locationURI>
 		</link>
 		<link>
 			<name>src/boards/mcu/kinetis</name>
@@ -102,7 +102,7 @@
 		<link>
 			<name>src/boards/mcu/kinetis/k22f/startup/startup.h</name>
 			<type>1</type>
-			<locationURI>KSDK_LOC/platform/devices/startup.h</locationURI>
+			<locationURI>KSDK_LOC/platform/devices/startup.c</locationURI>
 		</link>
 		<link>
 			<name>src/boards/mcu/kinetis/k22f/startup/system_MK22F51212.c</name>
@@ -115,10 +115,4 @@
 			<locationURI>KSDK_LOC/platform/devices/MK22F51212/startup/system_MK22F51212.h</locationURI>
 		</link>
 	</linkedResources>
-	<variableList>
-		<variable>
-			<name>KSDK_LOC</name>
-			<value>file:/C:/dev/Freescale/KSDK_1.3.0</value>
-		</variable>
-	</variableList>
 </projectDescription>

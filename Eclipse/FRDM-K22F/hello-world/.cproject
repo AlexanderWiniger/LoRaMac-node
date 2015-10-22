@@ -61,7 +61,7 @@
 									<listOptionValue builtIn="false" value="../../../../src/mac"/>
 									<listOptionValue builtIn="false" value="../../../../src/peripherals"/>
 									<listOptionValue builtIn="false" value="../../../../src/boards/FRDM-K22F"/>
-									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis"/>
+									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis/utilities"/>
 									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/devices"/>
 									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/devices/MK22F51212/startup"/>
 									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/devices/MK22F51212/include"/>
@@ -94,7 +94,7 @@
 									<listOptionValue builtIn="false" value="gcc"/>
 									<listOptionValue builtIn="false" value="nosys"/>
 								</option>
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.other.1519664713" name="Other linker flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.other" value="-Xlinker -z  -Xlinker muldefs   --specs=nano.specs          -Wall  -fno-common  -ffunction-sections  -fdata-sections  -ffreestanding  -fno-builtin  -Os  -mapcs  -Xlinker -static  -Xlinker --defsym=__stack_size__=0x2000  -Xlinker --defsym=__heap_size__=0x2000 " valueType="string"/>
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.other.1519664713" name="Other linker flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.other" value="-Xlinker -z  -Xlinker muldefs   --specs=nano.specs          -Wall  -fno-common  -ffunction-sections  -fdata-sections  -ffreestanding  -fno-builtin  -mapcs  -Xlinker -static  -Xlinker --defsym=__stack_size__=0x2000  -Xlinker --defsym=__heap_size__=0x2000  -Xlinker --defsym=__ram_vector_table__=1 " valueType="string"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.otherobjs.1665328401" name="Other objects" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.otherobjs" valueType="userObjs">
 									<listOptionValue builtIn="false" value="${KSDK_PATH}/lib/ksdk_platform_lib/armgcc/K22F51212/debug/libksdk_platform.a"/>
 								</option>
@@ -174,7 +174,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="src/apps/LoRaMac|src/boards/mcu/k22f/platform/osa/src|src/apps/hello-world/FRDM-KL25Z|src/boards/mcu/k22f/platform/system/src|src/boards/SK-iM880A|src/boards/SensorNode|src/boards/LoRaMote|src/apps/ping-pong|src/boards/FRDM-KL26Z|src/boards/mcu/k22f/platform/system/src/hwtimer/fsl_hwtimer_pit.c|src/boards/mcu/stm32|src/boards/mcu/k22f/platform/system/src/hwtimer/fsl_hwtimer_pit_irq.c|src/apps/tx-cw|src/boards/mcu/k22f/platform/drivers/src|src/apps/rx-sensi|src/boards/mcu/k22f/platform/hal/src|src/boards/mcu/kl26z|src/boards/FRDM-KL25Z|src/apps/BootLoader|src/boards/mcu/k22f/platform/system/src/power|src/radio/sx1272|src/boards/mcu/k22f/platform/hal/src/mpu|src/apps/hello-world/FRDM-KL26Z|src/boards/mcu/k22f/platform/utilities/src|src/boards/mcu/kl25z|src/boards/Bleeper-76|src/boards/Bleeper-72|src/peripherals" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/boards/mcu/kinetis/kl26z|src/apps/LoRaMac|src/boards/mcu/k22f/platform/osa/src|src/apps/hello-world/FRDM-KL25Z|src/boards/mcu/k22f/platform/system/src|src/boards/SK-iM880A|src/boards/SensorNode|src/boards/LoRaMote|src/apps/ping-pong|src/boards/FRDM-KL26Z|src/boards/mcu/k22f/platform/system/src/hwtimer/fsl_hwtimer_pit.c|src/boards/mcu/stm32|src/boards/mcu/k22f/platform/system/src/hwtimer/fsl_hwtimer_pit_irq.c|src/apps/tx-cw|src/boards/mcu/k22f/platform/drivers/src|src/apps/rx-sensi|src/boards/mcu/k22f/platform/hal/src|src/boards/mcu/kl26z|src/boards/FRDM-KL25Z|src/apps/BootLoader|src/boards/mcu/k22f/platform/system/src/power|src/radio/sx1272|src/boards/mcu/k22f/platform/hal/src/mpu|src/apps/hello-world/FRDM-KL26Z|src/boards/mcu/k22f/platform/utilities/src|src/boards/mcu/kl25z|src/boards/Bleeper-76|src/boards/Bleeper-72|src/peripherals" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

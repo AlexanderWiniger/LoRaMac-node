@@ -28,9 +28,6 @@ void OnLed1TimerEvent(void)
  */
 int main(void)
 {
-    // RX buffers
-    uint8_t receiveBuff;
-
     // LED state
     bool Led1On;
 
@@ -50,12 +47,6 @@ int main(void)
     PRINTF("\r\nHello World!\r\n\r\n");
 
     while (1) {
-        // First, get character
-        receiveBuff = GETCHAR();
-
-        // Now echo the received character
-        PUTCHAR(receiveBuff);
-
         if (Led1TimerEvent == true) {
             Led1TimerEvent = false;
 

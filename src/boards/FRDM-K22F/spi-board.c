@@ -9,6 +9,8 @@
 #include "board.h"
 #include "spi-board.h"
 #include "fsl_clock_manager.h"
+#include "fsl_dspi_master_driver.h"
+#include "fsl_dspi_slave_driver.h"
 #include "fsl_interrupt_manager.h"
 #include <stdlib.h>
 
@@ -26,25 +28,20 @@ typedef enum {
 void SpiInit(Spi_t *obj, PinNames mosi, PinNames miso, PinNames sclk, PinNames nss)
 {
     /* Check if a proper channel was selected */
-    if (obj->instance < 0 || obj->instance > SPI_INSTANCE_COUNT) return;
+    if (g_dspiBase[obj->instance] == NULL) return;
+
+    obj->Spi = g_dspiBase[obj->instance];
 
     GpioInit(&obj->Mosi, mosi, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_DOWN, 0);
     GpioInit(&obj->Miso, miso, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_DOWN, 0);
     GpioInit(&obj->Sclk, sclk, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_DOWN, 0);
+    GpioInit(&obj->Nss, nss, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
 
-    if (nss != NC) {
-        GpioInit(&obj->Nss, nss, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
-        obj->Spi = malloc(sizeof(SPI_SlaveType));
-        obj->isSlave = true;
-    } else {
-        obj->Spi = malloc(sizeof(SPI_MasterType));
-        obj->isSlave = false;
-    }
-
-    if (nss == NC) {
+    if (!obj->isSlave) {
+        obj->deviceDriver = malloc(sizeof(SPI_MasterDriverType));
         // 8 bits, CPOL = 0, CPHA = 0, MASTER
         SpiFormat(obj, 8, 0, 0, 0);
-        SPI_MasterType * master = ((SPI_MasterType *) obj->Spi);
+        SPI_MasterDriverType * master = ((SPI_MasterDriverType *) obj->deviceDriver);
         master->userConfig.isChipSelectContinuous = false;
         master->userConfig.isSckContinuous = false;
         master->userConfig.pcsPolarity = kDspiPcs_ActiveLow;
@@ -52,10 +49,11 @@ void SpiInit(Spi_t *obj, PinNames mosi, PinNames miso, PinNames sclk, PinNames n
         master->userConfig.whichPcs = kDspiPcs0;
         DSPI_DRV_MasterInit(obj->instance, &master->state, &master->userConfig);
     } else {
+        obj->Spi = malloc(sizeof(SPI_SlaveDriverType));
         // 8 bits, CPOL = 0, CPHA = 0, SLAVE
         SpiFormat(obj, 8, 0, 0, 1);
-        DSPI_DRV_SlaveInit(obj->instance, &((SPI_SlaveType*) obj->Spi)->state,
-                &((SPI_SlaveType*) obj->Spi)->userConfig);
+        DSPI_DRV_SlaveInit(obj->instance, &((SPI_SlaveDriverType*) obj->deviceDriver)->state,
+                &((SPI_SlaveDriverType*) obj->deviceDriver)->userConfig);
     }
     SpiFrequency(obj, 10000000);
 }
@@ -82,9 +80,9 @@ void SpiFormat(Spi_t *obj, int8_t bits, int8_t cpol, int8_t cpha, int8_t slave)
     dataConfig.bitsPerFrame = bits;
 
     if (obj->isSlave) {
-        ((SPI_SlaveType *) obj->Spi)->userConfig.dataConfig = dataConfig;
+        ((SPI_SlaveDriverType *) obj->deviceDriver)->userConfig.dataConfig = dataConfig;
     } else {
-        SPI_MasterType * master = ((SPI_MasterType *) obj->Spi);
+        SPI_MasterDriverType * master = ((SPI_MasterDriverType *) obj->deviceDriver);
         master->device.dataBusConfig = dataConfig;
     }
 }
@@ -94,18 +92,18 @@ void SpiFrequency(Spi_t *obj, uint32_t hz)
     uint32_t calculatedBaudRate;
 
     if (!(obj->isSlave)) {
-        SPI_MasterType * master = ((SPI_MasterType *) obj->Spi);
+        SPI_MasterDriverType * master = ((SPI_MasterDriverType *) obj->deviceDriver);
         master->device.bitsPerSec = hz;
-        DSPI_DRV_MasterConfigureBus(obj->instance, &((SPI_MasterType*) obj->Spi)->device,
-                &calculatedBaudRate);
+        DSPI_DRV_MasterConfigureBus(obj->instance,
+                &((SPI_MasterDriverType*) obj->deviceDriver)->device, &calculatedBaudRate);
     }
 }
 
 uint16_t SpiInOut(Spi_t *obj, uint16_t outData)
 {
+    dspi_status_t dspiResult;
     uint16_t data;
     uint8_t receiveBuffer[TRANSFER_SIZE];
-    uint8_t i;
     uint32_t wordsTransfered;
 
     if ((obj == NULL) || (obj->Spi) == NULL) {
@@ -114,40 +112,83 @@ uint16_t SpiInOut(Spi_t *obj, uint16_t outData)
     }
 
     // Reset the receive buffer.
-    for (i = 0; i < TRANSFER_SIZE; i++) {
+    for (uint8_t i = 0; i < TRANSFER_SIZE; i++) {
         receiveBuffer[i] = 0;
     }
 
     if (obj->isSlave) {
         // Receive the data.
-        DSPI_DRV_SlaveTransfer(obj->instance, NULL, receiveBuffer,
+        dspiResult = DSPI_DRV_SlaveTransfer(obj->instance, NULL, receiveBuffer,
         TRANSFER_SIZE);
-
+        if (dspiResult != kStatus_DSPI_Success) {
+            PRINTF("ERROR: slave receives error \r\n");
+            return -1;
+        }
         // Wait until the transfer is complete.
         while (DSPI_DRV_SlaveGetTransferStatus(obj->instance, &wordsTransfered) == kStatus_DSPI_Busy) {
         }
 
         // Transfer the data back to master.
-        DSPI_DRV_SlaveTransfer(obj->instance, receiveBuffer, NULL,
+        dspiResult = DSPI_DRV_SlaveTransfer(obj->instance, receiveBuffer, NULL,
         TRANSFER_SIZE);
+        if (dspiResult != kStatus_DSPI_Success) {
+            PRINTF("ERROR: slave sends error \r\n");
+            return -1;
+        }
         // Wait until the transfer is complete.
         while (DSPI_DRV_SlaveGetTransferStatus(obj->instance, &wordsTransfered) == kStatus_DSPI_Busy) {
         }
     } else {
-        DSPI_DRV_MasterTransfer(obj->instance, NULL, (uint8_t*) &outData, NULL, TRANSFER_SIZE);
+        // Send the data.
+        dspiResult = DSPI_DRV_MasterTransfer(obj->instance, NULL, (uint8_t*) &outData, NULL,
+        TRANSFER_SIZE);
+        if (dspiResult != kStatus_DSPI_Success) {
+            PRINTF("ERROR: send data error \r\n");
+            return -1;
+        }
         // Wait until the transfer is complete.
         while (DSPI_DRV_MasterGetTransferStatus(obj->instance, &wordsTransfered)
                 == kStatus_DSPI_Busy) {
         }
 
-        DSPI_DRV_MasterTransfer(obj->instance, NULL, NULL, receiveBuffer, TRANSFER_SIZE);
+        // Wait until slave is ready to send.
+        DelayMs(50);
+
+        // Receive the data.
+        dspiResult = DSPI_DRV_MasterTransfer(obj->instance, NULL, NULL, receiveBuffer,
+        TRANSFER_SIZE);
+        if (dspiResult != kStatus_DSPI_Success) {
+            PRINTF("\r\nERROR: receive data error \r\n");
+            return -1;
+        }
         // Wait until the transfer is complete.
         while (DSPI_DRV_MasterGetTransferStatus(obj->instance, &wordsTransfered)
                 == kStatus_DSPI_Busy) {
         }
     }
 
-    data = receiveBuffer[0] || (receiveBuffer[1] << 8);
+    data = (uint16_t) receiveBuffer[0];
+    data |= (uint16_t)(receiveBuffer[1] << 8);
     return data;
+}
+
+/*!
+ * @brief This function is the implementation of SPI0 handler named in startup code.
+ *
+ * It passes the instance to the shared DSPI IRQ handler.
+ */
+void SPI0_IRQHandler(void)
+{
+    DSPI_DRV_IRQHandler (SPI0_IDX);
+}
+
+/*!
+ * @brief This function is the implementation of SPI1 handler named in startup code.
+ *
+ * It passes the instance to the shared DSPI IRQ handler.
+ */
+void SPI1_IRQHandler(void)
+{
+    DSPI_DRV_IRQHandler (SPI1_IDX);
 }
 

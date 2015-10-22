@@ -63,6 +63,7 @@
 									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/devices"/>
 									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/devices/MKL26Z4/startup"/>
 									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/devices/MKL26Z4/include"/>
+									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/drivers/inc"/>
 									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/hal/inc"/>
 									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/system/inc"/>
 									<listOptionValue builtIn="false" value="${KSDK_PATH}/platform/utilities/inc"/>

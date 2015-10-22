@@ -251,11 +251,18 @@ RadioState_t SX1276GetStatus( void )
 
 void SX1276SetChannel( uint32_t freq )
 {
+    uint32_t initialFreq;
     SX1276.Settings.Channel = freq;
     freq = ( uint32_t )( ( double )freq / ( double )FREQ_STEP );
     SX1276Write( REG_FRFMSB, ( uint8_t )( ( freq >> 16 ) & 0xFF ) );
     SX1276Write( REG_FRFMID, ( uint8_t )( ( freq >> 8 ) & 0xFF ) );
     SX1276Write( REG_FRFLSB, ( uint8_t )( freq & 0xFF ) );
+
+    initialFreq = ( double )( ( ( uint32_t )SX1276Read( REG_FRFMSB ) << 16 ) |
+                                  ( ( uint32_t )SX1276Read( REG_FRFMID ) << 8 ) |
+                                  ( ( uint32_t )SX1276Read( REG_FRFLSB ) ) ) * ( double )FREQ_STEP;
+
+    PRINTF("Frequency (written/read): %u / %u\r\n", SX1276.Settings.Channel, initialFreq);
 }
 
 bool SX1276IsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThresh )

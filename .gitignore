@@ -14,3 +14,7 @@ obj/
 *.dbi
 *.xdb
 *.svn
+Debug/
+Release/
+*.o
+*.d
