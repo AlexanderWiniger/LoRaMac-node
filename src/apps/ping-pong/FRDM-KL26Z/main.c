@@ -36,7 +36,7 @@
 #error "Please define a frequency band in the compiler options."
 #endif
 
-#define TX_OUTPUT_POWER                             14        // dBm
+#define TX_OUTPUT_POWER                             0        // dBm
 
 #if defined( USE_MODEM_LORA )
 
@@ -120,7 +120,7 @@ void OnRxError(void);
  */
 int main(void)
 {
-    bool isMaster = true;
+    bool isMaster = false;
     uint8_t i;
 
     // Target board initialisation
