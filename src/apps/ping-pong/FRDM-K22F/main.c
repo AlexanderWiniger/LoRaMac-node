@@ -16,6 +16,9 @@
 #include "board.h"
 #include "radio.h"
 
+#include "fsl_port_hal.h"   /* \todo Debug purpose only */
+#include "fsl_gpio_driver.h"   /* \todo Debug purpose only */
+
 #if defined( USE_BAND_433 )
 
 #define RF_FREQUENCY                                434000000 // Hz
@@ -71,7 +74,7 @@ typedef enum {
     LOWPOWER, RX, RX_TIMEOUT, RX_ERROR, TX, TX_TIMEOUT,
 } States_t;
 
-#define RX_TIMEOUT_VALUE                            1000000
+#define RX_TIMEOUT_VALUE                            2000000
 #define BUFFER_SIZE                                 64 // Define the payload size here
 
 const uint8_t PingMsg[] = "PING";
@@ -84,6 +87,14 @@ States_t State = LOWPOWER;
 
 int8_t RssiValue = 0;
 int8_t SnrValue = 0;
+
+/* Declare Output GPIO pins */
+gpio_output_pin_user_config_t dbgPin = {
+    .pinName = GPIO_MAKE_PIN(GPIOD_IDX, 2),
+    .config.outputLogic = 1,
+    .config.slewRate = kPortSlowSlewRate,
+    .config.driveStrength = kPortLowDriveStrength,
+}; /* \todo Debug purpose only */
 
 /*!
  * Radio events function pointer
@@ -128,6 +139,9 @@ int main(void)
     PRINTF("\r\n\r\nTRACE: Mcu initialized.\r\n");
     BoardInitPeriph();
     PRINTF("TRACE: Peripherals initialized.\r\n");
+
+    PORT_HAL_SetMuxMode(PORTD, 2u, kPortMuxAsGpio); /* \todo Debug purpose only */
+    GPIO_DRV_OutputPinInit (&dbgPin); /* \todo Debug purpose only */
 
     // Radio initialization
     RadioEvents.TxDone = OnTxDone;
@@ -227,7 +241,8 @@ int main(void)
                 State = LOWPOWER;
                 break;
             case TX:
-                // Indicates that we have sent a PING
+                // Indicates that we have sent a PING [Master]
+                // Indicates that we have sent a PONG [Slave]
                 PRINTF("DEBUG: Sent %s\r\n", Buffer);
                 Radio.Rx( RX_TIMEOUT_VALUE);
                 State = LOWPOWER;
@@ -291,6 +306,7 @@ void OnTxTimeout(void)
 
 void OnRxTimeout(void)
 {
+    GPIO_DRV_TogglePinOutput(dbgPin.pinName); /* \todo Debug purpose only */
     Radio.Sleep();
     State = RX_TIMEOUT;
 }

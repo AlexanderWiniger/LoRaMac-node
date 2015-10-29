@@ -17,6 +17,7 @@
 #if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
 Gpio_t Led1;
 Gpio_t Led2;
+Gpio_t Led3;
 #endif
 
 /*!
@@ -125,6 +126,7 @@ void BoardInitPeriph(void)
 #if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Led2, LED_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+    GpioInit(&Led3, LED_3, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 #endif
 
     /* Init the IRQ GPIO pins*/
@@ -135,6 +137,7 @@ void BoardInitPeriph(void)
 #if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
     GpioWrite(&Led1, 1);
     GpioWrite(&Led2, 1);
+    GpioWrite(&Led3, 1);
 #endif
 }
 

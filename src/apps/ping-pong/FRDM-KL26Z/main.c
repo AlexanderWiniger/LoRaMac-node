@@ -16,6 +16,9 @@
 #include "board.h"
 #include "radio.h"
 
+#include "fsl_port_hal.h"   /* \todo Debug purpose only */
+#include "fsl_gpio_driver.h"   /* \todo Debug purpose only */
+
 #if defined( USE_BAND_433 )
 
 #define RF_FREQUENCY                                434000000 // Hz
@@ -36,7 +39,7 @@
 #error "Please define a frequency band in the compiler options."
 #endif
 
-#define TX_OUTPUT_POWER                             0        // dBm
+#define TX_OUTPUT_POWER                             2        // dBm
 
 #if defined( USE_MODEM_LORA )
 
@@ -71,7 +74,7 @@ typedef enum {
     LOWPOWER, RX, RX_TIMEOUT, RX_ERROR, TX, TX_TIMEOUT,
 } States_t;
 
-#define RX_TIMEOUT_VALUE                            1000000
+#define RX_TIMEOUT_VALUE                            2000000
 #define BUFFER_SIZE                                 64 // Define the payload size here
 
 const uint8_t PingMsg[] = "PING";
@@ -84,6 +87,14 @@ States_t State = LOWPOWER;
 
 int8_t RssiValue = 0;
 int8_t SnrValue = 0;
+
+/* Declare Output GPIO pins */
+gpio_output_pin_user_config_t dbgPin = {
+    .pinName = GPIO_MAKE_PIN(GPIOE_IDX, 1),
+    .config.outputLogic = 1,
+    .config.slewRate = kPortSlowSlewRate,
+    .config.driveStrength = kPortLowDriveStrength,
+}; /* \todo Debug purpose only */
 
 /*!
  * Radio events function pointer
@@ -129,7 +140,10 @@ int main(void)
     BoardInitPeriph();
     PRINTF("TRACE: Peripherals initialized.\r\n");
 
-    // Radio initialization
+    PORT_HAL_SetMuxMode(PORTE, 1u, kPortMuxAsGpio); /* \todo Debug purpose only */
+    GPIO_DRV_OutputPinInit (&dbgPin); /* \todo Debug purpose only */
+
+// Radio initialization
     RadioEvents.TxDone = OnTxDone;
     RadioEvents.RxDone = OnRxDone;
     RadioEvents.TxTimeout = OnTxTimeout;
@@ -296,7 +310,7 @@ void OnTxTimeout(void)
 
 void OnRxTimeout(void)
 {
-
+    GPIO_DRV_TogglePinOutput(dbgPin.pinName); /* \todo Debug purpose only */
     Radio.Sleep();
     State = RX_TIMEOUT;
 }

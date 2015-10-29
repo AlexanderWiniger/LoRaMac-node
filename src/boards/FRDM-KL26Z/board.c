@@ -8,6 +8,7 @@
 
 #include "board.h"
 #include "fsl_clock_manager.h"
+#include "fsl_cop_hal.h"
 #include "fsl_smc_hal.h"
 
 /*!
@@ -142,6 +143,9 @@ void BoardInitPeriph(void)
 void BoardInitMcu(void)
 {
     if (McuInitialized == false) {
+        /* Disable watchdog */
+        COP_HAL_Disable (SIM_BASE_PTR);
+
         /* Enable clock for PORTs */
         CLOCK_SYS_EnablePortClock (PORTA_IDX);
         CLOCK_SYS_EnablePortClock (PORTC_IDX);

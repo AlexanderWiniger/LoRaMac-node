@@ -77,8 +77,9 @@
  * Board MCU pins definitions
  */
 #if !defined(SX1276_BOARD_AVAILABLE)
-#define LED_1                          PA_1
-#define LED_2                          PA_2
+#define LED_1                          PA_2
+#define LED_2                          PA_1
+#define LED_3                          PD_5
 #endif
 
 #if defined(SX1276_BOARD_EMBED)
@@ -159,6 +160,7 @@
 #if !defined(SX1276_BOARD_EMBED)
 extern Gpio_t Led1;
 extern Gpio_t Led2;
+extern Gpio_t Led3;
 #endif
 
 /*!

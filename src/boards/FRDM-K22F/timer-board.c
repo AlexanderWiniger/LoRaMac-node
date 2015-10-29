@@ -68,7 +68,7 @@ void TimerHwInit(void)
     /* Set interrupt priority */
     NVIC_SetPriority(SysTick_IRQn, HWTIMER_ISR_PRIOR);
     /* Set timer period */
-    HWTIMER_SYS_SetPeriod(&hwtimer, 2 * HWTIMER_PERIOD);
+    HWTIMER_SYS_SetPeriod(&hwtimer, HWTIMER_PERIOD);
     /* Register hardware timer callback */
     HWTIMER_SYS_RegisterCallback(&hwtimer, hwtimer_callback, NULL);
     /* Start hardware timer */
@@ -77,7 +77,7 @@ void TimerHwInit(void)
     /*!
      * Init delay timer (PIT)
      */
-    PIT_DRV_Init(HWTIMER_PIT_INSTANCE, true);
+    PIT_DRV_Init(HWTIMER_PIT_INSTANCE, false);
     PIT_DRV_InitUs(HWTIMER_PIT_INSTANCE, HWTIMER_DELAY_CHANNEL);
 }
 

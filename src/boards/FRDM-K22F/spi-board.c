@@ -54,6 +54,9 @@ void SpiInit(Spi_t *obj, PinNames mosi, PinNames miso, PinNames sclk, PinNames n
         DSPI_HAL_SetDelay(obj->Spi, kDspiCtar0, 0, 1, kDspiPcsToSck);
         // DSPI system enable
         DSPI_HAL_Enable(obj->Spi);
+
+        // 8 bits, CPOL = 0, CPHA = 0, MASTER
+        SpiFormat(obj, 8, 0, 0, 0);
     } else {
         // 8 bits, CPOL = 0, CPHA = 0, SLAVE
         SpiFormat(obj, 8, 0, 0, 1);
@@ -132,35 +135,7 @@ uint16_t SpiInOut(Spi_t *obj, uint16_t outData)
             .clearTransferCount = true,
             .isEndOfQueue = false
         };
-
-        if (outData == 0x00) {
-            // Restart the transfer by stop then start again, this will clear out the shift register
-            DSPI_HAL_StopTransfer(obj->Spi);
-            // Flush the FIFOs
-            DSPI_HAL_SetFlushFifoCmd(obj->Spi, true, true);
-            //Clear status flags that may have been set from previous transfers.
-            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiTxComplete);
-            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiEndOfQueue);
-            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiTxFifoUnderflow);
-            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiTxFifoFillRequest);
-            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiRxFifoOverflow);
-            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiRxFifoDrainRequest);
-            // Clear the transfer count.
-            DSPI_HAL_PresetTransferCount(obj->Spi, 0);
-            // Start the transfer process in the hardware
-            DSPI_HAL_StartTransfer(obj->Spi);
-            // Receive the data from slave.
-
-            // Write command to PUSHR.
-            DSPI_HAL_WriteDataMastermode(obj->Spi, &commandConfig, 0);
-            // Check RFDR flag
-            while (DSPI_HAL_GetStatusFlag(obj->Spi, kDspiRxFifoDrainRequest) == false) {
-            }
-            // Read data from POPR
-            data = DSPI_HAL_ReadData(obj->Spi);
-            // Clear RFDR flag
-            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiRxFifoDrainRequest);
-        } else {
+        if (outData != 0x00) {
             // Restart the transfer by stop then start again, this will clear out the shift register
             DSPI_HAL_StopTransfer(obj->Spi);
             // Flush the FIFOs
@@ -179,6 +154,31 @@ uint16_t SpiInOut(Spi_t *obj, uint16_t outData)
             // Send the data to slave.
             // Write data to PUSHR
             DSPI_HAL_WriteDataMastermode(obj->Spi, &commandConfig, outData);
+        } else {
+            // Restart the transfer by stop then start again, this will clear out the shift register
+            DSPI_HAL_StopTransfer(obj->Spi);
+            // Flush the FIFOs
+            DSPI_HAL_SetFlushFifoCmd(obj->Spi, true, true);
+            //Clear status flags that may have been set from previous transfers.
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiTxComplete);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiEndOfQueue);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiTxFifoUnderflow);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiTxFifoFillRequest);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiRxFifoOverflow);
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiRxFifoDrainRequest);
+            // Clear the transfer count.
+            DSPI_HAL_PresetTransferCount(obj->Spi, 0);
+            // Start the transfer process in the hardware
+            DSPI_HAL_StartTransfer(obj->Spi);
+            // Write command to PUSHR.
+            DSPI_HAL_WriteDataMastermode(obj->Spi, &commandConfig, 0);
+            // Check RFDR flag
+            while (DSPI_HAL_GetStatusFlag(obj->Spi, kDspiRxFifoDrainRequest) == false) {
+            }
+            // Read data from POPR
+            data = DSPI_HAL_ReadData(obj->Spi);
+            // Clear RFDR flag
+            DSPI_HAL_ClearStatusFlag(obj->Spi, kDspiRxFifoDrainRequest);
         }
     }
     return data;
