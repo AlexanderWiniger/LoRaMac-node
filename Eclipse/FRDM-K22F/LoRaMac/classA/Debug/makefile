@@ -12,21 +12,22 @@ RM := rm -rf
 -include src/system/subdir.mk
 -include src/radio/sx1276/subdir.mk
 -include src/mac/subdir.mk
--include src/boards/mcu/startup/subdir.mk
+-include src/boards/mcu/kinetis/utilities/subdir.mk
+-include src/boards/mcu/kinetis/k22f/startup/subdir.mk
 -include src/boards/FRDM-K22F/subdir.mk
 -include src/apps/LoRaMac/classA/FRDM-K22F/subdir.mk
 -include subdir.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(strip $(C_DEPS)),)
+-include $(C_DEPS)
+endif
 ifneq ($(strip $(ASM_DEPS)),)
 -include $(ASM_DEPS)
 endif
 ifneq ($(strip $(S_UPPER_DEPS)),)
 -include $(S_UPPER_DEPS)
-endif
-ifneq ($(strip $(C_DEPS)),)
--include $(C_DEPS)
 endif
 endif
 
@@ -47,7 +48,7 @@ FRDM-K22F_LoRaMac-ClassA.elf: $(OBJS) $(USER_OBJS)
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(ASM_DEPS)$(S_UPPER_DEPS)$(C_DEPS) FRDM-K22F_LoRaMac-ClassA.elf
+	-$(RM) $(OBJS)$(C_DEPS)$(ASM_DEPS)$(S_UPPER_DEPS) FRDM-K22F_LoRaMac-ClassA.elf
 	-@echo ' '
 
 secondary-outputs:

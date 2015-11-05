@@ -9,20 +9,9 @@
 #include "board.h"
 #include "uart.h"
 
-#include "fsl_port_hal.h"   /* \todo Debug purpose only */
-#include "fsl_gpio_driver.h"   /* \todo Debug purpose only */
-
 /*------------------------- Local Defines --------------------------------*/
 
 /*------------------------ Local Variables -------------------------------*/
-/* Declare Output GPIO pins */
-gpio_output_pin_user_config_t dbgPin = {
-    .pinName = GPIO_MAKE_PIN(GPIOD_IDX, 2),
-    .config.outputLogic = 1,
-    .config.slewRate = kPortSlowSlewRate,
-    .config.driveStrength = kPortLowDriveStrength,
-}; /* \todo Debug purpose only */
-
 static TimerEvent_t Led1Timer;
 volatile bool Led1TimerEvent = false;
 
@@ -31,6 +20,19 @@ volatile bool Led2TimerEvent = false;
 
 static TimerEvent_t Led3Timer;
 volatile bool Led3TimerEvent = false;
+
+bool SwitchAPushEvent = false;
+bool SwitchBPushEvent = false;
+
+/*!
+ * \brief Switch A IRQ callback
+ */
+void SwitchAIrq(void);
+
+/*!
+ * \brief Switch B IRQ callback
+ */
+void SwitchBIrq(void);
 
 /*!
  * \brief Function executed on Led 1 Timeout event
@@ -64,11 +66,13 @@ int main(void)
     // Target board initialisation
     BoardInitMcu();
     PRINTF("TRACE: Mcu initialized.\r\n");
+
     BoardInitPeriph();
     PRINTF("TRACE: Peripherals initialized.\r\n");
 
-    PORT_HAL_SetMuxMode(PORTD, 2u, kPortMuxAsGpio); /* \todo Debug purpose only */
-    GPIO_DRV_OutputPinInit (&dbgPin); /* \todo Debug purpose only */
+    /* Switch A */
+    GpioSetInterrupt(&SwitchA, IRQ_RISING_EDGE, IRQ_LOW_PRIORITY, SwitchAIrq);
+    GpioSetInterrupt(&SwitchB, IRQ_RISING_EDGE, IRQ_LOW_PRIORITY, SwitchBIrq);
 
     TimerInit(&Led1Timer, OnLed1TimerEvent);
     TimerSetValue(&Led1Timer, 250000);
@@ -86,12 +90,6 @@ int main(void)
     // Print the initial banner
     PRINTF("\r\nHello World!\r\n\r\n");
 
-#if 1
-    for (;;) {
-        GPIO_DRV_TogglePinOutput(dbgPin.pinName); /* \todo Debug purpose only */
-        DelayMs(10);
-    }
-#else
     while (1) {
         if (Led1TimerEvent == true) {
             Led1TimerEvent = false;
@@ -122,7 +120,36 @@ int main(void)
             GpioWrite(&Led1, 0);
             TimerStart(&Led1Timer);
         }
+
+        if (SwitchAPushEvent) {
+            accel_sensor_data_t sensorData;
+            SwitchAPushEvent = false;
+
+            if (FxosReadSensorData(&sensorData) != FAIL) {
+                PRINTF("Accelerometer (X/Y/Z):\t%d \t%d \t%d \r\n", sensorData.accelX,
+                        sensorData.accelY, sensorData.accelZ);
+                PRINTF("Magnetometer (X/Y/Z):\t%d \t%d \t%d \r\n", sensorData.magX, sensorData.magY,
+                        sensorData.magZ);
+            } else {
+                PRINTF("ERROR: Couldn't retrieve sensor data!\r\n");
+            }
+        }
+
+        if (SwitchBPushEvent) {
+            SwitchBPushEvent = false;
+            PRINTF("Button B pushed!\r\n");
+        }
     }
-#endif
 }
 
+void SwitchAIrq(void)
+{
+    DelayMs(20);    // Software debouncing
+    SwitchAPushEvent = true;
+}
+
+void SwitchBIrq(void)
+{
+    DelayMs(20);    // Software debouncing
+    SwitchBPushEvent = true;
+}

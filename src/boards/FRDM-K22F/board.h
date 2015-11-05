@@ -9,6 +9,10 @@
 #define __BOARD_H__
 
 #include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
 #include "fsl_device_registers.h"
 #include "fsl_debug_console.h"
 #include "fsl_port_hal.h"
@@ -22,9 +26,11 @@
 #include "uart.h"
 #include "radio.h"
 #include "sx1276/sx1276.h"
+#include "fxos.h"
 #include "rtc-board.h"
 #include "timer-board.h"
 #include "sx1276-board.h"
+#include "gps-board.h"
 #include "uart-board.h"
 
 #if defined( USE_USB_CDC )
@@ -81,6 +87,9 @@
 #define LED_2                          PA_1
 #define LED_3                          PD_5
 #endif
+
+#define SWITCH_A                       PB_17
+#define SWITCH_B                       PC_1
 
 #if defined(SX1276_BOARD_EMBED)
 
@@ -144,7 +153,7 @@
 
 #endif /* SX1276_BOARD */
 
-#define FXOS8700CQ_I2C_DEVICE          I2C0
+#define FXOS8700CQ_I2C_INSTANCE        0
 #define I2C_SCL                        PB_2
 #define I2C_SDA                        PB_3
 
@@ -155,7 +164,7 @@
 #define UART1_TX                       PE_0
 
 /*!
- * LED GPIO pins objects
+ * LED GPIO pin objects
  */
 #if !defined(SX1276_BOARD_EMBED)
 extern Gpio_t Led1;
@@ -164,7 +173,13 @@ extern Gpio_t Led3;
 #endif
 
 /*!
- * IRQ GPIO pins objects
+ * Button GPIO pin objects
+ */
+extern Gpio_t SwitchA;
+extern Gpio_t SwitchB;
+
+/*!
+ * IRQ GPIO pin objects
  */
 extern Gpio_t Irq1Fxos8700;
 extern Gpio_t Irq2Fxos8700;
@@ -174,6 +189,7 @@ extern Gpio_t Irq2Fxos8700;
  */
 extern Adc_t Adc;
 extern I2c_t I2c;
+extern I2C_TypeDef Fxos;
 extern Uart_t Lpuart;
 extern Uart_t Uart0;
 extern Uart_t Uart1;
@@ -239,6 +255,13 @@ void BoardInitPeriph(void);
  *        consumption.
  */
 void BoardDeInitMcu(void);
+
+/*!
+ * \brief Measure the Battery level
+ *
+ * \retval value  battery level ( 0: very low, 254: fully charged )
+ */
+uint8_t BoardMeasureBatterieLevel(void);
 
 /*!
  * \brief Gets the board 64 bits unique ID 

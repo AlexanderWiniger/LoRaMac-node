@@ -602,7 +602,7 @@ void SX1276SetTxConfig(RadioModems_t modem, int8_t power, uint32_t fdev, uint32_
                 | (uint8_t)((uint16_t)(power + 1) & 0x0F);
     }
 
-    paConfig = 0x7F; /* \todo Only for debugging purposes */
+//    paConfig = 0x7F; /* \todo Only for debugging purposes */
 
     SX1276Write(REG_PACONFIG, paConfig);
     regSh = paConfig;

@@ -261,9 +261,9 @@ void GpioMcuSetInterrupt(Gpio_t *obj, IrqModes irqMode, IrqPriorities irqPriorit
 void GpioMcuRemoveInterrupt(Gpio_t *obj)
 {
     if (obj->portIndex == 0)
-        GpioAIrq[obj->pin & 0x1F] = NULL;
+        GpioAIrq[obj->pinIndex & 0x1F] = NULL;
     else if (obj->portIndex == 3)
-        GpioDIrq[obj->pin & 0x1F] = NULL;
+        GpioDIrq[obj->pinIndex & 0x1F] = NULL;
     else
         return;
 

@@ -11,8 +11,11 @@ src/system/delay.o: C:/workspace/eclipse/LoRaMac-node/src/system/delay.c \
  C:/dev/Freescale/KSDK_1.3.0/platform/devices/MK22F51212/include/MK22F51212.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/devices/MK22F51212/include/fsl_bitaccess.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/devices/MK22F51212/include/MK22F51212_features.h \
+ C:/dev/Freescale/KSDK_1.3.0/platform/utilities/inc/fsl_debug_console.h \
+ C:/dev/Freescale/KSDK_1.3.0/platform/osa/inc/fsl_os_abstraction.h \
+ C:/dev/Freescale/KSDK_1.3.0/platform/osa/inc/fsl_os_abstraction_bm.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_port_hal.h \
- ../../../../../src/boards/mcu/kinetis/utilities.h \
+ ../../../../../src/boards/mcu/kinetis/utilities/utilities.h \
  ../../../../../src/system/timer.h ../../../../../src/system/delay.h \
  ../../../../../src/system/gpio.h \
  ../../../../../src/boards/FRDM-K22F/pinName-board.h \
@@ -21,8 +24,6 @@ src/system/delay.o: C:/workspace/eclipse/LoRaMac-node/src/system/delay.c \
  ../../../../../src/boards/FRDM-K22F/spi-board.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_dspi_master_driver.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_dspi_hal.h \
- C:/dev/Freescale/KSDK_1.3.0/platform/osa/inc/fsl_os_abstraction.h \
- C:/dev/Freescale/KSDK_1.3.0/platform/osa/inc/fsl_os_abstraction_bm.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_dspi_slave_driver.h \
  ../../../../../src/system/i2c.h ../../../../../src/system/uart.h \
  ../../../../../src/system/fifo.h ../../../../../src/radio/radio.h \
@@ -32,6 +33,7 @@ src/system/delay.o: C:/workspace/eclipse/LoRaMac-node/src/system/delay.c \
  ../../../../../src/boards/FRDM-K22F/rtc-board.h \
  ../../../../../src/boards/FRDM-K22F/timer-board.h \
  ../../../../../src/boards/FRDM-K22F/sx1276-board.h \
+ ../../../../../src/boards/FRDM-K22F/gps-board.h \
  ../../../../../src/boards/FRDM-K22F/uart-board.h
 
 ../../../../../src/boards/FRDM-K22F/board.h:
@@ -58,9 +60,15 @@ C:/dev/Freescale/KSDK_1.3.0/platform/devices/MK22F51212/include/fsl_bitaccess.h:
 
 C:/dev/Freescale/KSDK_1.3.0/platform/devices/MK22F51212/include/MK22F51212_features.h:
 
+C:/dev/Freescale/KSDK_1.3.0/platform/utilities/inc/fsl_debug_console.h:
+
+C:/dev/Freescale/KSDK_1.3.0/platform/osa/inc/fsl_os_abstraction.h:
+
+C:/dev/Freescale/KSDK_1.3.0/platform/osa/inc/fsl_os_abstraction_bm.h:
+
 C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_port_hal.h:
 
-../../../../../src/boards/mcu/kinetis/utilities.h:
+../../../../../src/boards/mcu/kinetis/utilities/utilities.h:
 
 ../../../../../src/system/timer.h:
 
@@ -81,10 +89,6 @@ C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_port_hal.h:
 C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_dspi_master_driver.h:
 
 C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_dspi_hal.h:
-
-C:/dev/Freescale/KSDK_1.3.0/platform/osa/inc/fsl_os_abstraction.h:
-
-C:/dev/Freescale/KSDK_1.3.0/platform/osa/inc/fsl_os_abstraction_bm.h:
 
 C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_dspi_slave_driver.h:
 
@@ -107,5 +111,7 @@ C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_dspi_slave_driver.h:
 ../../../../../src/boards/FRDM-K22F/timer-board.h:
 
 ../../../../../src/boards/FRDM-K22F/sx1276-board.h:
+
+../../../../../src/boards/FRDM-K22F/gps-board.h:
 
 ../../../../../src/boards/FRDM-K22F/uart-board.h:

@@ -37,7 +37,7 @@ Gpio_t AntSwitchRxTx;
 
 void SX1276IoInit(void)
 {
-    GpioInit(&SX1276.Spi.Nss, RADIO_NSS, PIN_OUTPUT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
+    GpioInit(&SX1276.Spi.Nss, RADIO_NSS, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
     GpioInit(&SX1276.DIO0, RADIO_DIO_0, PIN_INPUT, PIN_PUSH_PULL, PIN_PULL_UP, 0);
     GpioInit(&SX1276.DIO1, RADIO_DIO_1, PIN_INPUT, PIN_PUSH_PULL, PIN_PULL_UP, 0);
@@ -127,12 +127,13 @@ void SX1276SetAntSw(uint8_t rxTx)
 
     SX1276.RxTx = rxTx;
 
-    if (rxTx != 0) { // 1: TX, 0: RX
+    // 1: TX, 0: RX
+    if (rxTx != 0) {
 #if defined(SX1276_BOARD_FREEDOM)
-            GpioWrite(&AntSwitchLf, 0);
-            GpioWrite(&AntSwitchHf, 1);
+        GpioWrite(&AntSwitchLf, 0);
+        GpioWrite(&AntSwitchHf, 1);
 #elif defined(SX1276_BOARD_EMBED)
-            GpioWrite(&AntSwitchRxTx, 1);
+        GpioWrite(&AntSwitchRxTx, 1);
 #endif
     } else {
 #if defined(SX1276_BOARD_FREEDOM)

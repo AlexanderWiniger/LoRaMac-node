@@ -8,11 +8,12 @@
 
 #include "board.h"
 #include "fsl_clock_manager.h"
+#include "fsl_os_abstraction.h"
 #include "fsl_wdog_hal.h"
 #include "fsl_smc_hal.h"
 
 /*!
- * LED GPIO pins objects
+ * LED GPIO pin objects
  */
 #if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
 Gpio_t Led1;
@@ -21,7 +22,13 @@ Gpio_t Led3;
 #endif
 
 /*!
- * IRQ GPIO pins objects
+ * Button GPIO pin objects
+ */
+Gpio_t SwitchA;
+Gpio_t SwitchB;
+
+/*!
+ * IRQ GPIO pin objects
  */
 Gpio_t Irq1Fxos8700cq;
 Gpio_t Irq2Fxos8700cq;
@@ -31,6 +38,7 @@ Gpio_t Irq2Fxos8700cq;
  */
 Adc_t Adc;
 I2c_t I2c;
+I2C_TypeDef Fxos;
 Uart_t Lpuart;
 Uart_t Uart0;
 Uart_t Uart1;
@@ -122,18 +130,24 @@ static bool McuInitialized = false;
 
 void BoardInitPeriph(void)
 {
-    /* Init the GPIO pins */
+    /* Init the LED GPIO pins */
 #if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Led2, LED_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Led3, LED_3, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 #endif
+    /* Init the Switch GPIO pins */
+    GpioInit(&SwitchA, SWITCH_A, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+    GpioInit(&SwitchB, SWITCH_B, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
     /* Init the IRQ GPIO pins*/
     GpioInit(&Irq1Fxos8700cq, IRQ_1_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Irq2Fxos8700cq, IRQ_2_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
-    // Switch LED 1, 2 OFF
+    // Init accelerometer
+    FxosInit();
+
+    // Switch LED 1, 2, 3 OFF
 #if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
     GpioWrite(&Led1, 1);
     GpioWrite(&Led2, 1);
@@ -144,12 +158,19 @@ void BoardInitPeriph(void)
 void BoardInitMcu(void)
 {
     if (McuInitialized == false) {
-        /* Disable watchdog */
-        WDOG_HAL_Disable (WDOG_BASE_PTR);
+        /* Make sure watchdog is disabled */
+        if (WDOG_HAL_IsEnable (WDOG_BASE_PTR)) {
+            /* Unlock watchdog registers */
+            WDOG_HAL_Unlock(WDOG_BASE_PTR);
+            /* Disable watchdog */
+            WDOG_HAL_Disable(WDOG_BASE_PTR);
+        }
 
         /* Enable clock for PORTs */
         CLOCK_SYS_EnablePortClock (PORTA_IDX);
+        CLOCK_SYS_EnablePortClock (PORTB_IDX);
         CLOCK_SYS_EnablePortClock (PORTC_IDX);
+        CLOCK_SYS_EnablePortClock (PORTD_IDX);
         CLOCK_SYS_EnablePortClock (PORTE_IDX);
 
         /* Set allowed power mode, allow all. */
@@ -177,6 +198,19 @@ void BoardInitMcu(void)
 
         CLOCK_SYS_OscInit(0U, &osc0Config);
 
+        rtc_osc_user_config_t
+        rtcOscConfig =
+        {
+            .freq = RTC_XTAL_FREQ,
+            .enableCapacitor2p = RTC_SC2P_ENABLE_CONFIG,
+            .enableCapacitor4p = RTC_SC4P_ENABLE_CONFIG,
+            .enableCapacitor8p = RTC_SC8P_ENABLE_CONFIG,
+            .enableCapacitor16p = RTC_SC16P_ENABLE_CONFIG,
+            .enableOsc = RTC_OSC_ENABLE_CONFIG,
+        };
+
+        CLOCK_SYS_RtcOscInit(0U, &rtcOscConfig);
+
         /* Set system clock configuration. */
 #if (CLOCK_INIT_CONFIG == CLOCK_VLPR)
         CLOCK_SYS_SetConfiguration (&g_defaultClockConfigVlpr);
@@ -184,15 +218,17 @@ void BoardInitMcu(void)
         CLOCK_SYS_SetConfiguration(&g_defaultClockConfigRun);
 #endif
 
+        /* OS initialization */
+        OSA_Init();
         /*! I2C channel to be used by digital 3D accelerometer */
-        I2c.I2c = FXOS8700CQ_I2C_DEVICE;
+        Fxos.instance = FXOS8700CQ_I2C_INSTANCE;
+        I2c.I2c = &Fxos;
         I2cInit(&I2c, I2C_SCL, I2C_SDA);
-
         /*! SPI channel to be used by Semtech SX1276 */
 #if defined(SX1276_BOARD_FREEDOM) || defined(SX1276_BOARD_EMBED)
         SX1276.Spi.instance = RADIO_SPI_INSTANCE;
         SX1276.Spi.isSlave = false;
-        SpiInit(&SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, RADIO_NSS);
+        SpiInit(&SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, NC);
         SX1276IoInit();
 #endif
 
@@ -230,6 +266,12 @@ void BoardDeInitMcu(void)
 #endif
 
     McuInitialized = false;
+}
+
+uint8_t BoardMeasureBatterieLevel(void)
+{
+    /* Device is connected to an external power source*/
+    return 0;
 }
 
 void BoardGetUniqueId(uint8_t *id)

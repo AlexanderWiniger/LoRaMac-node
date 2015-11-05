@@ -36,7 +36,7 @@ void SpiInit(Spi_t *obj, PinNames mosi, PinNames miso, PinNames sclk, PinNames n
     GpioInit(&obj->Mosi, mosi, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_DOWN, 0);
     GpioInit(&obj->Miso, miso, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_DOWN, 0);
     GpioInit(&obj->Sclk, sclk, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_DOWN, 0);
-    GpioInit(&obj->Nss, nss, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_DOWN, 1);
+    if (nss != NC) GpioInit(&obj->Nss, nss, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_DOWN, 1);
 
     /* Enable clock for SPI.*/
     CLOCK_SYS_EnableSpiClock(obj->instance);

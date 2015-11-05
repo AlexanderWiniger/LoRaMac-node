@@ -15,12 +15,12 @@ OBJS += \
 ./src/boards/mcu/startup/startup_MK22F51212.o \
 ./src/boards/mcu/startup/system_MK22F51212.o 
 
-S_UPPER_DEPS += \
-./src/boards/mcu/startup/startup_MK22F51212.d 
-
 C_DEPS += \
 ./src/boards/mcu/startup/startup.d \
 ./src/boards/mcu/startup/system_MK22F51212.d 
+
+S_UPPER_DEPS += \
+./src/boards/mcu/startup/startup_MK22F51212.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

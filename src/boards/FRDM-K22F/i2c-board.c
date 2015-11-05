@@ -8,7 +8,8 @@
 
 #include "board.h"
 #include "i2c-board.h"
-#include "fsl_i2c_hal.h"
+#include "fsl_i2c_master_driver.h"
+#include "fsl_i2c_shared_function.h"
 #include "fsl_clock_manager.h"
 #include "fsl_interrupt_manager.h"
 
@@ -26,86 +27,112 @@ typedef enum {
 } I2cName;
 
 /*------------------------ Local Variables -------------------------------*/
-/*! Table of base addresses for PORT instances. */
-I2C_Type * const g_i2cBase[I2C_INSTANCE_COUNT] = I2C_BASE_PTRS;
-
-/*! Table to save port IRQ enum numbers defined in CMSIS files. */
-const IRQn_Type g_i2cIrqId[I2C_INSTANCE_COUNT] = I2C_IRQS;
-
 I2cAddrSize I2cInternalAddrSize = I2C_ADDR_SIZE_8;
 
-void I2cMcuInit( I2c_t *obj, PinNames scl, PinNames sda ) {
-    /* Check if a proper channel was selected */
-    if ( obj->I2c == NULL ) return;
+void I2cMcuInit(I2c_t *obj, PinNames scl, PinNames sda)
+{
+#if 0
+    obj->I2c = (I2C_TypeDef *) g_i2cBase[FXOS8700CQ_I2C_INSTANCE];
+
+    GpioInit(&obj->Scl, scl, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 0);
+    GpioInit(&obj->Sda, sda, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 0);
 
     /* Enable clock for I2C.*/
-    if ( obj->I2c == g_i2cBase[0] ) CLOCK_SYS_EnableI2cClock(0);
-    else CLOCK_SYS_EnableI2cClock(1);
+    CLOCK_SYS_EnableI2cClock (FXOS8700CQ_I2C_INSTANCE);
 
     /* Initialize peripheral to known state.*/
     I2C_HAL_Init(obj->I2c);
 
-    GpioInit(&obj->Scl, scl, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 0);
-    GpioInit(&obj->Sda, sda, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 0);
-}
-
-void I2cMcuFormat( I2c_t *obj, I2cMode mode, I2cDutyCycle dutyCycle, bool I2cAckEnable,
-        I2cAckAddrMode AckAddrMode, uint32_t I2cFrequency ) {
-    uint32_t i2cClockFreq, baudRate_kbps;
-
-    if ( I2cFrequency > 400000 ) {
-        baudRate_kbps = 400;
-    } else {
-        baudRate_kbps = I2cFrequency / 1000;
-    }
-
-    /* Get the current bus clock.*/
-    if ( obj->I2c == g_i2cBase[0] ) i2cClockFreq = CLOCK_SYS_GetI2cFreq(0);
-    else i2cClockFreq = CLOCK_SYS_GetI2cFreq(1);
-
-    I2C_HAL_SetBaudRate(obj->I2c, i2cClockFreq, baudRate_kbps, NULL);
-
-    /* I2C Peripheral Enable */
+    /* Enable module.*/
     I2C_HAL_Enable(obj->I2c);
+#else
+    if (obj->I2c->instance < 0 || obj->I2c->instance > I2C_INSTANCE_COUNT) return;
+
+    GpioInit(&obj->Scl, scl, PIN_ALTERNATE_FCT, PIN_OPEN_DRAIN, PIN_PULL_UP, 0);
+    GpioInit(&obj->Sda, sda, PIN_ALTERNATE_FCT, PIN_OPEN_DRAIN, PIN_PULL_UP, 0);
+
+    I2C_DRV_MasterInit(obj->I2c->instance, &obj->I2c->state);
+#endif
 }
 
-void I2cMcuDeInit( I2c_t *obj ) {
+void I2cMcuFormat(I2c_t *obj, I2cMode mode, I2cDutyCycle dutyCycle, bool I2cAckEnable,
+        I2cAckAddrMode AckAddrMode, uint32_t I2cFrequency)
+{
+#if 0
+    /* Get the current bus clock.*/
+    uint32_t i2cClockFreq = CLOCK_SYS_GetI2cFreq(FXOS8700CQ_I2C_INSTANCE);
+
+    I2C_HAL_SetBaudRate(obj->I2c, i2cClockFreq, I2cFrequency, NULL);
+#else
+    obj->I2c->slave.baudRate_kbps = (I2cFrequency / 1000);
+#endif
+}
+
+void I2cMcuDeInit(I2c_t *obj)
+{
+#if 0
     /* Disable module.*/
     I2C_HAL_Disable(obj->I2c);
 
     /* Disable clock for I2C.*/
-    if ( obj->I2c == g_i2cBase[0] ) CLOCK_SYS_DisableI2cClock(0);
-    else CLOCK_SYS_DisableI2cClock(1);
+    CLOCK_SYS_DisableI2cClock (FXOS8700CQ_I2C_INSTANCE);
+#else
+    I2C_DRV_MasterDeinit(obj->I2c->instance);
+#endif
 
     GpioInit(&obj->Scl, obj->Scl.pin, PIN_ANALOGIC, PIN_PUSH_PULL, PIN_NO_PULL, 0);
     GpioInit(&obj->Sda, obj->Sda.pin, PIN_ANALOGIC, PIN_PUSH_PULL, PIN_NO_PULL, 0);
 }
 
-void I2cSetAddrSize( I2c_t *obj, I2cAddrSize addrSize ) {
+void I2cSetAddrSize(I2c_t *obj, I2cAddrSize addrSize)
+{
     I2cInternalAddrSize = addrSize;
 }
 
-uint8_t I2cMcuWriteBuffer( I2c_t *obj, uint8_t deviceAddr, uint16_t addr, uint8_t *buffer,
-        uint16_t size ) {
-    return 0;
+uint8_t I2cMcuWriteBuffer(I2c_t *obj, uint8_t deviceAddr, uint16_t addr, uint8_t *buffer,
+        uint16_t size)
+{
+#if 0
+    if (I2C_HAL_MasterSendDataPolling(obj->I2c, deviceAddr, (const uint8_t*) &addr, 1, buffer,
+                    size)) return FAIL;
+#else
+#endif
+    /* Adjust address */
+    if (obj->I2c->slave.address != deviceAddr) obj->I2c->slave.address = deviceAddr;
+    /* Write data */
+    if (I2C_DRV_MasterSendDataBlocking(obj->I2c->instance, &obj->I2c->slave, (const uint8_t*) &addr,
+            1, buffer, size, 200) != kStatus_I2C_Success) return FAIL;
+    return SUCCESS;
 }
 
-uint8_t I2cMcuReadBuffer( I2c_t *obj, uint8_t deviceAddr, uint16_t addr, uint8_t *buffer,
-        uint16_t size ) {
-    return 0;
+uint8_t I2cMcuReadBuffer(I2c_t *obj, uint8_t deviceAddr, uint16_t addr, uint8_t *buffer,
+        uint16_t size)
+{
+#if 0
+    if (I2C_HAL_MasterReceiveDataPolling(obj->I2c, deviceAddr, NULL, 0, buffer, size) != kStatus_I2C_Success) return FAIL;
+#else
+    /* Adjust address */
+    if (obj->I2c->slave.address != deviceAddr) obj->I2c->slave.address = deviceAddr;
+    /* Read data */
+    if (I2C_DRV_MasterReceiveDataBlocking(obj->I2c->instance, &obj->I2c->slave,
+            (const uint8_t*) &addr, 1, buffer, size, 200) != kStatus_I2C_Success) return FAIL;
+#endif
+
+    return SUCCESS;
 }
 
-/* Maximum Timeout values for flags and events waiting loops. These timeouts are
- not based on accurate values, they just guarantee that the application will 
- not remain stuck if the I2C communication is corrupted.
- You may modify these timeout values depending on CPU frequency and application
- conditions (interrupts routines ...). */
-#define EE_FLAG_TIMEOUT         ( ( uint32_t )0x1000 )
-#define EE_LONG_TIMEOUT         ( ( uint32_t )( 10 * EE_FLAG_TIMEOUT ) )
-
-/* Maximum number of trials for I2cMcuWaitStandbyState( ) function */
-#define EE_MAX_TRIALS_NUMBER     300
-
-uint8_t I2cMcuWaitStandbyState( I2c_t *obj, uint8_t deviceAddr ) {
-    return 0;
+#if (I2C_INSTANCE_COUNT > 0U)
+/* Implementation of I2C0 handler named in startup code. */
+void I2C0_IRQHandler(void)
+{
+    I2C_DRV_IRQHandler(I2C0_IDX);
 }
+#endif
+
+#if (I2C_INSTANCE_COUNT > 1U)
+/* Implementation of I2C1 handler named in startup code. */
+void I2C1_IRQHandler(void)
+{
+    I2C_DRV_IRQHandler(I2C1_IDX);
+}
+#endif
