@@ -77,7 +77,8 @@ uint8_t FxosInit(uint8_t accelAddr)
         FxosRead(WHO_AM_I_REG, &regVal);
         /*! Fixed Device ID Number = 0xC7 */
         if (regVal != kFXOS_WHO_AM_I_Device_ID) {
-            PRINTF("ERROR: Device id register returned 0x%02x where as 0xC7 was expected!\r\n");
+            PRINTF("ERROR: Device id register returned 0x%02x where as 0xC7 was expected!\r\n",
+                    regVal);
             return FAIL;
         }
 
@@ -99,9 +100,6 @@ uint8_t FxosInit(uint8_t accelAddr)
          * [1:0]: m_hms=11=3: select hybrid mode with accel and magnetometer active
          */
         FxosWrite(M_CTRL_REG1, (HYBRID_ACTIVE | (M_OSR_800_HZ)));
-        FxosRead(M_CTRL_REG1, &regVal);
-        PRINTF("TRACE: Value at 0x%02x: 0x%02x (0x%02x)\r\n", M_CTRL_REG1, regVal,
-                (HYBRID_ACTIVE | (M_OSR_800_HZ)));
 
         /* Magnetometer control register 2
          * [7]: reserved
@@ -113,9 +111,6 @@ uint8_t FxosInit(uint8_t accelAddr)
          * [1:0]: m_rst_cnt=00 to enable magnetic reset each cycle
          */
         FxosWrite(M_CTRL_REG2, M_HYB_AUTOINC_MASK);
-        FxosRead(M_CTRL_REG2, &regVal);
-        PRINTF("TRACE: Value at 0x%02x: 0x%02x (0x%02x)\r\n", M_CTRL_REG2, regVal,
-                M_HYB_AUTOINC_MASK);
 
         /* XYZ data config register
          * [7]: reserved
@@ -127,9 +122,6 @@ uint8_t FxosInit(uint8_t accelAddr)
          * [1-0]: fs=01 for accelerometer range of +/-4g range with 0.488mg/LSB
          */
         FxosWrite(XYZ_DATA_CFG_REG, FULL_SCALE_4G);
-        FxosRead(XYZ_DATA_CFG_REG, &regVal);
-        PRINTF("TRACE: Value at 0x%02x: 0x%02x (0x%02x)\r\n", XYZ_DATA_CFG_REG, regVal,
-                FULL_SCALE_4G);
 
         /* Accelerometer control register 1
          * [7:6]: aslp_rate=00
@@ -140,9 +132,6 @@ uint8_t FxosInit(uint8_t accelAddr)
          */
         FxosWrite(CTRL_REG1, (ASLP_RATE_20MS | DATA_RATE_200HZ | LNOISE_MASK | ACTIVE));
         FxosRead(CTRL_REG1, &regVal);
-        PRINTF("TRACE: Value at 0x%02x: 0x%02x (0x%02x)\r\n", CTRL_REG1, regVal,
-                (ASLP_RATE_20MS | DATA_RATE_200HZ | LNOISE_MASK | ACTIVE));
-
         /* Read Control register again to ensure we are in active mode */
         if ((regVal & ACTIVE_MASK) != ACTIVE_MASK) {
             PRINTF("Unable to move FXOS8700CQ to Active mode\n\r");

@@ -151,15 +151,16 @@
 
 #define RADIO_ANT_SWITCH_RX_TX         NC
 
-#endif /* SX1276_BOARD */
-
 #define FXOS8700CQ_I2C_INSTANCE        0
-#define FXOS_I2C_ADDRESS               0x1D
-#define I2C_SCL                        PB_2
-#define I2C_SDA                        PB_3
+#define FXOS_I2C_ADDRESS               0x1C
 
 #define IRQ_1_FXOS8700CQ               PD_0
 #define IRQ_2_FXOS8700CQ               PD_1
+
+#endif /* SX1276_BOARD */
+
+#define I2C_SCL                        PB_2
+#define I2C_SDA                        PB_3
 
 #define UART1_RX                       PE_1
 #define UART1_TX                       PE_0
@@ -182,15 +183,19 @@ extern Gpio_t SwitchB;
 /*!
  * IRQ GPIO pin objects
  */
+#if !defined(SX1276_BOARD_AVAILABLE)
 extern Gpio_t Irq1Fxos8700;
 extern Gpio_t Irq2Fxos8700;
+#endif
 
 /*!
  * MCU objects
  */
 extern Adc_t Adc;
 extern I2c_t I2c;
+#if !defined(SX1276_BOARD_AVAILABLE)
 extern I2C_TypeDef Fxos;
+#endif
 extern Uart_t Lpuart;
 extern Uart_t Uart0;
 extern Uart_t Uart1;

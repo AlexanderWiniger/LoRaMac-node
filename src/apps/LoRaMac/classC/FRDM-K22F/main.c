@@ -219,13 +219,13 @@ static void PrepareTxFrame(uint8_t port)
             batteryLevel = BoardGetBatteryLevel();       // 1 (very low) to 254 (fully charged)
 
             AppData[0] = AppLedStateOn;
-            AppData[1] = (sensorData.accelX >> 8) & 0xFF;
-            AppData[2] = sensorData.accelX & 0xFF;
-            AppData[3] = (sensorData.accelY >> 8) & 0xFF;
-            AppData[4] = sensorData.accelY & 0xFF;
-            AppData[5] = (sensorData.accelZ >> 8) & 0xFF;
-            AppData[6] = sensorData.accelZ & 0xFF;
-            AppData[7] = batteryLevel;
+            AppData[1] = batteryLevel;
+            AppData[2] = (sensorData.accelX >> 8) & 0xFF;
+            AppData[3] = sensorData.accelX & 0xFF;
+            AppData[4] = (sensorData.accelY >> 8) & 0xFF;
+            AppData[5] = sensorData.accelY & 0xFF;
+            AppData[6] = (sensorData.accelZ >> 8) & 0xFF;
+            AppData[7] = sensorData.accelZ & 0xFF;
             AppData[8] = (sensorData.magX >> 8) & 0xFF;
             AppData[9] = sensorData.magX & 0xFF;
             AppData[10] = (sensorData.magY >> 8) & 0xFF;
@@ -333,11 +333,14 @@ int main(void)
     bool trySendingFrameAgain = false;
 
     BoardInitMcu();
+    PRINTF("DEBUG: Mcu initialized.\r\n");
     BoardInitPeriph();
+    PRINTF("DEBUG: Peripherals initialized.\r\n");
 
     LoRaMacCallbacks.MacEvent = OnMacEvent;
     LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
     LoRaMacInit(&LoRaMacCallbacks);
+    PRINTF("DEBUG: LoRaMac initialized.\r\n");
 
     IsNetworkJoined = false;
 

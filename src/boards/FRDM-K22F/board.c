@@ -31,15 +31,19 @@ Gpio_t SwitchB;
 /*!
  * IRQ GPIO pin objects
  */
+#if !defined(SX1276_BOARD_AVAILABLE)
 Gpio_t Irq1Fxos8700cq;
 Gpio_t Irq2Fxos8700cq;
+#endif
 
 /*!
  * MCU objects
  */
 Adc_t Adc;
 I2c_t I2c;
+#if !defined(SX1276_BOARD_AVAILABLE)
 I2C_TypeDef Fxos;
+#endif
 Uart_t Lpuart;
 Uart_t Uart0;
 Uart_t Uart1;
@@ -141,12 +145,14 @@ void BoardInitPeriph(void)
     GpioInit(&SwitchA, SWITCH_A, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&SwitchB, SWITCH_B, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
+#if !defined(SX1276_BOARD_AVAILABLE)
     /* Init the IRQ GPIO pins*/
     GpioInit(&Irq1Fxos8700cq, IRQ_1_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Irq2Fxos8700cq, IRQ_2_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
     /* Initialize accelerometer */
     FxosInit (FXOS_I2C_ADDRESS);
+#endif
 
     /* Initialize RNGA */
     rnga_user_config_t
@@ -227,12 +233,14 @@ void BoardInitMcu(void)
         CLOCK_SYS_SetConfiguration(&g_defaultClockConfigRun);
 #endif
 
+#if !defined(SX1276_BOARD_AVAILABLE)
         /* OS initialization */
         OSA_Init();
         /*! I2C channel to be used by digital 3D accelerometer */
         Fxos.instance = FXOS8700CQ_I2C_INSTANCE;
         I2c.I2c = &Fxos;
         I2cInit(&I2c, I2C_SCL, I2C_SDA);
+#endif
 
         /*! SPI channel to be used by Semtech SX1276 */
 #if defined(SX1276_BOARD_FREEDOM) || defined(SX1276_BOARD_EMBED)
@@ -293,14 +301,14 @@ uint32_t BoardGetRandomSeed(void)
 
 void BoardGetUniqueId(uint8_t *id)
 {
-    id[0] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3)) >> 24;
-    id[1] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3)) >> 16;
-    id[2] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3)) >> 8;
-    id[3] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3));
-    id[4] = ((*(uint32_t*) ID2) + (*(uint32_t*) ID4)) >> 24;
-    id[5] = ((*(uint32_t*) ID2) + (*(uint32_t*) ID4)) >> 16;
-    id[6] = ((*(uint32_t*) ID2) + (*(uint32_t*) ID4)) >> 8;
-    id[7] = ((*(uint32_t*) ID2) + (*(uint32_t*) ID4));
+    id[0] = (ID1 + ID3) >> 24;
+    id[1] = (ID1 + ID3) >> 16;
+    id[2] = (ID1 + ID3) >> 8;
+    id[3] = (ID1 + ID3);
+    id[4] = (ID2 + ID4) >> 24;
+    id[5] = (ID2 + ID4) >> 16;
+    id[6] = (ID2 + ID4) >> 8;
+    id[7] = (ID2 + ID4);
 }
 
 static void BoardUnusedIoInit(void)

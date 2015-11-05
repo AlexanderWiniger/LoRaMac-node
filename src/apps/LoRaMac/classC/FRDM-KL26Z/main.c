@@ -364,6 +364,7 @@ int main(void)
     LoRaMacCallbacks.MacEvent = OnMacEvent;
     LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
     LoRaMacInit(&LoRaMacCallbacks);
+    PRINTF("DEBUG: LoRaMac initialized.\r\n");
 
     IsNetworkJoined = false;
 
@@ -399,6 +400,8 @@ DevAddr    = randr(0, 0x01FFFFFF);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
     LoRaMacSetPublicNetwork( LORAWAN_PUBLIC_NETWORK);
     LoRaMacSetDeviceClass (CLASS_C);
+
+    PRINTF("DEBUG: Starting class C application...\r\n");
 
     while (1) {
         while (IsNetworkJoined == false) {

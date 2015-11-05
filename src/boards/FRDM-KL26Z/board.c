@@ -255,19 +255,19 @@ uint8_t BoardGetBatteryLevel(void)
 
 uint32_t BoardGetRandomSeed(void)
 {
-    return ((*(uint32_t*) ID1) ^ (*(uint32_t*) ID2) ^ (*(uint32_t*) ID3));
+    return (ID1 ^ ID2 ^ ID3);
 }
 
 void BoardGetUniqueId(uint8_t *id)
 {
-    id[0] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3)) >> 24;
-    id[1] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3)) >> 16;
-    id[2] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3)) >> 8;
-    id[3] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3));
-    id[4] = ((*(uint32_t*) ID2)) >> 24;
-    id[5] = ((*(uint32_t*) ID2)) >> 16;
-    id[6] = ((*(uint32_t*) ID2)) >> 8;
-    id[7] = ((*(uint32_t*) ID2));
+    id[0] = (ID1 + ID3) >> 24;
+    id[1] = (ID1 + ID3) >> 16;
+    id[2] = (ID1 + ID3) >> 8;
+    id[3] = (ID1 + ID3);
+    id[4] = ID2 >> 24;
+    id[5] = ID2 >> 16;
+    id[6] = ID2 >> 8;
+    id[7] = ID2;
 }
 
 static void BoardUnusedIoInit(void)
