@@ -17,6 +17,13 @@
 #include "adc-board.h"
 
 /*!
+ * Unique Devices IDs register set ( STM32L1xxx )
+ */
+#define         ID1                                 ( 0x1FF80050 )
+#define         ID2                                 ( 0x1FF80054 )
+#define         ID3                                 ( 0x1FF80064 )
+
+/*!
  * IO Extander pins objects
  */
 Gpio_t IrqMpl3115;
@@ -185,7 +192,16 @@ void BoardDeInitMcu(void)
     McuInitialized = false;
 }
 
+<<<<<<< HEAD
 void BoardGetUniqueId(uint8_t *id)
+=======
+uint32_t BoardGetRandomSeed( void )
+{
+    return ( ( *( uint32_t* )ID1 ) ^ ( *( uint32_t* )ID2 ) ^ ( *( uint32_t* )ID3 ) );
+}
+
+void BoardGetUniqueId( uint8_t *id )
+>>>>>>> refs/remotes/Lora-net/master
 {
     id[0] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3)) >> 24;
     id[1] = ((*(uint32_t*) ID1) + (*(uint32_t*) ID3)) >> 16;
@@ -239,10 +255,16 @@ uint16_t BoardGetPowerSupply(void)
     return (uint16_t)(batteryVoltage * 1000);
 }
 
+<<<<<<< HEAD
 uint8_t BoardMeasureBatterieLevel(void)
 {
     __IO uint8_t
     batteryLevel = 0;
+=======
+uint8_t BoardGetBatteryLevel( void ) 
+{
+    volatile uint8_t batteryLevel = 0;
+>>>>>>> refs/remotes/Lora-net/master
     uint16_t batteryVoltage = 0;
 
     if (GpioRead(&UsbDetect) == 1) {
