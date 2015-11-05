@@ -65,11 +65,11 @@ void FxosSetDeviceAddr(uint8_t addr);
  */
 uint8_t FxosGetDeviceAddr(void);
 
-uint8_t FxosInit(void)
+uint8_t FxosInit(uint8_t accelAddr)
 {
     uint8_t regVal = 0x0;
 
-    FxosSetDeviceAddr (FXOS_I2C_ADDRESS);
+    FxosSetDeviceAddr(accelAddr);
 
     if (FxosInitialized == false) {
         FxosInitialized = true;

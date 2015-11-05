@@ -9,19 +9,9 @@
 #include "board.h"
 #include "uart.h"
 
-#include "fsl_port_hal.h"   /* \todo Debug purpose only */
-#include "fsl_gpio_driver.h"   /* \todo Debug purpose only */
-
 /*------------------------- Local Defines --------------------------------*/
 
 /*------------------------ Local Variables -------------------------------*/
-///* Declare Output GPIO pins */
-//gpio_output_pin_user_config_t dbgPin = {
-//    .pinName = GPIO_MAKE_PIN(GPIOE_IDX, 1),
-//    .config.outputLogic = 1,
-//    .config.slewRate = kPortSlowSlewRate,
-//    .config.driveStrength = kPortLowDriveStrength,
-//}; /* \todo Debug purpose only */
 static TimerEvent_t Led1Timer;
 volatile bool Led1TimerEvent = false;
 
@@ -30,6 +20,13 @@ volatile bool Led2TimerEvent = false;
 
 static TimerEvent_t Led3Timer;
 volatile bool Led3TimerEvent = false;
+
+bool SwitchAPushEvent = false;
+
+/*!
+ * \brief Switch A IRQ callback
+ */
+void SwitchAIrq(void);
 
 /*!
  * \brief Function executed on Led 1 Timeout event
@@ -66,8 +63,8 @@ int main(void)
     BoardInitPeriph();
     PRINTF("TRACE: Peripherals initialized.\r\n");
 
-//    PORT_HAL_SetMuxMode(PORTE, 1u, kPortMuxAsGpio); /* \todo Debug purpose only */
-//    GPIO_DRV_OutputPinInit (&dbgPin); /* \todo Debug purpose only */
+    /* Switch A */
+    GpioSetInterrupt(&SwitchA, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchAIrq);
 
     TimerInit(&Led1Timer, OnLed1TimerEvent);
     TimerSetValue(&Led1Timer, 250000);
@@ -85,12 +82,6 @@ int main(void)
     // Print the initial banner
     PRINTF("\r\nHello World!\r\n\r\n");
 
-#if 1
-    for (;;) {
-//        GPIO_DRV_TogglePinOutput(dbgPin.pinName); /* \todo Debug purpose only */
-        DelayMs(10);
-    }
-#else
     while (1) {
         if (Led1TimerEvent == true) {
             Led1TimerEvent = false;
@@ -121,7 +112,25 @@ int main(void)
             GpioWrite(&Led1, 0);
             TimerStart(&Led1Timer);
         }
+
+        if (SwitchAPushEvent) {
+            accel_sensor_data_t sensorData;
+            SwitchAPushEvent = false;
+
+            if (FxosReadSensorData(&sensorData) != FAIL) {
+                PRINTF("Accelerometer (X/Y/Z):\t%d \t%d \t%d \r\n", sensorData.accelX,
+                        sensorData.accelY, sensorData.accelZ);
+                //                PRINTF("Magnetometer (X/Y/Z):\t%d \t%d \t%d \r\n", sensorData.magX, sensorData.magY,
+                //                        sensorData.magZ);
+            } else {
+                PRINTF("ERROR: Couldn't retrieve sensor data!\r\n");
+            }
+        }
     }
-#endif
 }
 
+void SwitchAIrq(void)
+{
+    DelayMs(20);    // Software debouncing
+    SwitchAPushEvent = true;
+}

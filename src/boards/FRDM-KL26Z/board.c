@@ -21,6 +21,11 @@ Gpio_t Led3;
 #endif
 
 /*!
+ * Button GPIO pin objects
+ */
+Gpio_t SwitchA;
+
+/*!
  * IRQ GPIO pins objects
  */
 Gpio_t Irq1Fxos8700cq;
@@ -31,6 +36,7 @@ Gpio_t Irq2Fxos8700cq;
  */
 Adc_t Adc;
 I2c_t I2c;
+I2C_TypeDef Fxos;
 Uart_t Uart0;
 Uart_t Uart1;
 Uart_t Uart2;
@@ -128,9 +134,15 @@ void BoardInitPeriph(void)
     GpioInit(&Led3, LED_3, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 #endif
 
+    /* Init the Switch GPIO pins */
+    GpioInit(&SwitchA, SWITCH_A, PIN_INPUT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
+
     /* Init the IRQ GPIO pins*/
     GpioInit(&Irq1Fxos8700cq, IRQ_1_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Irq2Fxos8700cq, IRQ_2_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+
+    // Init accelerometer
+    FxosInit (FXOS_I2C_ADDRESS);
 
     // Switch LED 1, 2 OFF
     GpioWrite(&Led1, 1);
@@ -183,8 +195,11 @@ void BoardInitMcu(void)
         CLOCK_SYS_SetConfiguration(&g_defaultClockConfigRun);
 #endif
 
+        /* OS initialization */
+        OSA_Init();
         /*! I2C channel to be used by digital 3D accelerometer */
-        I2c.I2c = FXOS8700CQ_I2C_DEVICE;
+        Fxos.instance = FXOS8700CQ_I2C_INSTANCE;
+        I2c.I2c = &Fxos;
         I2cInit(&I2c, I2C_SCL, I2C_SDA);
 
         /*! SPI channel to be used by Semtech SX1276 */
@@ -230,6 +245,17 @@ void BoardDeInitMcu(void)
 #endif
 
     McuInitialized = false;
+}
+
+uint8_t BoardGetBatteryLevel(void)
+{
+    /* Device is connected to an external power source*/
+    return 0;
+}
+
+uint32_t BoardGetRandomSeed(void)
+{
+    return ((*(uint32_t*) ID1) ^ (*(uint32_t*) ID2) ^ (*(uint32_t*) ID3));
 }
 
 void BoardGetUniqueId(uint8_t *id)

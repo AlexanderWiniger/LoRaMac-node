@@ -17,6 +17,8 @@ src/boards/FRDM-K22F/i2c-board.o: \
  C:/dev/Freescale/KSDK_1.3.0/platform/osa/inc/fsl_os_abstraction_bm.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_port_hal.h \
  ../../../../../src/boards/mcu/kinetis/utilities/utilities.h \
+ C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_i2c_master_driver.h \
+ C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_i2c_hal.h \
  ../../../../../src/system/timer.h ../../../../../src/system/delay.h \
  ../../../../../src/system/gpio.h \
  ../../../../../src/boards/FRDM-K22F/pinName-board.h \
@@ -31,13 +33,14 @@ src/boards/FRDM-K22F/i2c-board.o: \
  ../../../../../src/radio/sx1276/sx1276.h \
  ../../../../../src/radio/sx1276/sx1276Regs-Fsk.h \
  ../../../../../src/radio/sx1276/sx1276Regs-LoRa.h \
+ ../../../../../src/peripherals/fxos.h \
  C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/rtc-board.h \
  C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/timer-board.h \
  C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/sx1276-board.h \
  C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/gps-board.h \
  C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/uart-board.h \
  C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/i2c-board.h \
- C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_i2c_hal.h \
+ C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_i2c_shared_function.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/system/inc/fsl_clock_manager.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_sim_hal.h \
  c:\dev\freescale\ksdk_1.3.0\platform\hal\src\sim\mk22f51212\fsl_sim_hal_mk22f51212.h \
@@ -82,6 +85,10 @@ C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_port_hal.h:
 
 ../../../../../src/boards/mcu/kinetis/utilities/utilities.h:
 
+C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_i2c_master_driver.h:
+
+C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_i2c_hal.h:
+
 ../../../../../src/system/timer.h:
 
 ../../../../../src/system/delay.h:
@@ -118,6 +125,8 @@ C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_dspi_slave_driver.h:
 
 ../../../../../src/radio/sx1276/sx1276Regs-LoRa.h:
 
+../../../../../src/peripherals/fxos.h:
+
 C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/rtc-board.h:
 
 C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/timer-board.h:
@@ -130,7 +139,7 @@ C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/uart-board.h:
 
 C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/i2c-board.h:
 
-C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_i2c_hal.h:
+C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_i2c_shared_function.h:
 
 C:/dev/Freescale/KSDK_1.3.0/platform/system/inc/fsl_clock_manager.h:
 

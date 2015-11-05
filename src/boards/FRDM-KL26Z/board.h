@@ -22,9 +22,11 @@
 #include "uart.h"
 #include "radio.h"
 #include "sx1276/sx1276.h"
+#include "fxos.h"
 #include "rtc-board.h"
 #include "timer-board.h"
 #include "sx1276-board.h"
+#include "gps-board.h"
 #include "uart-board.h"
 
 #if defined( USE_USB_CDC )
@@ -71,6 +73,8 @@
 #if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
 #define LED_3                          PD_5
 #endif /* SX1276_BOARD_AVAILABLE */
+
+#define SWITCH_A                       PC_3
 
 #if defined(SX1276_BOARD_FREEDOM)
 
@@ -134,7 +138,8 @@
 
 #endif /* SX1276_BOARD */
 
-#define FXOS8700CQ_I2C_DEVICE          I2C0
+#define FXOS8700CQ_I2C_INSTANCE        0
+#define FXOS_I2C_ADDRESS               0x1D
 #define I2C_SCL                        PE_24
 #define I2C_SDA                        PE_25
 
@@ -165,6 +170,11 @@ extern Gpio_t Led3;
 #endif
 
 /*!
+ * Button GPIO pin objects
+ */
+extern Gpio_t SwitchA;
+
+/*!
  * IRQ GPIO pins objects
  */
 extern Gpio_t Irq1Fxos8700;
@@ -175,6 +185,7 @@ extern Gpio_t Irq2Fxos8700;
  */
 extern Adc_t Adc;
 extern I2c_t I2c;
+extern I2C_TypeDef Fxos;
 extern Uart_t Uart0;
 extern Uart_t Uart1;
 extern Uart_t Uart2;
@@ -238,6 +249,20 @@ void BoardInitPeriph(void);
  *        consumption.
  */
 void BoardDeInitMcu(void);
+
+/*!
+ * \brief Measure the Battery level
+ *
+ * \retval value  battery level ( 0: very low, 254: fully charged )
+ */
+uint8_t BoardGetBatteryLevel(void);
+
+/*!
+ * Returns a pseudo random seed generated using the MCU Unique ID
+ *
+ * \retval seed Generated pseudo random seed
+ */
+uint32_t BoardGetRandomSeed(void);
 
 /*!
  * \brief Gets the board 64 bits unique ID 

@@ -66,13 +66,12 @@ int main(void)
     // Target board initialisation
     BoardInitMcu();
     PRINTF("TRACE: Mcu initialized.\r\n");
-
     BoardInitPeriph();
     PRINTF("TRACE: Peripherals initialized.\r\n");
 
-    /* Switch A */
-    GpioSetInterrupt(&SwitchA, IRQ_RISING_EDGE, IRQ_LOW_PRIORITY, SwitchAIrq);
-    GpioSetInterrupt(&SwitchB, IRQ_RISING_EDGE, IRQ_LOW_PRIORITY, SwitchBIrq);
+    /* Switch A & B */
+    GpioSetInterrupt(&SwitchA, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchAIrq);
+    GpioSetInterrupt(&SwitchB, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchBIrq);
 
     TimerInit(&Led1Timer, OnLed1TimerEvent);
     TimerSetValue(&Led1Timer, 250000);

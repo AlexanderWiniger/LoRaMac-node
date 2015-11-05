@@ -17,6 +17,7 @@ SUBDIRS := \
 src/system \
 src/system/crypto \
 src/radio/sx1276 \
+src/peripherals \
 src/mac \
 src/boards/mcu/kinetis/utilities \
 src/boards/mcu/kinetis/k22f/startup \

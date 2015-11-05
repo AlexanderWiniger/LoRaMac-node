@@ -11,6 +11,7 @@ RM := rm -rf
 -include src/system/crypto/subdir.mk
 -include src/system/subdir.mk
 -include src/radio/sx1276/subdir.mk
+-include src/peripherals/subdir.mk
 -include src/mac/subdir.mk
 -include src/boards/mcu/kinetis/utilities/subdir.mk
 -include src/boards/mcu/kinetis/k22f/startup/subdir.mk

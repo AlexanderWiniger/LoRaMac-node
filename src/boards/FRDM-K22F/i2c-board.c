@@ -121,18 +121,14 @@ uint8_t I2cMcuReadBuffer(I2c_t *obj, uint8_t deviceAddr, uint16_t addr, uint8_t 
     return SUCCESS;
 }
 
-#if (I2C_INSTANCE_COUNT > 0U)
 /* Implementation of I2C0 handler named in startup code. */
 void I2C0_IRQHandler(void)
 {
-    I2C_DRV_IRQHandler(I2C0_IDX);
+    I2C_DRV_IRQHandler (I2C0_IDX);
 }
-#endif
 
-#if (I2C_INSTANCE_COUNT > 1U)
 /* Implementation of I2C1 handler named in startup code. */
 void I2C1_IRQHandler(void)
 {
-    I2C_DRV_IRQHandler(I2C1_IDX);
+    I2C_DRV_IRQHandler (I2C1_IDX);
 }
-#endif

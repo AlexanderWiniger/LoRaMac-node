@@ -10,6 +10,7 @@
 #include "fsl_clock_manager.h"
 #include "fsl_os_abstraction.h"
 #include "fsl_wdog_hal.h"
+#include "fsl_rnga_driver.h"
 #include "fsl_smc_hal.h"
 
 /*!
@@ -144,8 +145,16 @@ void BoardInitPeriph(void)
     GpioInit(&Irq1Fxos8700cq, IRQ_1_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Irq2Fxos8700cq, IRQ_2_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
-    // Init accelerometer
-    FxosInit();
+    /* Initialize accelerometer */
+    FxosInit (FXOS_I2C_ADDRESS);
+
+    /* Initialize RNGA */
+    rnga_user_config_t
+    rngaConfig = {
+        .isIntMasked = true,
+        .highAssuranceEnable = true
+    };
+    RNGA_DRV_Init(0, &rngaConfig);
 
     // Switch LED 1, 2, 3 OFF
 #if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
@@ -224,6 +233,7 @@ void BoardInitMcu(void)
         Fxos.instance = FXOS8700CQ_I2C_INSTANCE;
         I2c.I2c = &Fxos;
         I2cInit(&I2c, I2C_SCL, I2C_SDA);
+
         /*! SPI channel to be used by Semtech SX1276 */
 #if defined(SX1276_BOARD_FREEDOM) || defined(SX1276_BOARD_EMBED)
         SX1276.Spi.instance = RADIO_SPI_INSTANCE;
@@ -268,10 +278,17 @@ void BoardDeInitMcu(void)
     McuInitialized = false;
 }
 
-uint8_t BoardMeasureBatterieLevel(void)
+uint8_t BoardGetBatteryLevel(void)
 {
     /* Device is connected to an external power source*/
     return 0;
+}
+
+uint32_t BoardGetRandomSeed(void)
+{
+    int32_t randout = 0;
+    RNGA_DRV_GetRandomData(0, &randout, sizeof(int32_t));
+    return randout;
 }
 
 void BoardGetUniqueId(uint8_t *id)
@@ -288,5 +305,5 @@ void BoardGetUniqueId(uint8_t *id)
 
 static void BoardUnusedIoInit(void)
 {
-    // \todo Initialize unused gpio to knwon state
+// \todo Initialize unused gpio to knwon state
 }

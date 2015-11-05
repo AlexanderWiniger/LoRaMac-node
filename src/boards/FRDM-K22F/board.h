@@ -154,6 +154,7 @@
 #endif /* SX1276_BOARD */
 
 #define FXOS8700CQ_I2C_INSTANCE        0
+#define FXOS_I2C_ADDRESS               0x1D
 #define I2C_SCL                        PB_2
 #define I2C_SDA                        PB_3
 
@@ -261,10 +262,17 @@ void BoardDeInitMcu(void);
  *
  * \retval value  battery level ( 0: very low, 254: fully charged )
  */
-uint8_t BoardMeasureBatterieLevel(void);
+uint8_t BoardGetBatteryLevel(void);
 
 /*!
- * \brief Gets the board 64 bits unique ID 
+ * Returns a pseudo random seed generated using the MCU Unique ID
+ *
+ * \retval seed Generated pseudo random seed
+ */
+uint32_t BoardGetRandomSeed(void);
+
+/*!
+ * \brief Gets the board 64 bits unique ID
  *
  * \param [IN] id Pointer to an array that will contain the Unique ID
  */

@@ -16,6 +16,8 @@ src/system/uart.o: C:/workspace/eclipse/LoRaMac-node/src/system/uart.c \
  C:/dev/Freescale/KSDK_1.3.0/platform/osa/inc/fsl_os_abstraction_bm.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_port_hal.h \
  ../../../../../src/boards/mcu/kinetis/utilities/utilities.h \
+ C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_i2c_master_driver.h \
+ C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_i2c_hal.h \
  ../../../../../src/system/timer.h ../../../../../src/system/delay.h \
  ../../../../../src/system/gpio.h \
  ../../../../../src/boards/FRDM-K22F/pinName-board.h \
@@ -30,6 +32,7 @@ src/system/uart.o: C:/workspace/eclipse/LoRaMac-node/src/system/uart.c \
  ../../../../../src/radio/sx1276/sx1276.h \
  ../../../../../src/radio/sx1276/sx1276Regs-Fsk.h \
  ../../../../../src/radio/sx1276/sx1276Regs-LoRa.h \
+ ../../../../../src/peripherals/fxos.h \
  ../../../../../src/boards/FRDM-K22F/rtc-board.h \
  ../../../../../src/boards/FRDM-K22F/timer-board.h \
  ../../../../../src/boards/FRDM-K22F/sx1276-board.h \
@@ -72,6 +75,10 @@ C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_port_hal.h:
 
 ../../../../../src/boards/mcu/kinetis/utilities/utilities.h:
 
+C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_i2c_master_driver.h:
+
+C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_i2c_hal.h:
+
 ../../../../../src/system/timer.h:
 
 ../../../../../src/system/delay.h:
@@ -107,6 +114,8 @@ C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_dspi_slave_driver.h:
 ../../../../../src/radio/sx1276/sx1276Regs-Fsk.h:
 
 ../../../../../src/radio/sx1276/sx1276Regs-LoRa.h:
+
+../../../../../src/peripherals/fxos.h:
 
 ../../../../../src/boards/FRDM-K22F/rtc-board.h:
 

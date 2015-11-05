@@ -17,6 +17,8 @@ src/boards/FRDM-K22F/board.o: \
  C:/dev/Freescale/KSDK_1.3.0/platform/osa/inc/fsl_os_abstraction_bm.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_port_hal.h \
  ../../../../../src/boards/mcu/kinetis/utilities/utilities.h \
+ C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_i2c_master_driver.h \
+ C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_i2c_hal.h \
  ../../../../../src/system/timer.h ../../../../../src/system/delay.h \
  ../../../../../src/system/gpio.h \
  ../../../../../src/boards/FRDM-K22F/pinName-board.h \
@@ -31,6 +33,7 @@ src/boards/FRDM-K22F/board.o: \
  ../../../../../src/radio/sx1276/sx1276.h \
  ../../../../../src/radio/sx1276/sx1276Regs-Fsk.h \
  ../../../../../src/radio/sx1276/sx1276Regs-LoRa.h \
+ ../../../../../src/peripherals/fxos.h \
  C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/rtc-board.h \
  C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/timer-board.h \
  C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/sx1276-board.h \
@@ -45,6 +48,8 @@ src/boards/FRDM-K22F/board.o: \
  C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_mcg_hal.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_osc_hal.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_wdog_hal.h \
+ C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_rnga_driver.h \
+ C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_rnga_hal.h \
  C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_smc_hal.h
 
 C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/board.h:
@@ -80,6 +85,10 @@ C:/dev/Freescale/KSDK_1.3.0/platform/osa/inc/fsl_os_abstraction_bm.h:
 C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_port_hal.h:
 
 ../../../../../src/boards/mcu/kinetis/utilities/utilities.h:
+
+C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_i2c_master_driver.h:
+
+C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_i2c_hal.h:
 
 ../../../../../src/system/timer.h:
 
@@ -117,6 +126,8 @@ C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_dspi_slave_driver.h:
 
 ../../../../../src/radio/sx1276/sx1276Regs-LoRa.h:
 
+../../../../../src/peripherals/fxos.h:
+
 C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/rtc-board.h:
 
 C:/workspace/eclipse/LoRaMac-node/src/boards/FRDM-K22F/timer-board.h:
@@ -144,5 +155,9 @@ C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_mcg_hal.h:
 C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_osc_hal.h:
 
 C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_wdog_hal.h:
+
+C:/dev/Freescale/KSDK_1.3.0/platform/drivers/inc/fsl_rnga_driver.h:
+
+C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_rnga_hal.h:
 
 C:/dev/Freescale/KSDK_1.3.0/platform/hal/inc/fsl_smc_hal.h:

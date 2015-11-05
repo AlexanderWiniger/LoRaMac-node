@@ -6,7 +6,7 @@
  (______/|_____)_|_|_| \__)_____)\____)_| |_|
  (C)2013 Semtech
 
- Description: LoRaMac classA device implementation
+ Description: LoRaMac classC device implementation
 
  License: Revised BSD License, see LICENSE.TXT file include in the project
 
@@ -198,7 +198,7 @@ static bool AppLedStateOn = false;
 
 static LoRaMacCallbacks_t LoRaMacCallbacks;
 
-volatile bool Led3StateChanged = false;
+volatile bool AppLedStateChanged = false;
 
 /*!
  * Prepares the frame buffer to be sent
@@ -247,7 +247,7 @@ static void ProcessRxFrame(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
         case 2:
             if (info->RxBufferSize == 1) {
                 AppLedStateOn = info->RxBuffer[0] & 0x01;
-                Led3StateChanged = true;
+                AppLedStateChanged = true;
             }
             break;
         default:
@@ -366,6 +366,7 @@ DevAddr    = randr(0, 0x01FFFFFF);
     LoRaMacSetAdrOn( LORAWAN_ADR_ON);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
     LoRaMacSetPublicNetwork( LORAWAN_PUBLIC_NETWORK);
+    LoRaMacSetDeviceClass (CLASS_C);
 
     while (1) {
         while (IsNetworkJoined == false) {
@@ -394,6 +395,11 @@ DevAddr    = randr(0, 0x01FFFFFF);
 #endif
         }
 
+        if (AppLedStateChanged == true) {
+            AppLedStateChanged = false;
+            PRINTF("DEBUG: AppLedStateOn - %s\r\n",
+                    (((AppLedStateOn & 0x01) != 0) ? "true" : "false"));
+        }
         if (DownlinkStatusUpdate == true) {
             DownlinkStatusUpdate = false;
         }
@@ -406,11 +412,7 @@ DevAddr    = randr(0, 0x01FFFFFF);
             TimerSetValue(&TxNextPacketTimer, TxDutyCycleTime);
             TimerStart(&TxNextPacketTimer);
         }
-        if (Led3StateChanged == true) {
-            Led3StateChanged = false;
-            PRINTF("DEBUG: AppLedStateOn - %s\r\n",
-                    (((AppLedStateOn & 0x01) != 0) ? "true" : "false"));
-        }
+
         if (trySendingFrameAgain == true) {
             trySendingFrameAgain = SendFrame();
         }

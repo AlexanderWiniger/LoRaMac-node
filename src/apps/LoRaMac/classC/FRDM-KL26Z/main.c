@@ -6,7 +6,7 @@
  (______/|_____)_|_|_| \__)_____)\____)_| |_|
  (C)2013 Semtech
 
- Description: LoRaMac classA device implementation
+ Description: LoRaMac classC device implementation
 
  License: Revised BSD License, see LICENSE.TXT file include in the project
 
@@ -198,7 +198,12 @@ static bool AppLedStateOn = false;
 
 static LoRaMacCallbacks_t LoRaMacCallbacks;
 
-volatile bool Led3StateChanged = false;
+static TimerEvent_t Led1Timer;
+volatile bool Led1StateChanged = false;
+static TimerEvent_t Led2Timer;
+volatile bool Led2StateChanged = false;
+
+volatile bool AppLedStateChanged = false;
 
 /*!
  * Prepares the frame buffer to be sent
@@ -247,7 +252,7 @@ static void ProcessRxFrame(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
         case 2:
             if (info->RxBufferSize == 1) {
                 AppLedStateOn = info->RxBuffer[0] & 0x01;
-                Led3StateChanged = true;
+                AppLedStateChanged = true;
             }
             break;
         default:
@@ -297,6 +302,24 @@ static void OnTxNextPacketTimerEvent(void)
 }
 
 /*!
+ * \brief Function executed on Led 1 Timeout event
+ */
+static void OnLed1TimerEvent(void)
+{
+    TimerStop(&Led1Timer);
+    Led1StateChanged = true;
+}
+
+/*!
+ * \brief Function executed on Led 2 Timeout event
+ */
+static void OnLed2TimerEvent(void)
+{
+    TimerStop(&Led2Timer);
+    Led2StateChanged = true;
+}
+
+/*!
  * \brief Function to be executed on MAC layer event
  */
 static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
@@ -316,6 +339,7 @@ static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
             }
 
             DownlinkStatusUpdate = true;
+            TimerStart(&Led2Timer);
         }
     }
     // Schedule a new transmission
@@ -333,7 +357,9 @@ int main(void)
     bool trySendingFrameAgain = false;
 
     BoardInitMcu();
+    PRINTF("DEBUG: Mcu initialized.\r\n");
     BoardInitPeriph();
+    PRINTF("DEBUG: Peripherals initialized.\r\n");
 
     LoRaMacCallbacks.MacEvent = OnMacEvent;
     LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
@@ -363,9 +389,16 @@ DevAddr    = randr(0, 0x01FFFFFF);
     TxNextPacket = true;
     TimerInit(&TxNextPacketTimer, OnTxNextPacketTimerEvent);
 
+    TimerInit(&Led1Timer, OnLed1TimerEvent);
+    TimerSetValue(&Led1Timer, 25000);
+
+    TimerInit(&Led2Timer, OnLed2TimerEvent);
+    TimerSetValue(&Led2Timer, 25000);
+
     LoRaMacSetAdrOn( LORAWAN_ADR_ON);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
     LoRaMacSetPublicNetwork( LORAWAN_PUBLIC_NETWORK);
+    LoRaMacSetDeviceClass (CLASS_C);
 
     while (1) {
         while (IsNetworkJoined == false) {
@@ -394,8 +427,25 @@ DevAddr    = randr(0, 0x01FFFFFF);
 #endif
         }
 
+        if (Led1StateChanged == true) {
+            Led1StateChanged = false;
+            // Switch LED 1 OFF
+            GpioWrite(&Led1, 1);
+        }
+        if (Led2StateChanged == true) {
+            Led2StateChanged = false;
+            // Switch LED 2 OFF
+            GpioWrite(&Led2, 1);
+        }
+        if (AppLedStateChanged == true) {
+            AppLedStateChanged = false;
+            PRINTF("DEBUG: AppLedStateOn - %s\r\n",
+                    (((AppLedStateOn & 0x01) != 0) ? "true" : "false"));
+        }
         if (DownlinkStatusUpdate == true) {
             DownlinkStatusUpdate = false;
+            // Switch LED 2 ON for each received downlink
+            GpioWrite(&Led2, 0);
         }
 
         if (ScheduleNextTx == true) {
@@ -406,11 +456,7 @@ DevAddr    = randr(0, 0x01FFFFFF);
             TimerSetValue(&TxNextPacketTimer, TxDutyCycleTime);
             TimerStart(&TxNextPacketTimer);
         }
-        if (Led3StateChanged == true) {
-            Led3StateChanged = false;
-            PRINTF("DEBUG: AppLedStateOn - %s\r\n",
-                    (((AppLedStateOn & 0x01) != 0) ? "true" : "false"));
-        }
+
         if (trySendingFrameAgain == true) {
             trySendingFrameAgain = SendFrame();
         }
@@ -419,9 +465,14 @@ DevAddr    = randr(0, 0x01FFFFFF);
 
             PrepareTxFrame(AppPort);
 
+            // Switch LED 1 ON
+            GpioWrite(&Led1, 0);
+            TimerStart(&Led1Timer);
+
             trySendingFrameAgain = SendFrame();
         }
 
         TimerLowPowerHandler();
     }
 }
+

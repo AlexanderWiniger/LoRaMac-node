@@ -19,11 +19,6 @@ typedef struct {
 } accel_sensor_data_t;
 
 /*
- * FXOS I2C address
- */
-#define FXOS_I2C_ADDRESS                             0x1C
-
-/*
  * FXOS Registers
  */
 
@@ -631,7 +626,7 @@ typedef struct {
  *
  * \retval status [SUCCESS, FAIL]
  */
-uint8_t FxosInit(void);
+uint8_t FxosInit(uint8_t accelAddr);
 
 /*!
  * \brief Resets the device
