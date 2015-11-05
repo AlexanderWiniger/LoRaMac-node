@@ -128,8 +128,8 @@ int main(void)
             if (FxosReadSensorData(&sensorData) != FAIL) {
                 PRINTF("Accelerometer (X/Y/Z):\t%d \t%d \t%d \r\n", sensorData.accelX,
                         sensorData.accelY, sensorData.accelZ);
-                PRINTF("Magnetometer (X/Y/Z):\t%d \t%d \t%d \r\n", sensorData.magX, sensorData.magY,
-                        sensorData.magZ);
+//                PRINTF("Magnetometer (X/Y/Z):\t%d \t%d \t%d \r\n", sensorData.magX, sensorData.magY,
+//                        sensorData.magZ);
             } else {
                 PRINTF("ERROR: Couldn't retrieve sensor data!\r\n");
             }
