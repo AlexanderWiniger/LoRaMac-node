@@ -104,14 +104,14 @@
  *
  * \remark Please note that when ADR is enabled the end-device should be static
  */
-#define LORAWAN_ADR_ON                              1
+#define LORAWAN_ADR_ON                              0
 
 /*!
  * LoRaWAN ETSI duty cycle control enable/disable
  *
  * \remark Please note that ETSI mandates duty cycled transmissions. Use only for test purposes
  */
-#define LORAWAN_DUTYCYCLE_ON                        true
+#define LORAWAN_DUTYCYCLE_ON                        false
 
 /*!
  * LoRaWAN application port
@@ -121,7 +121,7 @@
 /*!
  * User application data buffer size
  */
-#define LORAWAN_APP_DATA_SIZE                       14
+#define LORAWAN_APP_DATA_SIZE                       2
 
 #if( OVER_THE_AIR_ACTIVATION != 0 )
 
@@ -171,13 +171,6 @@ static uint8_t AppData[LORAWAN_APP_DATA_MAX_SIZE];
  */
 static uint8_t IsTxConfirmed = LORAWAN_CONFIRMED_MSG_ON;
 
-/*!
- * Defines the application data transmission duty cycle
- */
-static uint32_t TxDutyCycleTime;
-
-static TimerEvent_t TxNextPacketTimer;
-
 #if( OVER_THE_AIR_ACTIVATION != 0 )
 
 /*!
@@ -190,15 +183,30 @@ static TimerEvent_t JoinReqTimer;
 /*!
  * Indicates if a new packet can be sent
  */
-static bool TxNextPacket = true;
-static bool ScheduleNextTx = false;
 static bool DownlinkStatusUpdate = false;
-
-static bool AppLedStateOn = false;
 
 static LoRaMacCallbacks_t LoRaMacCallbacks;
 
-volatile bool AppLedStateChanged = false;
+static bool AppLedStateOn = false;
+static bool AppLedStateChanged = false;
+static bool AppSensorTransmissionStateOn = true;
+static bool AppSensorTransmissionStateChanged = false;
+static bool NewSensorDataReceived = false;
+
+static accel_sensor_data_t SensorData;
+
+bool SwitchAPushEvent = false;
+bool SwitchBPushEvent = false;
+
+/*!
+ * \brief Switch A IRQ callback
+ */
+void SwitchAIrq(void);
+
+/*!
+ * \brief Switch B IRQ callback
+ */
+void SwitchBIrq(void);
 
 /*!
  * Prepares the frame buffer to be sent
@@ -208,22 +216,8 @@ static void PrepareTxFrame(uint8_t port)
     switch (port) {
         case 2:
         {
-            uint8_t batteryLevel = BoardGetBatteryLevel();    // 1 (very low) to 254 (fully charged)
-
             AppData[0] = AppLedStateOn;
-            AppData[1] = batteryLevel;
-            AppData[2] = 0;
-            AppData[3] = 0;
-            AppData[4] = 0;
-            AppData[5] = 0;
-            AppData[6] = 0;
-            AppData[7] = 0;
-            AppData[8] = 0;
-            AppData[9] = 0;
-            AppData[10] = 0;
-            AppData[11] = 0;
-            AppData[12] = 0;
-            AppData[13] = 0;
+            AppData[1] = AppSensorTransmissionStateOn;
         }
             break;
         default:
@@ -237,9 +231,19 @@ static void ProcessRxFrame(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
     {
         case 1: // The application LED can be controlled on port 1 or 2
         case 2:
-            if (info->RxBufferSize == 1) {
-                AppLedStateOn = info->RxBuffer[0] & 0x01;
-                AppLedStateChanged = true;
+            if (info->RxBufferSize == 15) {
+                AppLedStateOn = ((info->RxBuffer[0] & 0x01) == 0 ? false : true);
+                AppSensorTransmissionStateOn = ((info->RxBuffer[1] & 0x01) == 0 ? false : true);
+
+                SensorData.accelX = (uint16_t)((info->RxBuffer[2] << 8) | info->RxBuffer[3]);
+                SensorData.accelY = (uint16_t)((info->RxBuffer[4] << 8) | info->RxBuffer[5]);
+                SensorData.accelZ = (uint16_t)((info->RxBuffer[6] << 8) | info->RxBuffer[7]);
+
+                SensorData.magX = (uint16_t)((info->RxBuffer[9] << 8) | info->RxBuffer[10]);
+                SensorData.magY = (uint16_t)((info->RxBuffer[11] << 8) | info->RxBuffer[12]);
+                SensorData.magZ = (uint16_t)((info->RxBuffer[13] << 8) | info->RxBuffer[14]);
+
+                NewSensorDataReceived = true;
             }
             break;
         default:
@@ -280,15 +284,6 @@ static void OnJoinReqTimerEvent( void )
 #endif
 
 /*!
- * \brief Function executed on TxNextPacket Timeout event
- */
-static void OnTxNextPacketTimerEvent(void)
-{
-    TimerStop(&TxNextPacketTimer);
-    TxNextPacket = true;
-}
-
-/*!
  * \brief Function to be executed on MAC layer event
  */
 static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
@@ -310,8 +305,6 @@ static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
             DownlinkStatusUpdate = true;
         }
     }
-    // Schedule a new transmission
-    ScheduleNextTx = true;
 }
 
 /**
@@ -329,11 +322,17 @@ int main(void)
     BoardInitPeriph();
     PRINTF("DEBUG: Peripherals initialized.\r\n");
 
+    /* Switch A & B */
+    GpioSetInterrupt(&SwitchA, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchAIrq);
+    GpioSetInterrupt(&SwitchB, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchBIrq);
+
     LoRaMacCallbacks.MacEvent = OnMacEvent;
     LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
     LoRaMacInit(&LoRaMacCallbacks);
     PRINTF("DEBUG: LoRaMac initialized.\r\n");
 
+    AppLedStateChanged = true;
+    AppSensorTransmissionStateChanged = true;
     IsNetworkJoined = false;
 
 #if( OVER_THE_AIR_ACTIVATION == 0 )
@@ -354,9 +353,6 @@ DevAddr    = randr(0, 0x01FFFFFF);
     TimerInit( &JoinReqTimer, OnJoinReqTimerEvent );
     TimerSetValue( &JoinReqTimer, OVER_THE_AIR_ACTIVATION_DUTYCYCLE );
 #endif
-
-    TxNextPacket = true;
-    TimerInit(&TxNextPacketTimer, OnTxNextPacketTimerEvent);
 
     LoRaMacSetAdrOn( LORAWAN_ADR_ON);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
@@ -390,37 +386,68 @@ DevAddr    = randr(0, 0x01FFFFFF);
 #endif
         }
 
-        if (AppLedStateChanged == true) {
-            AppLedStateChanged = false;
-            PRINTF("DEBUG: AppLedStateOn - %s\r\n",
-                    (((AppLedStateOn & 0x01) != 0) ? "true" : "false"));
+        if (SwitchAPushEvent) {
+            DelayMs(20);    // Software debouncing
+            SwitchAPushEvent = false;
+            if (AppLedStateOn)
+                PRINTF("TRACE: Remotely disable LED.\r\n");
+            else
+                PRINTF("TRACE: Remotely enable LED.\r\n");
+            AppLedStateOn = !AppLedStateOn;
+            AppLedStateChanged = true;
         }
+
+        if (SwitchBPushEvent) {
+            DelayMs(20);    // Software debouncing
+            SwitchBPushEvent = false;
+            if (AppSensorTransmissionStateOn)
+                PRINTF("TRACE: Remotely disable sensor data collecting.\r\n");
+            else
+                PRINTF("TRACE: Remotely enable sensor data collecting.\r\n");
+            AppSensorTransmissionStateOn = !AppSensorTransmissionStateOn;
+            AppSensorTransmissionStateChanged = true;
+        }
+
         if (DownlinkStatusUpdate == true) {
             DownlinkStatusUpdate = false;
         }
 
-        if (ScheduleNextTx == true) {
-            ScheduleNextTx = false;
-
-            // Schedule next packet transmission
-            TxDutyCycleTime = APP_TX_DUTYCYCLE + randr(-APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND);
-            TimerSetValue(&TxNextPacketTimer, TxDutyCycleTime);
-            TimerStart(&TxNextPacketTimer);
+        if (NewSensorDataReceived) {
+            NewSensorDataReceived = false;
+            PRINTF("DATA: Accelerometer (x/y/z) \t%d \t%d \t%d\r\n", SensorData.accelX,
+                    SensorData.accelY, SensorData.accelZ);
+            PRINTF("DATA: Magnetometer (x/y/z) \t%d \t%d \t%d\r\n", SensorData.magX,
+                    SensorData.magY, SensorData.magZ);
         }
 
         if (trySendingFrameAgain == true) {
-            PRINTF("TRACE: Re-sending frame.\r\n");
+            PRINTF("TRACE: Re-sending frame...\r\n");
             trySendingFrameAgain = SendFrame();
+            if (trySendingFrameAgain) PRINTF("TRACE: No free channel. Try again later.\r\n");
         }
-        if (TxNextPacket == true) {
-            PRINTF("TRACE: Trying to send frame.\r\n");
-            TxNextPacket = false;
+
+        if (AppSensorTransmissionStateChanged || AppLedStateChanged) {
+            PRINTF("TRACE: Trying to send frame...\r\n");
+            if (AppSensorTransmissionStateChanged) AppSensorTransmissionStateChanged = false;
+            if (AppLedStateChanged) AppLedStateChanged = false;
 
             PrepareTxFrame(AppPort);
 
             trySendingFrameAgain = SendFrame();
+
+            if (trySendingFrameAgain) PRINTF("TRACE: No free channel. Try again later.\r\n");
         }
 
         TimerLowPowerHandler();
     }
+}
+
+void SwitchAIrq(void)
+{
+    SwitchAPushEvent = true;
+}
+
+void SwitchBIrq(void)
+{
+    SwitchBPushEvent = true;
 }

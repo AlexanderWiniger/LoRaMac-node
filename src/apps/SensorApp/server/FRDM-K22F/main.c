@@ -187,8 +187,9 @@ int main(void)
     PRINTF("TRACE: Peripherals initialized.\r\n");
 
     /* Switch A & B */
-//    GpioSetInterrupt(&SwitchA, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchAIrq);
-//    GpioSetInterrupt(&SwitchB, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchBIrq);
+    GpioSetInterrupt(&SwitchA, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchAIrq);
+    GpioSetInterrupt(&SwitchB, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchBIrq);
+
 // Radio initialization
     RadioEvents.TxDone = OnTxDone;
     RadioEvents.RxDone = OnRxDone;
@@ -324,7 +325,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr)
     memcpy(AppData, payload, ReceivedDataSize);
     RssiValue = rssi;
     SnrValue = snr;
-    PRINTF("TRACE: Measured rssi and snr values (%u / %u)");
+    PRINTF("TRACE: Measured rssi and snr values (%d / %d)\r\n", RssiValue, SnrValue);
     State = RX;
 }
 

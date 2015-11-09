@@ -539,6 +539,11 @@ static void OnRadioRxError(void);
 static void OnRadioRxTimeout(void);
 
 /*!
+ *
+ */
+static void OnCadDone(bool channelActivityDetected );
+
+/*!
  * Function executed on Resend Frame timer event.
  */
 static void OnMacStateCheckTimerEvent(void);
@@ -801,7 +806,8 @@ void LoRaMacInit(LoRaMacCallbacks_t *callbacks)
 #elif defined( USE_BAND_780 )
     ChannelsMask[0] = LC( 1 ) + LC( 2 ) + LC( 3 );
 #elif defined( USE_BAND_868 )
-    ChannelsMask[0] = LC( 1 ) + LC( 2 ) + LC( 3 );
+    ChannelsMask[0] = LC( 1 );            // + LC( 2 ) + LC( 3 );
+    ChannelsMask[1] = LC( 4 ) + LC( 5 ) + LC( 6 ) + LC( 7 ) + LC( 8 );
 #elif defined( USE_BAND_915 )
     ChannelsMask[0] = 0xFFFF;
     ChannelsMask[1] = 0xFFFF;
@@ -880,6 +886,7 @@ void LoRaMacInit(LoRaMacCallbacks_t *callbacks)
     RadioEvents.RxError = OnRadioRxError;
     RadioEvents.TxTimeout = OnRadioTxTimeout;
     RadioEvents.RxTimeout = OnRadioRxTimeout;
+    RadioEvents.CadDone = OnCadDone;
     Radio.Init(&RadioEvents);
 
     // Random seed initialization
@@ -1303,10 +1310,13 @@ uint8_t LoRaMacSendFrameOnChannel(ChannelParams_t channel)
 
     if (MAX(Bands[channel.Band].TimeOff, AggregatedTimeOff) > (TimerGetCurrentTime())) {
         // Schedule transmission
+        PRINTF("TRACE: Sending frame in %u ticks on frequency %u\r\n",
+                MAX(Bands[channel.Band].TimeOff, AggregatedTimeOff), channel.Frequency);
         TimerSetValue(&TxDelayedTimer, MAX(Bands[channel.Band].TimeOff, AggregatedTimeOff));
         TimerStart(&TxDelayedTimer);
     } else {
         // Send now
+        PRINTF("TRACE: Sending frame now on frequency %u\r\n", channel.Frequency);
         Radio.Send(LoRaMacBuffer, LoRaMacBufferPktLen);
     }
     return 0;
@@ -1610,6 +1620,7 @@ static void LoRaMacProcessMacCommands(uint8_t *payload, uint8_t macIndex, uint8_
  */
 static void OnRadioTxDone(void)
 {
+    PRINTF("TRACE: Transmitted successfully.\r\n"); /* \todo added debug output */
     TimerTime_t curTime = TimerGetCurrentTime();
     if (LoRaMacDeviceClass != CLASS_C) {
         Radio.Sleep();
@@ -1632,10 +1643,11 @@ static void OnRadioTxDone(void)
     if (IsRxWindowsEnabled == true) {
         TimerSetValue(&RxWindowTimer1, RxWindow1Delay);
         TimerStart(&RxWindowTimer1);
-        if (LoRaMacDeviceClass != CLASS_C) {
-            TimerSetValue(&RxWindowTimer2, RxWindow2Delay);
-            TimerStart(&RxWindowTimer2);
-        }
+        /* \todo removed if clause */
+//        if (LoRaMacDeviceClass != CLASS_C) {
+        TimerSetValue(&RxWindowTimer2, RxWindow2Delay);
+        TimerStart(&RxWindowTimer2);
+//        }
     } else {
         LoRaMacEventFlags.Bits.Tx = 1;
         LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_OK;
@@ -1922,6 +1934,7 @@ static void OnRadioRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t 
  */
 static void OnRadioTxTimeout(void)
 {
+    PRINTF("TRACE: Rx timeout!\r\n"); /* \todo added debug output */
     if (LoRaMacDeviceClass != CLASS_C) {
         Radio.Sleep();
     } else {
@@ -1937,8 +1950,11 @@ static void OnRadioTxTimeout(void)
  */
 static void OnRadioRxTimeout(void)
 {
+    PRINTF("TRACE: Rx timeout!\r\n"); /* \todo added debug output */
     if (LoRaMacDeviceClass != CLASS_C) {
         Radio.Sleep();
+    } else {/* \todo Conclude transmission after timeout of rx window 1 */
+        if (LoRaMacEventFlags.Bits.RxSlot == 0) LoRaMacEventFlags.Bits.Tx = 1;
     }
     if (LoRaMacEventFlags.Bits.RxSlot == 1) {
         LoRaMacEventFlags.Bits.Tx = 1;
@@ -1951,6 +1967,7 @@ static void OnRadioRxTimeout(void)
  */
 static void OnRadioRxError(void)
 {
+    PRINTF("ERROR: Rx error occured!\r\n"); /* \todo added debug output */
     if (LoRaMacDeviceClass != CLASS_C) {
         Radio.Sleep();
     }
@@ -1958,6 +1975,16 @@ static void OnRadioRxError(void)
         LoRaMacEventFlags.Bits.Tx = 1;
         LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_RX2_ERROR;
     }
+}
+
+
+/*!
+ * Function executed on Cad Done event
+ */
+void OnCadDone(bool channelActivityDetected )
+{
+    if(channelActivityDetected)
+        PRINTF("TRACE: Channel activity detected.\r\n"); /* \todo added debug output */
 }
 
 /*!
@@ -2014,8 +2041,15 @@ static void OnRxWindow1TimerEvent(void)
     int8_t datarate = 0;
     uint32_t bandwidth = 0; // LoRa 125 kHz
 
+    PRINTF("TRACE: Rx window 1 event.\r\n");/* \todo added debug output */
+
     TimerStop(&RxWindowTimer1);
     LoRaMacEventFlags.Bits.RxSlot = 0;
+
+    /* \todo move radio to standby mode in order to open rx window 1 directly after rx window 2 */
+    if (LoRaMacDeviceClass == CLASS_C) {
+        Radio.Standby();
+    }
 
 #if defined( USE_BAND_433 ) || defined( USE_BAND_780 ) || defined( USE_BAND_868 )
     datarate = ChannelsDatarate - Rx1DrOffset;
@@ -2062,6 +2096,8 @@ static void OnRxWindow2TimerEvent(void)
 {
     uint16_t symbTimeout = 5; // DR_2, DR_1, DR_0
     uint32_t bandwidth = 0; // LoRa 125 kHz
+
+    PRINTF("TRACE: Rx window 2 event.\r\n"); /* \todo added debug output */
 
     TimerStop(&RxWindowTimer2);
     LoRaMacEventFlags.Bits.RxSlot = 1;

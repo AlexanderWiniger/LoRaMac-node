@@ -1,16 +1,9 @@
-/*
- / _____)             _              | |
- ( (____  _____ ____ _| |_ _____  ____| |__
- \____ \| ___ |    (_   _) ___ |/ ___)  _ \
- _____) ) ____| | | || |_| ____( (___| | | |
- (______/|_____)_|_|_| \__)_____)\____)_| |_|
- (C)2013 Semtech
-
- Description: LoRaMac classC device implementation
-
- License: Revised BSD License, see LICENSE.TXT file include in the project
-
- Maintainer: Miguel Luis and Gregory Cristian
+/**
+ * \file main.c
+ * \author Alexander Winiger (alexander.winiger@hslu.ch)
+ * \date 09.11.2015
+ * \brief Class C test implementation
+ *
  */
 #include <string.h>
 #include <math.h>
@@ -104,14 +97,14 @@
  *
  * \remark Please note that when ADR is enabled the end-device should be static
  */
-#define LORAWAN_ADR_ON                              1
+#define LORAWAN_ADR_ON                              0
 
 /*!
  * LoRaWAN ETSI duty cycle control enable/disable
  *
  * \remark Please note that ETSI mandates duty cycled transmissions. Use only for test purposes
  */
-#define LORAWAN_DUTYCYCLE_ON                        true
+#define LORAWAN_DUTYCYCLE_ON                        false
 
 /*!
  * LoRaWAN application port
@@ -121,7 +114,7 @@
 /*!
  * User application data buffer size
  */
-#define LORAWAN_APP_DATA_SIZE                       14
+#define LORAWAN_APP_DATA_SIZE                       15
 
 #if( OVER_THE_AIR_ACTIVATION != 0 )
 
@@ -194,16 +187,12 @@ static bool TxNextPacket = true;
 static bool ScheduleNextTx = false;
 static bool DownlinkStatusUpdate = false;
 
-static bool AppLedStateOn = false;
-
 static LoRaMacCallbacks_t LoRaMacCallbacks;
 
-static TimerEvent_t Led1Timer;
-volatile bool Led1StateChanged = false;
-static TimerEvent_t Led2Timer;
-volatile bool Led2StateChanged = false;
-
-volatile bool AppLedStateChanged = false;
+static bool AppLedStateOn = false;
+static bool AppLedStateChanged = false;
+static bool AppSensorTransmissionStateOn = true;
+static bool AppSensorTransmissionStateChanged = false;
 
 /*!
  * Prepares the frame buffer to be sent
@@ -224,19 +213,20 @@ static void PrepareTxFrame(uint8_t port)
             batteryLevel = BoardGetBatteryLevel();       // 1 (very low) to 254 (fully charged)
 
             AppData[0] = AppLedStateOn;
-            AppData[1] = (sensorData.accelX >> 8) & 0xFF;
-            AppData[2] = sensorData.accelX & 0xFF;
-            AppData[3] = (sensorData.accelY >> 8) & 0xFF;
-            AppData[4] = sensorData.accelY & 0xFF;
-            AppData[5] = (sensorData.accelZ >> 8) & 0xFF;
-            AppData[6] = sensorData.accelZ & 0xFF;
-            AppData[7] = batteryLevel;
-            AppData[8] = (sensorData.magX >> 8) & 0xFF;
-            AppData[9] = sensorData.magX & 0xFF;
-            AppData[10] = (sensorData.magY >> 8) & 0xFF;
-            AppData[11] = sensorData.magY & 0xFF;
-            AppData[12] = (sensorData.magZ >> 8) & 0xFF;
-            AppData[13] = sensorData.magZ & 0xFF;
+            AppData[1] = AppSensorTransmissionStateOn;
+            AppData[2] = (sensorData.accelX >> 8) & 0xFF;
+            AppData[3] = sensorData.accelX & 0xFF;
+            AppData[4] = (sensorData.accelY >> 8) & 0xFF;
+            AppData[5] = sensorData.accelY & 0xFF;
+            AppData[6] = (sensorData.accelZ >> 8) & 0xFF;
+            AppData[7] = sensorData.accelZ & 0xFF;
+            AppData[8] = batteryLevel;
+            AppData[9] = (sensorData.magX >> 8) & 0xFF;
+            AppData[10] = sensorData.magX & 0xFF;
+            AppData[11] = (sensorData.magY >> 8) & 0xFF;
+            AppData[12] = sensorData.magY & 0xFF;
+            AppData[13] = (sensorData.magZ >> 8) & 0xFF;
+            AppData[14] = sensorData.magZ & 0xFF;
         }
             break;
         default:
@@ -250,9 +240,16 @@ static void ProcessRxFrame(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
     {
         case 1: // The application LED can be controlled on port 1 or 2
         case 2:
-            if (info->RxBufferSize == 1) {
-                AppLedStateOn = info->RxBuffer[0] & 0x01;
-                AppLedStateChanged = true;
+            if (info->RxBufferSize == 2) {
+                if (AppLedStateOn != (info->RxBuffer[0] & 0x01)) {
+                    AppLedStateOn = ((info->RxBuffer[0] & 0x01) == 0 ? false : true);
+                    AppLedStateChanged = true;
+                }
+
+                if (AppSensorTransmissionStateOn != (info->RxBuffer[1] & 0x01)) {
+                    AppSensorTransmissionStateOn = ((info->RxBuffer[1] & 0x01) == 0 ? false : true);
+                    AppSensorTransmissionStateChanged = true;
+                }
             }
             break;
         default:
@@ -302,24 +299,6 @@ static void OnTxNextPacketTimerEvent(void)
 }
 
 /*!
- * \brief Function executed on Led 1 Timeout event
- */
-static void OnLed1TimerEvent(void)
-{
-    TimerStop(&Led1Timer);
-    Led1StateChanged = true;
-}
-
-/*!
- * \brief Function executed on Led 2 Timeout event
- */
-static void OnLed2TimerEvent(void)
-{
-    TimerStop(&Led2Timer);
-    Led2StateChanged = true;
-}
-
-/*!
  * \brief Function to be executed on MAC layer event
  */
 static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
@@ -339,7 +318,6 @@ static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
             }
 
             DownlinkStatusUpdate = true;
-            TimerStart(&Led2Timer);
         }
     }
     // Schedule a new transmission
@@ -390,18 +368,10 @@ DevAddr    = randr(0, 0x01FFFFFF);
     TxNextPacket = true;
     TimerInit(&TxNextPacketTimer, OnTxNextPacketTimerEvent);
 
-    TimerInit(&Led1Timer, OnLed1TimerEvent);
-    TimerSetValue(&Led1Timer, 25000);
-
-    TimerInit(&Led2Timer, OnLed2TimerEvent);
-    TimerSetValue(&Led2Timer, 25000);
-
     LoRaMacSetAdrOn( LORAWAN_ADR_ON);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
     LoRaMacSetPublicNetwork( LORAWAN_PUBLIC_NETWORK);
     LoRaMacSetDeviceClass (CLASS_C);
-
-    PRINTF("DEBUG: Starting class C application...\r\n");
 
     while (1) {
         while (IsNetworkJoined == false) {
@@ -430,28 +400,34 @@ DevAddr    = randr(0, 0x01FFFFFF);
 #endif
         }
 
-        if (Led1StateChanged == true) {
-            Led1StateChanged = false;
-            // Switch LED 1 OFF
-            GpioWrite(&Led1, 1);
-        }
-        if (Led2StateChanged == true) {
-            Led2StateChanged = false;
-            // Switch LED 2 OFF
-            GpioWrite(&Led2, 1);
-        }
-        if (AppLedStateChanged == true) {
+        if (AppLedStateChanged) {
             AppLedStateChanged = false;
-            PRINTF("DEBUG: AppLedStateOn - %s\r\n",
-                    (((AppLedStateOn & 0x01) != 0) ? "true" : "false"));
-        }
-        if (DownlinkStatusUpdate == true) {
-            DownlinkStatusUpdate = false;
-            // Switch LED 2 ON for each received downlink
-            GpioWrite(&Led2, 0);
+            if (AppLedStateOn) {
+                GpioWrite(&Led1, 0);
+                PRINTF("TRACE: LED was remotely disabled.\r\n");
+            } else {
+                GpioWrite(&Led1, 1);
+                PRINTF("TRACE: LED was remotely enabled.\r\n");
+            }
         }
 
-        if (ScheduleNextTx == true) {
+        if (AppSensorTransmissionStateChanged) {
+            AppSensorTransmissionStateChanged = false;
+            if (AppSensorTransmissionStateOn) {
+                ScheduleNextTx = true;
+                PRINTF("TRACE: Sensor data collecting was remotely enabled.\r\n");
+            } else {
+                TimerStop(&TxNextPacketTimer);
+                PRINTF("TRACE: Sensor data collecting was remotely disabled.\r\n");
+            }
+        }
+
+        if (DownlinkStatusUpdate == true) {
+            DownlinkStatusUpdate = false;
+        }
+
+        if (ScheduleNextTx && AppSensorTransmissionStateOn) {
+            PRINTF("TRACE: Schedule next uplink packet.\r\n");
             ScheduleNextTx = false;
 
             // Schedule next packet transmission
@@ -460,22 +436,23 @@ DevAddr    = randr(0, 0x01FFFFFF);
             TimerStart(&TxNextPacketTimer);
         }
 
-        if (trySendingFrameAgain == true) {
+        if (trySendingFrameAgain) {
+            PRINTF("TRACE: Re-sending frame...\r\n");
             trySendingFrameAgain = SendFrame();
+            if (trySendingFrameAgain) PRINTF("TRACE: No free channel. Try again later.\r\n");
         }
-        if (TxNextPacket == true) {
+
+        if (TxNextPacket) {
+            PRINTF("TRACE: Trying to send frame...\r\n");
             TxNextPacket = false;
 
             PrepareTxFrame(AppPort);
 
-            // Switch LED 1 ON
-            GpioWrite(&Led1, 0);
-            TimerStart(&Led1Timer);
-
             trySendingFrameAgain = SendFrame();
+
+            if (trySendingFrameAgain) PRINTF("TRACE: No free channel. Try again later.\r\n");
         }
 
         TimerLowPowerHandler();
     }
 }
-

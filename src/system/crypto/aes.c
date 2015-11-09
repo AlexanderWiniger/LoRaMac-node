@@ -7,14 +7,14 @@
  The redistribution and use of this software (with or without changes)
  is allowed without the payment of fees or royalties provided that:
 
-  1. source code distributions include the above copyright notice, this
-     list of conditions and the following disclaimer;
+ 1. source code distributions include the above copyright notice, this
+ list of conditions and the following disclaimer;
 
-  2. binary distributions include the above copyright notice, this list
-     of conditions and the following disclaimer in their documentation;
+ 2. binary distributions include the above copyright notice, this list
+ of conditions and the following disclaimer in their documentation;
 
-  3. the name of the copyright holder is not used to endorse products
-     built using this software without specific written permission.
+ 3. the name of the copyright holder is not used to endorse products
+ built using this software without specific written permission.
 
  DISCLAIMER
 
@@ -41,12 +41,13 @@
 #  endif
 #endif
 
-
 #include <stdlib.h>
 #include <stdint.h>
 
+#include "fsl_debug_console.h"
+
 /* define if you have fast 32-bit types on your system */
-#if 1
+#if 0
 #  define HAVE_UINT_32T
 #endif
 
@@ -191,7 +192,7 @@
     w(0xf0), w(0xf1), w(0xf2), w(0xf3), w(0xf4), w(0xf5), w(0xf6), w(0xf7),\
     w(0xf8), w(0xf9), w(0xfa), w(0xfb), w(0xfc), w(0xfd), w(0xfe), w(0xff) }
 
-static const uint8_t sbox[256]  =  sb_data(f1);
+static const uint8_t sbox[256] = sb_data(f1);
 
 #if defined( AES_DEC_PREKEYED )
 static const uint8_t isbox[256] = isb_data(f1);
@@ -239,45 +240,45 @@ static uint8_t hibit(const uint8_t x)
 static uint8_t gf_inv(const uint8_t x)
 {   uint8_t p1 = x, p2 = BPOLY, n1 = hibit(x), n2 = 0x80, v1 = 1, v2 = 0;
 
-    if(x < 2) 
-        return x;
+    if(x < 2)
+    return x;
 
-    for( ; ; )
+    for(;; )
     {
         if(n1)
-            while(n2 >= n1)             /* divide polynomial p2 by p1    */
-            {
-                n2 /= n1;               /* shift smaller polynomial left */ 
-                p2 ^= (p1 * n2) & 0xff; /* and remove from larger one    */
-                v2 ^= (v1 * n2);        /* shift accumulated value and   */ 
-                n2 = hibit(p2);         /* add into result               */
-            }
+        while(n2 >= n1) /* divide polynomial p2 by p1    */
+        {
+            n2 /= n1; /* shift smaller polynomial left */
+            p2 ^= (p1 * n2) & 0xff; /* and remove from larger one    */
+            v2 ^= (v1 * n2); /* shift accumulated value and   */
+            n2 = hibit(p2); /* add into result               */
+        }
         else
-            return v1;
+        return v1;
 
-        if(n2)                          /* repeat with values swapped    */ 
-            while(n1 >= n2)
-            {
-                n1 /= n2; 
-                p1 ^= p2 * n1; 
-                v1 ^= v2 * n1; 
-                n1 = hibit(p1);
-            }
+        if(n2) /* repeat with values swapped    */
+        while(n1 >= n2)
+        {
+            n1 /= n2;
+            p1 ^= p2 * n1;
+            v1 ^= v2 * n1;
+            n1 = hibit(p1);
+        }
         else
-            return v2;
+        return v2;
     }
 }
 
 /* The forward and inverse affine transformations used in the S-box */
 uint8_t fwd_affine(const uint8_t x)
-{   
+{
 #if defined( HAVE_UINT_32T )
     uint32_t w = x;
     w ^= (w << 1) ^ (w << 2) ^ (w << 3) ^ (w << 4);
     return 0x63 ^ ((w ^ (w >> 8)) & 0xff);
 #else
-    return 0x63 ^ x ^ (x << 1) ^ (x << 2) ^ (x << 3) ^ (x << 4) 
-                    ^ (x >> 7) ^ (x >> 6) ^ (x >> 5) ^ (x >> 4);
+    return 0x63 ^ x ^ (x << 1) ^ (x << 2) ^ (x << 3) ^ (x << 4)
+    ^ (x >> 7) ^ (x >> 6) ^ (x >> 5) ^ (x >> 4);
 #endif
 }
 
@@ -288,8 +289,8 @@ uint8_t inv_affine(const uint8_t x)
     w = (w << 1) ^ (w << 3) ^ (w << 6);
     return 0x05 ^ ((w ^ (w >> 8)) & 0xff);
 #else
-    return 0x05 ^ (x << 1) ^ (x << 3) ^ (x << 6) 
-                ^ (x >> 7) ^ (x >> 5) ^ (x >> 2);
+    return 0x05 ^ (x << 1) ^ (x << 3) ^ (x << 6)
+    ^ (x >> 7) ^ (x >> 5) ^ (x >> 2);
 #endif
 }
 
@@ -312,13 +313,13 @@ uint8_t inv_affine(const uint8_t x)
 #  define block_copy(d, s)          copy_block(d, s)
 #endif
 
-static void copy_block( void *d, const void *s )
+static void copy_block(void *d, const void *s)
 {
 #if defined( HAVE_UINT_32T )
-    ((uint32_t*)d)[ 0] = ((uint32_t*)s)[ 0];
-    ((uint32_t*)d)[ 1] = ((uint32_t*)s)[ 1];
-    ((uint32_t*)d)[ 2] = ((uint32_t*)s)[ 2];
-    ((uint32_t*)d)[ 3] = ((uint32_t*)s)[ 3];
+    ((uint32_t*) d)[0] = ((uint32_t*) s)[0];
+    ((uint32_t*) d)[1] = ((uint32_t*) s)[1];
+    ((uint32_t*) d)[2] = ((uint32_t*) s)[2];
+    ((uint32_t*) d)[3] = ((uint32_t*) s)[3];
 #else
     ((uint8_t*)d)[ 0] = ((uint8_t*)s)[ 0];
     ((uint8_t*)d)[ 1] = ((uint8_t*)s)[ 1];
@@ -339,20 +340,20 @@ static void copy_block( void *d, const void *s )
 #endif
 }
 
-static void copy_block_nn( uint8_t * d, const uint8_t *s, uint8_t nn )
+static void copy_block_nn(uint8_t * d, const uint8_t *s, uint8_t nn)
 {
-    while( nn-- )
+    while (nn--)
         //*((uint8_t*)d)++ = *((uint8_t*)s)++;
         *d++ = *s++;
 }
 
-static void xor_block( void *d, const void *s )
+static void xor_block(void *d, const void *s)
 {
 #if defined( HAVE_UINT_32T )
-    ((uint32_t*)d)[ 0] ^= ((uint32_t*)s)[ 0];
-    ((uint32_t*)d)[ 1] ^= ((uint32_t*)s)[ 1];
-    ((uint32_t*)d)[ 2] ^= ((uint32_t*)s)[ 2];
-    ((uint32_t*)d)[ 3] ^= ((uint32_t*)s)[ 3];
+    ((uint32_t*) d)[0] ^= ((uint32_t*) s)[0];
+    ((uint32_t*) d)[1] ^= ((uint32_t*) s)[1];
+    ((uint32_t*) d)[2] ^= ((uint32_t*) s)[2];
+    ((uint32_t*) d)[3] ^= ((uint32_t*) s)[3];
 #else
     ((uint8_t*)d)[ 0] ^= ((uint8_t*)s)[ 0];
     ((uint8_t*)d)[ 1] ^= ((uint8_t*)s)[ 1];
@@ -373,13 +374,13 @@ static void xor_block( void *d, const void *s )
 #endif
 }
 
-static void copy_and_key( void *d, const void *s, const void *k )
+static void copy_and_key(void *d, const void *s, const void *k)
 {
 #if defined( HAVE_UINT_32T )
-    ((uint32_t*)d)[ 0] = ((uint32_t*)s)[ 0] ^ ((uint32_t*)k)[ 0];
-    ((uint32_t*)d)[ 1] = ((uint32_t*)s)[ 1] ^ ((uint32_t*)k)[ 1];
-    ((uint32_t*)d)[ 2] = ((uint32_t*)s)[ 2] ^ ((uint32_t*)k)[ 2];
-    ((uint32_t*)d)[ 3] = ((uint32_t*)s)[ 3] ^ ((uint32_t*)k)[ 3];
+    ((uint32_t*) d)[0] = ((uint32_t*) s)[0] ^ ((uint32_t*) k)[0];
+    ((uint32_t*) d)[1] = ((uint32_t*) s)[1] ^ ((uint32_t*) k)[1];
+    ((uint32_t*) d)[2] = ((uint32_t*) s)[2] ^ ((uint32_t*) k)[2];
+    ((uint32_t*) d)[3] = ((uint32_t*) s)[3] ^ ((uint32_t*) k)[3];
 #elif 1
     ((uint8_t*)d)[ 0] = ((uint8_t*)s)[ 0] ^ ((uint8_t*)k)[ 0];
     ((uint8_t*)d)[ 1] = ((uint8_t*)s)[ 1] ^ ((uint8_t*)k)[ 1];
@@ -403,25 +404,38 @@ static void copy_and_key( void *d, const void *s, const void *k )
 #endif
 }
 
-static void add_round_key( uint8_t d[N_BLOCK], const uint8_t k[N_BLOCK] )
+static void add_round_key(uint8_t d[N_BLOCK], const uint8_t k[N_BLOCK])
 {
     xor_block(d, k);
 }
 
-static void shift_sub_rows( uint8_t st[N_BLOCK] )
-{   uint8_t tt;
+static void shift_sub_rows(uint8_t st[N_BLOCK])
+{
+    uint8_t tt;
 
-    st[ 0] = s_box(st[ 0]); st[ 4] = s_box(st[ 4]);
-    st[ 8] = s_box(st[ 8]); st[12] = s_box(st[12]);
+    st[0] = s_box(st[0]);
+    st[4] = s_box(st[4]);
+    st[8] = s_box(st[8]);
+    st[12] = s_box(st[12]);
 
-    tt = st[1]; st[ 1] = s_box(st[ 5]); st[ 5] = s_box(st[ 9]);
-    st[ 9] = s_box(st[13]); st[13] = s_box( tt );
+    tt = st[1];
+    st[1] = s_box(st[5]);
+    st[5] = s_box(st[9]);
+    st[9] = s_box(st[13]);
+    st[13] = s_box(tt);
 
-    tt = st[2]; st[ 2] = s_box(st[10]); st[10] = s_box( tt );
-    tt = st[6]; st[ 6] = s_box(st[14]); st[14] = s_box( tt );
+    tt = st[2];
+    st[2] = s_box(st[10]);
+    st[10] = s_box(tt);
+    tt = st[6];
+    st[6] = s_box(st[14]);
+    st[14] = s_box(tt);
 
-    tt = st[15]; st[15] = s_box(st[11]); st[11] = s_box(st[ 7]);
-    st[ 7] = s_box(st[ 3]); st[ 3] = s_box( tt );
+    tt = st[15];
+    st[15] = s_box(st[11]);
+    st[11] = s_box(st[7]);
+    st[7] = s_box(st[3]);
+    st[3] = s_box(tt);
 }
 
 #if defined( AES_DEC_PREKEYED )
@@ -445,127 +459,127 @@ static void inv_shift_sub_rows( uint8_t st[N_BLOCK] )
 #endif
 
 #if defined( VERSION_1 )
-  static void mix_sub_columns( uint8_t dt[N_BLOCK] )
-  { uint8_t st[N_BLOCK];
+static void mix_sub_columns(uint8_t dt[N_BLOCK])
+{
+    uint8_t st[N_BLOCK];
     block_copy(st, dt);
 #else
-  static void mix_sub_columns( uint8_t dt[N_BLOCK], uint8_t st[N_BLOCK] )
-  {
+    static void mix_sub_columns( uint8_t dt[N_BLOCK], uint8_t st[N_BLOCK] )
+    {
 #endif
-    dt[ 0] = gfm2_sb(st[0]) ^ gfm3_sb(st[5]) ^ s_box(st[10]) ^ s_box(st[15]);
-    dt[ 1] = s_box(st[0]) ^ gfm2_sb(st[5]) ^ gfm3_sb(st[10]) ^ s_box(st[15]);
-    dt[ 2] = s_box(st[0]) ^ s_box(st[5]) ^ gfm2_sb(st[10]) ^ gfm3_sb(st[15]);
-    dt[ 3] = gfm3_sb(st[0]) ^ s_box(st[5]) ^ s_box(st[10]) ^ gfm2_sb(st[15]);
+    dt[0] = gfm2_sb(st[0])^ gfm3_sb(st[5]) ^ s_box(st[10]) ^ s_box(st[15]);
+    dt[1] = s_box(st[0])^ gfm2_sb(st[5]) ^ gfm3_sb(st[10]) ^ s_box(st[15]);
+    dt[2] = s_box(st[0])^ s_box(st[5]) ^ gfm2_sb(st[10]) ^ gfm3_sb(st[15]);
+    dt[3] = gfm3_sb(st[0])^ s_box(st[5]) ^ s_box(st[10]) ^ gfm2_sb(st[15]);
 
-    dt[ 4] = gfm2_sb(st[4]) ^ gfm3_sb(st[9]) ^ s_box(st[14]) ^ s_box(st[3]);
-    dt[ 5] = s_box(st[4]) ^ gfm2_sb(st[9]) ^ gfm3_sb(st[14]) ^ s_box(st[3]);
-    dt[ 6] = s_box(st[4]) ^ s_box(st[9]) ^ gfm2_sb(st[14]) ^ gfm3_sb(st[3]);
-    dt[ 7] = gfm3_sb(st[4]) ^ s_box(st[9]) ^ s_box(st[14]) ^ gfm2_sb(st[3]);
+    dt[4] = gfm2_sb(st[4])^ gfm3_sb(st[9]) ^ s_box(st[14]) ^ s_box(st[3]);
+    dt[5] = s_box(st[4])^ gfm2_sb(st[9]) ^ gfm3_sb(st[14]) ^ s_box(st[3]);
+    dt[6] = s_box(st[4])^ s_box(st[9]) ^ gfm2_sb(st[14]) ^ gfm3_sb(st[3]);
+    dt[7] = gfm3_sb(st[4])^ s_box(st[9]) ^ s_box(st[14]) ^ gfm2_sb(st[3]);
 
-    dt[ 8] = gfm2_sb(st[8]) ^ gfm3_sb(st[13]) ^ s_box(st[2]) ^ s_box(st[7]);
-    dt[ 9] = s_box(st[8]) ^ gfm2_sb(st[13]) ^ gfm3_sb(st[2]) ^ s_box(st[7]);
-    dt[10] = s_box(st[8]) ^ s_box(st[13]) ^ gfm2_sb(st[2]) ^ gfm3_sb(st[7]);
-    dt[11] = gfm3_sb(st[8]) ^ s_box(st[13]) ^ s_box(st[2]) ^ gfm2_sb(st[7]);
+    dt[8] = gfm2_sb(st[8])^ gfm3_sb(st[13]) ^ s_box(st[2]) ^ s_box(st[7]);
+    dt[9] = s_box(st[8])^ gfm2_sb(st[13]) ^ gfm3_sb(st[2]) ^ s_box(st[7]);
+    dt[10] = s_box(st[8])^ s_box(st[13]) ^ gfm2_sb(st[2]) ^ gfm3_sb(st[7]);
+    dt[11] = gfm3_sb(st[8])^ s_box(st[13]) ^ s_box(st[2]) ^ gfm2_sb(st[7]);
 
-    dt[12] = gfm2_sb(st[12]) ^ gfm3_sb(st[1]) ^ s_box(st[6]) ^ s_box(st[11]);
-    dt[13] = s_box(st[12]) ^ gfm2_sb(st[1]) ^ gfm3_sb(st[6]) ^ s_box(st[11]);
-    dt[14] = s_box(st[12]) ^ s_box(st[1]) ^ gfm2_sb(st[6]) ^ gfm3_sb(st[11]);
-    dt[15] = gfm3_sb(st[12]) ^ s_box(st[1]) ^ s_box(st[6]) ^ gfm2_sb(st[11]);
-  }
+    dt[12] = gfm2_sb(st[12])^ gfm3_sb(st[1]) ^ s_box(st[6]) ^ s_box(st[11]);
+    dt[13] = s_box(st[12])^ gfm2_sb(st[1]) ^ gfm3_sb(st[6]) ^ s_box(st[11]);
+    dt[14] = s_box(st[12])^ s_box(st[1]) ^ gfm2_sb(st[6]) ^ gfm3_sb(st[11]);
+    dt[15] = gfm3_sb(st[12])^ s_box(st[1]) ^ s_box(st[6]) ^ gfm2_sb(st[11]);
+}
 
 #if defined( AES_DEC_PREKEYED )
 
 #if defined( VERSION_1 )
-  static void inv_mix_sub_columns( uint8_t dt[N_BLOCK] )
-  { uint8_t st[N_BLOCK];
-    block_copy(st, dt);
+            static void inv_mix_sub_columns( uint8_t dt[N_BLOCK] )
+            {   uint8_t st[N_BLOCK];
+                block_copy(st, dt);
 #else
-  static void inv_mix_sub_columns( uint8_t dt[N_BLOCK], uint8_t st[N_BLOCK] )
-  {
+            static void inv_mix_sub_columns( uint8_t dt[N_BLOCK], uint8_t st[N_BLOCK] )
+            {
 #endif
-    dt[ 0] = is_box(gfm_e(st[ 0]) ^ gfm_b(st[ 1]) ^ gfm_d(st[ 2]) ^ gfm_9(st[ 3]));
-    dt[ 5] = is_box(gfm_9(st[ 0]) ^ gfm_e(st[ 1]) ^ gfm_b(st[ 2]) ^ gfm_d(st[ 3]));
-    dt[10] = is_box(gfm_d(st[ 0]) ^ gfm_9(st[ 1]) ^ gfm_e(st[ 2]) ^ gfm_b(st[ 3]));
-    dt[15] = is_box(gfm_b(st[ 0]) ^ gfm_d(st[ 1]) ^ gfm_9(st[ 2]) ^ gfm_e(st[ 3]));
+            dt[ 0] = is_box(gfm_e(st[ 0]) ^ gfm_b(st[ 1]) ^ gfm_d(st[ 2]) ^ gfm_9(st[ 3]));
+            dt[ 5] = is_box(gfm_9(st[ 0]) ^ gfm_e(st[ 1]) ^ gfm_b(st[ 2]) ^ gfm_d(st[ 3]));
+            dt[10] = is_box(gfm_d(st[ 0]) ^ gfm_9(st[ 1]) ^ gfm_e(st[ 2]) ^ gfm_b(st[ 3]));
+            dt[15] = is_box(gfm_b(st[ 0]) ^ gfm_d(st[ 1]) ^ gfm_9(st[ 2]) ^ gfm_e(st[ 3]));
 
-    dt[ 4] = is_box(gfm_e(st[ 4]) ^ gfm_b(st[ 5]) ^ gfm_d(st[ 6]) ^ gfm_9(st[ 7]));
-    dt[ 9] = is_box(gfm_9(st[ 4]) ^ gfm_e(st[ 5]) ^ gfm_b(st[ 6]) ^ gfm_d(st[ 7]));
-    dt[14] = is_box(gfm_d(st[ 4]) ^ gfm_9(st[ 5]) ^ gfm_e(st[ 6]) ^ gfm_b(st[ 7]));
-    dt[ 3] = is_box(gfm_b(st[ 4]) ^ gfm_d(st[ 5]) ^ gfm_9(st[ 6]) ^ gfm_e(st[ 7]));
+            dt[ 4] = is_box(gfm_e(st[ 4]) ^ gfm_b(st[ 5]) ^ gfm_d(st[ 6]) ^ gfm_9(st[ 7]));
+            dt[ 9] = is_box(gfm_9(st[ 4]) ^ gfm_e(st[ 5]) ^ gfm_b(st[ 6]) ^ gfm_d(st[ 7]));
+            dt[14] = is_box(gfm_d(st[ 4]) ^ gfm_9(st[ 5]) ^ gfm_e(st[ 6]) ^ gfm_b(st[ 7]));
+            dt[ 3] = is_box(gfm_b(st[ 4]) ^ gfm_d(st[ 5]) ^ gfm_9(st[ 6]) ^ gfm_e(st[ 7]));
 
-    dt[ 8] = is_box(gfm_e(st[ 8]) ^ gfm_b(st[ 9]) ^ gfm_d(st[10]) ^ gfm_9(st[11]));
-    dt[13] = is_box(gfm_9(st[ 8]) ^ gfm_e(st[ 9]) ^ gfm_b(st[10]) ^ gfm_d(st[11]));
-    dt[ 2] = is_box(gfm_d(st[ 8]) ^ gfm_9(st[ 9]) ^ gfm_e(st[10]) ^ gfm_b(st[11]));
-    dt[ 7] = is_box(gfm_b(st[ 8]) ^ gfm_d(st[ 9]) ^ gfm_9(st[10]) ^ gfm_e(st[11]));
+            dt[ 8] = is_box(gfm_e(st[ 8]) ^ gfm_b(st[ 9]) ^ gfm_d(st[10]) ^ gfm_9(st[11]));
+            dt[13] = is_box(gfm_9(st[ 8]) ^ gfm_e(st[ 9]) ^ gfm_b(st[10]) ^ gfm_d(st[11]));
+            dt[ 2] = is_box(gfm_d(st[ 8]) ^ gfm_9(st[ 9]) ^ gfm_e(st[10]) ^ gfm_b(st[11]));
+            dt[ 7] = is_box(gfm_b(st[ 8]) ^ gfm_d(st[ 9]) ^ gfm_9(st[10]) ^ gfm_e(st[11]));
 
-    dt[12] = is_box(gfm_e(st[12]) ^ gfm_b(st[13]) ^ gfm_d(st[14]) ^ gfm_9(st[15]));
-    dt[ 1] = is_box(gfm_9(st[12]) ^ gfm_e(st[13]) ^ gfm_b(st[14]) ^ gfm_d(st[15]));
-    dt[ 6] = is_box(gfm_d(st[12]) ^ gfm_9(st[13]) ^ gfm_e(st[14]) ^ gfm_b(st[15]));
-    dt[11] = is_box(gfm_b(st[12]) ^ gfm_d(st[13]) ^ gfm_9(st[14]) ^ gfm_e(st[15]));
-  }
+            dt[12] = is_box(gfm_e(st[12]) ^ gfm_b(st[13]) ^ gfm_d(st[14]) ^ gfm_9(st[15]));
+            dt[ 1] = is_box(gfm_9(st[12]) ^ gfm_e(st[13]) ^ gfm_b(st[14]) ^ gfm_d(st[15]));
+            dt[ 6] = is_box(gfm_d(st[12]) ^ gfm_9(st[13]) ^ gfm_e(st[14]) ^ gfm_b(st[15]));
+            dt[11] = is_box(gfm_b(st[12]) ^ gfm_d(st[13]) ^ gfm_9(st[14]) ^ gfm_e(st[15]));
+        }
 
 #endif
 
 #if defined( AES_ENC_PREKEYED ) || defined( AES_DEC_PREKEYED )
 
-/*  Set the cipher key for the pre-keyed version */
+            /*  Set the cipher key for the pre-keyed version */
 
-return_type aes_set_key( const uint8_t key[], length_type keylen, aes_context ctx[1] )
-{
-    uint8_t cc, rc, hi;
+            return_type aes_set_key( const uint8_t key[], length_type keylen, aes_context ctx[1] )
+            {
+                uint8_t cc, rc, hi;
 
-    switch( keylen )
-    {
-    case 16:
-    case 24:
-    case 32:
-        break;
-    default: 
-        ctx->rnd = 0; 
-        return ( uint8_t )-1;
-    }
-    block_copy_nn(ctx->ksch, key, keylen);
-    hi = (keylen + 28) << 2;
-    ctx->rnd = (hi >> 4) - 1;
-    for( cc = keylen, rc = 1; cc < hi; cc += 4 )
-    {   uint8_t tt, t0, t1, t2, t3;
+                switch( keylen )
+                {
+                    case 16:
+                    case 24:
+                    case 32:
+                    break;
+                    default:
+                    ctx->rnd = 0;
+                    return ( uint8_t )-1;
+                }
+                block_copy_nn(ctx->ksch, key, keylen);
+                hi = (keylen + 28) << 2;
+                ctx->rnd = (hi >> 4) - 1;
+                for( cc = keylen, rc = 1; cc < hi; cc += 4 )
+                {   uint8_t tt, t0, t1, t2, t3;
 
-        t0 = ctx->ksch[cc - 4];
-        t1 = ctx->ksch[cc - 3];
-        t2 = ctx->ksch[cc - 2];
-        t3 = ctx->ksch[cc - 1];
-        if( cc % keylen == 0 )
-        {
-            tt = t0;
-            t0 = s_box(t1) ^ rc;
-            t1 = s_box(t2);
-            t2 = s_box(t3);
-            t3 = s_box(tt);
-            rc = f2(rc);
-        }
-        else if( keylen > 24 && cc % keylen == 16 )
-        {
-            t0 = s_box(t0);
-            t1 = s_box(t1);
-            t2 = s_box(t2);
-            t3 = s_box(t3);
-        }
-        tt = cc - keylen;
-        ctx->ksch[cc + 0] = ctx->ksch[tt + 0] ^ t0;
-        ctx->ksch[cc + 1] = ctx->ksch[tt + 1] ^ t1;
-        ctx->ksch[cc + 2] = ctx->ksch[tt + 2] ^ t2;
-        ctx->ksch[cc + 3] = ctx->ksch[tt + 3] ^ t3;
-    }
-    return 0;
-}
+                    t0 = ctx->ksch[cc - 4];
+                    t1 = ctx->ksch[cc - 3];
+                    t2 = ctx->ksch[cc - 2];
+                    t3 = ctx->ksch[cc - 1];
+                    if( cc % keylen == 0 )
+                    {
+                        tt = t0;
+                        t0 = s_box(t1) ^ rc;
+                        t1 = s_box(t2);
+                        t2 = s_box(t3);
+                        t3 = s_box(tt);
+                        rc = f2(rc);
+                    }
+                    else if( keylen > 24 && cc % keylen == 16 )
+                    {
+                        t0 = s_box(t0);
+                        t1 = s_box(t1);
+                        t2 = s_box(t2);
+                        t3 = s_box(t3);
+                    }
+                    tt = cc - keylen;
+                    ctx->ksch[cc + 0] = ctx->ksch[tt + 0] ^ t0;
+                    ctx->ksch[cc + 1] = ctx->ksch[tt + 1] ^ t1;
+                    ctx->ksch[cc + 2] = ctx->ksch[tt + 2] ^ t2;
+                    ctx->ksch[cc + 3] = ctx->ksch[tt + 3] ^ t3;
+                }
+                return 0;
+            }
 
 #endif
 
 #if defined( AES_ENC_PREKEYED )
 
 /*  Encrypt a single block of 16 bytes */
-
-return_type aes_encrypt( const uint8_t in[N_BLOCK], uint8_t  out[N_BLOCK], const aes_context ctx[1] )
+return_type aes_encrypt( const uint8_t in[N_BLOCK], uint8_t out[N_BLOCK],const aes_context ctx[1] )
 {
     if( ctx->rnd )
     {

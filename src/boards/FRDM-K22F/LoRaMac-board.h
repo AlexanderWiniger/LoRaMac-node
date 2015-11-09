@@ -225,7 +225,7 @@
 /*!
  * Default datarate used by the node
  */
-#define LORAMAC_DEFAULT_DATARATE                    DR_0
+#define LORAMAC_DEFAULT_DATARATE                    DR_5
 
 /*!
  * Minimal Rx1 receive datarate offset
@@ -278,7 +278,7 @@
  * Second reception window channel definition.
  */
 // Channel = { Frequency [Hz], Datarate }
-#define RX_WND_2_CHANNEL                                  { 869525000, DR_0 }
+#define RX_WND_2_CHANNEL                                  { 868100000, DR_5 }
 
 /*!
  * LoRaMac maximum number of bands
@@ -308,9 +308,9 @@ typedef enum
  * LoRaMac default channels
  */
 // Channel = { Frequency [Hz], { ( ( DrMax << 4 ) | DrMin ) }, Band }
-#define LC1                { 868100000, { ( ( DR_5 << 4 ) | DR_0 ) }, 1 }
-#define LC2                { 868300000, { ( ( DR_6 << 4 ) | DR_0 ) }, 1 }
-#define LC3                { 868500000, { ( ( DR_5 << 4 ) | DR_0 ) }, 1 }
+#define LC1                { 868100000, { ( ( DR_5 << 4 ) | DR_0 ) }, 1 } /* EU863-870 default channel */
+#define LC2                { 868300000, { ( ( DR_6 << 4 ) | DR_0 ) }, 1 } /* EU863-870 default channel */
+#define LC3                { 868500000, { ( ( DR_5 << 4 ) | DR_0 ) }, 1 } /* EU863-870 default channel */
 #define LC4                { 867100000, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
 #define LC5                { 867300000, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
 #define LC6                { 867500000, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
