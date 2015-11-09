@@ -208,30 +208,22 @@ static void PrepareTxFrame(uint8_t port)
     switch (port) {
         case 2:
         {
-            accel_sensor_data_t sensorData;
-            uint8_t batteryLevel = 0;
-
-            if (FxosReadSensorData(&sensorData) == FAIL) {
-                PRINTF("ERROR: Failed to retrieve sensor data!\r\n");
-                return;
-            }
-
-            batteryLevel = BoardGetBatteryLevel();       // 1 (very low) to 254 (fully charged)
+            uint8_t batteryLevel = BoardGetBatteryLevel();    // 1 (very low) to 254 (fully charged)
 
             AppData[0] = AppLedStateOn;
             AppData[1] = batteryLevel;
-            AppData[2] = (sensorData.accelX >> 8) & 0xFF;
-            AppData[3] = sensorData.accelX & 0xFF;
-            AppData[4] = (sensorData.accelY >> 8) & 0xFF;
-            AppData[5] = sensorData.accelY & 0xFF;
-            AppData[6] = (sensorData.accelZ >> 8) & 0xFF;
-            AppData[7] = sensorData.accelZ & 0xFF;
-            AppData[8] = (sensorData.magX >> 8) & 0xFF;
-            AppData[9] = sensorData.magX & 0xFF;
-            AppData[10] = (sensorData.magY >> 8) & 0xFF;
-            AppData[11] = sensorData.magY & 0xFF;
-            AppData[12] = (sensorData.magZ >> 8) & 0xFF;
-            AppData[13] = sensorData.magZ & 0xFF;
+            AppData[2] = 0;
+            AppData[3] = 0;
+            AppData[4] = 0;
+            AppData[5] = 0;
+            AppData[6] = 0;
+            AppData[7] = 0;
+            AppData[8] = 0;
+            AppData[9] = 0;
+            AppData[10] = 0;
+            AppData[11] = 0;
+            AppData[12] = 0;
+            AppData[13] = 0;
         }
             break;
         default:
@@ -417,9 +409,11 @@ DevAddr    = randr(0, 0x01FFFFFF);
         }
 
         if (trySendingFrameAgain == true) {
+            PRINTF("TRACE: Re-sending frame.\r\n");
             trySendingFrameAgain = SendFrame();
         }
         if (TxNextPacket == true) {
+            PRINTF("TRACE: Trying to send frame.\r\n");
             TxNextPacket = false;
 
             PrepareTxFrame(AppPort);

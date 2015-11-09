@@ -23,7 +23,7 @@ const struct Radio_s Radio = { SX1276Init, SX1276GetStatus, SX1276SetModem, SX12
         SX1276IsChannelFree, SX1276Random, SX1276SetRxConfig, SX1276SetTxConfig,
         SX1276CheckRfFrequency, SX1276GetTimeOnAir, SX1276Send, SX1276SetSleep, SX1276SetStby,
         SX1276SetRx, SX1276StartCad, SX1276ReadRssi, SX1276Write, SX1276Read, SX1276WriteBuffer,
-        SX1276ReadBuffer };
+        SX1276ReadBuffer, SX1276SetMaxPayloadLength };
 
 /*!
  * Antenna switch GPIO pins objects
@@ -79,7 +79,7 @@ void SX1276IoDeInit(void)
 
 uint8_t SX1276GetPaSelect(uint32_t channel)
 {
-    if (channel > RF_MID_BAND_THRESH) {
+    if (channel < RF_MID_BAND_THRESH) {
         return RF_PACONFIG_PASELECT_PABOOST;
     } else {
         return RF_PACONFIG_PASELECT_RFO;
