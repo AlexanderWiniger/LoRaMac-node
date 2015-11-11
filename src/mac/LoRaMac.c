@@ -1109,7 +1109,11 @@ uint8_t LoRaMacPrepareFrame(ChannelParams_t channel, LoRaMacHeader_t *macHdr,
             LoRaMacBuffer[LoRaMacBufferPktLen++] = (mic >> 8) & 0xFF;
             LoRaMacBuffer[LoRaMacBufferPktLen++] = (mic >> 16) & 0xFF;
             LoRaMacBuffer[LoRaMacBufferPktLen++] = (mic >> 24) & 0xFF;
-
+#if LORAMAC_USE_CUSTOM_JOIN_PROCEDURE
+			if(LoRaMacCallbacks.HandleJoinAccept != NULL) {
+				LoRaMacCallbacks.HandleJoinRequest();
+			}
+#endif
             break;
         case FRAME_TYPE_DATA_CONFIRMED_UP:
             NodeAckRequested = true;

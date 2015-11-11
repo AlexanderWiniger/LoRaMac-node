@@ -187,6 +187,11 @@ typedef enum
     MOTE_MAC_DEV_STATUS_ANS          = 0x06,
     MOTE_MAC_NEW_CHANNEL_ANS         = 0x07,
     MOTE_MAC_RX_TIMING_SETUP_ANS     = 0x08,
+	// Class B
+	MOTE_MAC_PING_INFO_REQ		     = 0x10,
+	MOTE_MAC_PING_CHANNEL_ANS	     = 0x11,
+	MOTE_MAC_BCN_TIMING_REQ			 = 0x12,
+	MOTE_MAC_BCN_FREQ_ANS			 = 0x13,
 }LoRaMacMoteCmd_t;
 
 /*!
@@ -201,6 +206,11 @@ typedef enum
     SRV_MAC_DEV_STATUS_REQ           = 0x06,
     SRV_MAC_NEW_CHANNEL_REQ          = 0x07,
     SRV_MAC_RX_TIMING_SETUP_REQ      = 0x08,
+	// Class B
+	MOTE_MAC_PING_INFO_ANS		     = 0x10,
+	MOTE_MAC_PING_CHANNEL_REQ	     = 0x11,
+	MOTE_MAC_BCN_TIMING_ANS			 = 0x12,
+	MOTE_MAC_BCN_FREQ_REQ			 = 0x13,
 }LoRaMacSrvCmd_t;
 
 /*!
@@ -307,6 +317,20 @@ typedef struct sLoRaMacCallbacks
      * \param [IN] info  Details about MAC events occurred
      */
     void ( *MacEvent )( LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info );
+	/*!
+	 * Function callback to handle packets of FTYPE proprietary
+	 *
+	 * \param [IN]
+	 * \param [IN]
+	 * \param [IN]
+	 * \param [IN]
+	 * \retval handled True if the frame was handled
+	*/
+	bool ( *HandleProprietaryFrame )(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr);
+	
+	void ( *HandleJoinRequest )();
+	
+	void ( *HandleJoinAccept )();
     /*!
      * Function callback to get the current battery level
      *
