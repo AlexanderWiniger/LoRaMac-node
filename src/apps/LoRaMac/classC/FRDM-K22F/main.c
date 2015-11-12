@@ -91,7 +91,7 @@
 /*!
  * Defines the application data transmission duty cycle
  */
-#define APP_TX_DUTYCYCLE                            5000000  // 5 [s] value in us
+#define APP_TX_DUTYCYCLE                            1000000  // 5 [s] value in us
 #define APP_TX_DUTYCYCLE_RND                        1000000  // 1 [s] value in us
 
 /*!
@@ -171,6 +171,13 @@ static uint8_t AppData[LORAWAN_APP_DATA_MAX_SIZE];
  */
 static uint8_t IsTxConfirmed = LORAWAN_CONFIRMED_MSG_ON;
 
+/*!
+ * Defines the application data transmission duty cycle
+ */
+static uint32_t TxDutyCycleTime;
+
+static TimerEvent_t TxNextPacketTimer;
+
 #if( OVER_THE_AIR_ACTIVATION != 0 )
 
 /*!
@@ -183,6 +190,8 @@ static TimerEvent_t JoinReqTimer;
 /*!
  * Indicates if a new packet can be sent
  */
+static bool TxNextPacket = true;
+static bool ScheduleNextTx = false;
 static bool DownlinkStatusUpdate = false;
 
 static LoRaMacCallbacks_t LoRaMacCallbacks;
@@ -305,6 +314,17 @@ static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
             DownlinkStatusUpdate = true;
         }
     }
+    // Schedule a new transmission
+    ScheduleNextTx = true;
+}
+
+/*!
+ * \brief Function executed on TxNextPacket Timeout event
+ */
+static void OnTxNextPacketTimerEvent(void)
+{
+    TimerStop(&TxNextPacketTimer);
+    TxNextPacket = true;
 }
 
 /**
@@ -358,6 +378,9 @@ DevAddr    = randr(0, 0x01FFFFFF);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
     LoRaMacSetPublicNetwork( LORAWAN_PUBLIC_NETWORK);
     LoRaMacSetDeviceClass (CLASS_C);
+
+    TxNextPacket = true;
+    TimerInit(&TxNextPacketTimer, OnTxNextPacketTimerEvent);
 
     while (1) {
         while (IsNetworkJoined == false) {
@@ -420,14 +443,25 @@ DevAddr    = randr(0, 0x01FFFFFF);
                     SensorData.magY, SensorData.magZ);
         }
 
+        if (ScheduleNextTx && AppSensorTransmissionStateOn) {
+            PRINTF("TRACE: Schedule next uplink packet.\r\n");
+            ScheduleNextTx = false;
+
+            // Schedule next packet transmission
+            TxDutyCycleTime = APP_TX_DUTYCYCLE + randr(-APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND);
+            TimerSetValue(&TxNextPacketTimer, TxDutyCycleTime);
+            TimerStart(&TxNextPacketTimer);
+        }
+
         if (trySendingFrameAgain == true) {
             PRINTF("TRACE: Re-sending frame...\r\n");
             trySendingFrameAgain = SendFrame();
             if (trySendingFrameAgain) PRINTF("TRACE: No free channel. Try again later.\r\n");
         }
 
-        if (AppSensorTransmissionStateChanged || AppLedStateChanged) {
+        if (TxNextPacket) {
             PRINTF("TRACE: Trying to send frame...\r\n");
+            TxNextPacket = false;
             if (AppSensorTransmissionStateChanged) AppSensorTransmissionStateChanged = false;
             if (AppLedStateChanged) AppLedStateChanged = false;
 

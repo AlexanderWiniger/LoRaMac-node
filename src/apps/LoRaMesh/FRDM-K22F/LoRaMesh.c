@@ -1,14 +1,11 @@
 /**
- * \file main.c
+ * \file LoRaMesh.c
  * \author Alexander Winiger (alexander.winiger@hslu.ch)
- * \date 09.11.2015
- * \brief LoRaMesh implementation
+ * \date 11.11.2015
+ * \brief Mesh LoRa network implementation
  *
  */
-#include <string.h>
-#include "board.h"
-#include "radio.h"
-
+#include "LoRaMesh.h"
 #include "LoRaMac.h"
 
 /*!
@@ -79,7 +76,12 @@
  */
 #define LORAWAN_APPSKEY                             { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C }
 
-#endif
+/*!
+ * AES encryption/decryption cipher multicast group key
+ */
+#define LORAWAN_MGRPKEY                             { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C }
+
+#endif /* OVER_THE_AIR_ACTIVATION */
 
 /*!
  * Defines the application data transmission duty cycle
@@ -97,24 +99,14 @@
  *
  * \remark Please note that when ADR is enabled the end-device should be static
  */
-#define LORAWAN_ADR_ON                              1
+#define LORAWAN_ADR_ON                              0
 
 /*!
  * LoRaWAN ETSI duty cycle control enable/disable
  *
  * \remark Please note that ETSI mandates duty cycled transmissions. Use only for test purposes
  */
-#define LORAWAN_DUTYCYCLE_ON                        true
-
-/*!
- * LoRaWAN application port
- */
-#define LORAWAN_APP_PORT                            2
-
-/*!
- * User application data buffer size
- */
-#define LORAWAN_APP_DATA_SIZE                       14
+#define LORAWAN_DUTYCYCLE_ON                        false
 
 #if( OVER_THE_AIR_ACTIVATION != 0 )
 
@@ -132,22 +124,12 @@ static uint8_t AppSKey[] = LORAWAN_APPSKEY;
  */
 static uint32_t DevAddr;
 
-#endif
+#endif /* OVER_THE_AIR_ACTIVATION */
 
 /*!
  * Indicates if the MAC layer has already joined a network.
  */
 static bool IsNetworkJoined = false;
-
-/*!
- * Application port
- */
-static uint8_t AppPort = LORAWAN_APP_PORT;
-
-/*!
- * User application data size
- */
-static uint8_t AppDataSize = LORAWAN_APP_DATA_SIZE;
 
 /*!
  * User application data buffer size
@@ -164,11 +146,6 @@ static uint8_t AppData[LORAWAN_APP_DATA_MAX_SIZE];
  */
 static uint8_t IsTxConfirmed = LORAWAN_CONFIRMED_MSG_ON;
 
-/*!
- * Defines the application data transmission duty cycle
- */
-static uint32_t TxDutyCycleTime;
-
 #if( OVER_THE_AIR_ACTIVATION != 0 )
 
 /*!
@@ -176,7 +153,7 @@ static uint32_t TxDutyCycleTime;
  */
 static TimerEvent_t JoinReqTimer;
 
-#endif
+#endif /* OVER_THE_AIR_ACTIVATION */
 
 static LoRaMacCallbacks_t LoRaMacCallbacks;
 
@@ -234,7 +211,7 @@ static void OnJoinReqTimerEvent( void )
     TxNextPacket = true;
 }
 
-#endif
+#endif /* OVER_THE_AIR_ACTIVATION */
 
 /*!
  * \brief Function to be executed on MAC layer event
@@ -244,7 +221,7 @@ static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
     if (flags->Bits.JoinAccept == 1) {
 #if( OVER_THE_AIR_ACTIVATION != 0 )
         TimerStop( &JoinReqTimer );
-#endif
+#endif /* OVER_THE_AIR_ACTIVATION */
         IsNetworkJoined = true;
     } else {
         if (flags->Bits.Tx == 1) {
@@ -258,22 +235,12 @@ static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
     }
 }
 
-/**
- * Main application entry point.
- */
-int main(void)
+void LoRaMeshInit(void)
 {
-// Target board initialisation
-    BoardInitMcu();
-    PRINTF("\r\n\r\nTRACE: Mcu initialized.\r\n");
-    BoardInitPeriph();
-    PRINTF("TRACE: Peripherals initialized.\r\n");
-
-// LoRaMac initialization
+    // LoRaMac initialization
     LoRaMacCallbacks.MacEvent = OnMacEvent;
     LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
     LoRaMacInit(&LoRaMacCallbacks);
-    PRINTF("TRACE: LoRaMac initialized.\r\n");
 
     IsNetworkJoined = false;
 
@@ -294,17 +261,9 @@ DevAddr    = randr(0, 0x01FFFFFF);
     // seconds until the network is joined
     TimerInit( &JoinReqTimer, OnJoinReqTimerEvent );
     TimerSetValue( &JoinReqTimer, OVER_THE_AIR_ACTIVATION_DUTYCYCLE );
-#endif
+#endif /* OVER_THE_AIR_ACTIVATION */
 
     LoRaMacSetAdrOn( LORAWAN_ADR_ON);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
     LoRaMacSetPublicNetwork( LORAWAN_PUBLIC_NETWORK);
-    LoRaMacSetDeviceClass (CLASS_C);
-
-    PRINTF("\r\nLoRaMesh Application starting...\r\n");
-
-    while (1) {
-
-        TimerLowPowerHandler();
-    }
 }

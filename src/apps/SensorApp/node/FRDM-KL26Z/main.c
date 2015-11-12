@@ -19,7 +19,7 @@
 
 #elif defined( USE_BAND_868 )
 
-#define RF_FREQUENCY                                868000000 // Hz
+#define RF_FREQUENCY                                868100000 // Hz
 
 #elif defined( USE_BAND_915 )
 

@@ -194,18 +194,12 @@ static bool TxNextPacket = true;
 static bool ScheduleNextTx = false;
 static bool DownlinkStatusUpdate = false;
 
-static bool AppLedStateOn = false;
-
 static LoRaMacCallbacks_t LoRaMacCallbacks;
 
-static TimerEvent_t Led1Timer;
-volatile bool Led1StateChanged = false;
-static TimerEvent_t Led2Timer;
-volatile bool Led2StateChanged = false;
-//static TimerEvent_t Led4Timer;
-//volatile bool Led4StateChanged = false;
-
-//volatile bool Led3StateChanged = false;
+static bool AppLedStateOn = false;
+static bool AppLedStateChanged = false;
+static bool AppSensorTransmissionStateOn = true;
+static bool AppSensorTransmissionStateChanged = false;
 
 /*!
  * Prepares the frame buffer to be sent
@@ -215,36 +209,31 @@ static void PrepareTxFrame(uint8_t port)
     switch (port) {
         case 2:
         {
-            uint16_t pressure = 0;
-            int16_t altitudeBar = 0;
-            int16_t temperature = 0;
-            int32_t latitude = 0, longitude = 0;
-            uint16_t altitudeGps = 0xFFFF;
+            accel_sensor_data_t sensorData;
             uint8_t batteryLevel = 0;
 
-//            pressure = (uint16_t)(MPL3115ReadPressure() / 10);             // in hPa / 10
-//            temperature = (int16_t)(MPL3115ReadTemperature() * 100);       // in °C * 100
-//            altitudeBar = (int16_t)(MPL3115ReadAltitude() * 10);           // in m * 10
-//            batteryLevel = BoardGetBatteryLevel();            // 1 (very low) to 254 (fully charged)
-//            GpsGetLatestGpsPositionBinary(&latitude, &longitude);
-//            altitudeGps = GpsGetLatestGpsAltitude();                           // in m
+            if (FxosReadSensorData(&sensorData) == FAIL) {
+                PRINTF("ERROR: Failed to retrieve sensor data!\r\n");
+                return;
+            }
+
+            batteryLevel = BoardGetBatteryLevel();       // 1 (very low) to 254 (fully charged)
 
             AppData[0] = AppLedStateOn;
-            AppData[1] = (pressure >> 8) & 0xFF;
-            AppData[2] = pressure & 0xFF;
-            AppData[3] = (temperature >> 8) & 0xFF;
-            AppData[4] = temperature & 0xFF;
-            AppData[5] = (altitudeBar >> 8) & 0xFF;
-            AppData[6] = altitudeBar & 0xFF;
-            AppData[7] = batteryLevel;
-            AppData[8] = (latitude >> 16) & 0xFF;
-            AppData[9] = (latitude >> 8) & 0xFF;
-            AppData[10] = latitude & 0xFF;
-            AppData[11] = (longitude >> 16) & 0xFF;
-            AppData[12] = (longitude >> 8) & 0xFF;
-            AppData[13] = longitude & 0xFF;
-            AppData[14] = (altitudeGps >> 8) & 0xFF;
-            AppData[15] = altitudeGps & 0xFF;
+            AppData[1] = AppSensorTransmissionStateOn;
+            AppData[2] = (sensorData.accelX >> 8) & 0xFF;
+            AppData[3] = sensorData.accelX & 0xFF;
+            AppData[4] = (sensorData.accelY >> 8) & 0xFF;
+            AppData[5] = sensorData.accelY & 0xFF;
+            AppData[6] = (sensorData.accelZ >> 8) & 0xFF;
+            AppData[7] = sensorData.accelZ & 0xFF;
+            AppData[8] = batteryLevel;
+            AppData[9] = (sensorData.magX >> 8) & 0xFF;
+            AppData[10] = sensorData.magX & 0xFF;
+            AppData[11] = (sensorData.magY >> 8) & 0xFF;
+            AppData[12] = sensorData.magY & 0xFF;
+            AppData[13] = (sensorData.magZ >> 8) & 0xFF;
+            AppData[14] = sensorData.magZ & 0xFF;
         }
             break;
         default:
@@ -258,9 +247,16 @@ static void ProcessRxFrame(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
     {
         case 1: // The application LED can be controlled on port 1 or 2
         case 2:
-            if (info->RxBufferSize == 1) {
-                AppLedStateOn = info->RxBuffer[0] & 0x01;
-//                Led3StateChanged = true;
+            if (info->RxBufferSize == 2) {
+                if (AppLedStateOn != (info->RxBuffer[0] & 0x01)) {
+                    AppLedStateOn = ((info->RxBuffer[0] & 0x01) == 0 ? false : true);
+                    AppLedStateChanged = true;
+                }
+
+                if (AppSensorTransmissionStateOn != (info->RxBuffer[1] & 0x01)) {
+                    AppSensorTransmissionStateOn = ((info->RxBuffer[1] & 0x01) == 0 ? false : true);
+                    AppSensorTransmissionStateChanged = true;
+                }
             }
             break;
         default:
@@ -310,32 +306,6 @@ static void OnTxNextPacketTimerEvent(void)
 }
 
 /*!
- * \brief Function executed on Led 1 Timeout event
- */
-static void OnLed1TimerEvent(void)
-{
-    TimerStop(&Led1Timer);
-    Led1StateChanged = true;
-}
-
-/*!
- * \brief Function executed on Led 2 Timeout event
- */
-static void OnLed2TimerEvent(void)
-{
-    TimerStop(&Led2Timer);
-    Led2StateChanged = true;
-}
-
-/*!
- * \brief Function executed on Led 4 Timeout event
- */
-//void OnLed4TimerEvent(void)
-//{
-//    TimerStop(&Led4Timer);
-//    Led4StateChanged = true;
-//}
-/*!
  * \brief Function to be executed on MAC layer event
  */
 static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
@@ -355,7 +325,6 @@ static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
             }
 
             DownlinkStatusUpdate = true;
-            TimerStart(&Led2Timer);
         }
     }
     // Schedule a new transmission
@@ -406,15 +375,6 @@ DevAddr    = randr(0, 0x01FFFFFF);
     TxNextPacket = true;
     TimerInit(&TxNextPacketTimer, OnTxNextPacketTimerEvent);
 
-    TimerInit(&Led1Timer, OnLed1TimerEvent);
-    TimerSetValue(&Led1Timer, 25000);
-
-    TimerInit(&Led2Timer, OnLed2TimerEvent);
-    TimerSetValue(&Led2Timer, 25000);
-
-//    TimerInit(&Led4Timer, OnLed4TimerEvent);
-//    TimerSetValue(&Led4Timer, 25000);
-
     LoRaMacSetAdrOn( LORAWAN_ADR_ON);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
     LoRaMacSetPublicNetwork( LORAWAN_PUBLIC_NETWORK);
@@ -448,38 +408,33 @@ DevAddr    = randr(0, 0x01FFFFFF);
 #endif
         }
 
-//        if (GpsGetPpsDetectedState() == true) {
-//            // Switch LED 4 ON
-//            GpioWrite(&Led4, 0);
-//            TimerStart(&Led4Timer);
-//        }
+        if (AppLedStateChanged) {
+            AppLedStateChanged = false;
+            if (AppLedStateOn) {
+                GpioWrite(&Led1, 0);
+                PRINTF("TRACE: LED was remotely disabled.\r\n");
+            } else {
+                GpioWrite(&Led1, 1);
+                PRINTF("TRACE: LED was remotely enabled.\r\n");
+            }
+        }
 
-        if (Led1StateChanged == true) {
-            Led1StateChanged = false;
-            // Switch LED 1 OFF
-            GpioWrite(&Led1, 1);
+        if (AppSensorTransmissionStateChanged) {
+            AppSensorTransmissionStateChanged = false;
+            if (AppSensorTransmissionStateOn) {
+                ScheduleNextTx = true;
+                PRINTF("TRACE: Sensor data collecting was remotely enabled.\r\n");
+            } else {
+                TimerStop(&TxNextPacketTimer);
+                PRINTF("TRACE: Sensor data collecting was remotely disabled.\r\n");
+            }
         }
-        if (Led2StateChanged == true) {
-            Led2StateChanged = false;
-            // Switch LED 2 OFF
-            GpioWrite(&Led2, 1);
-        }
-//        if (Led3StateChanged == true) {
-//            Led3StateChanged = false;
-//            GpioWrite(&Led3, ((AppLedStateOn & 0x01) != 0) ? 0 : 1);
-//        }
-//        if (Led4StateChanged == true) {
-//            Led4StateChanged = false;
-//            // Switch LED 4 OFF
-//            GpioWrite(&Led4, 1);
-//        }
+
         if (DownlinkStatusUpdate == true) {
             DownlinkStatusUpdate = false;
-            // Switch LED 2 ON for each received downlink
-            GpioWrite(&Led2, 0);
         }
 
-        if (ScheduleNextTx == true) {
+        if (ScheduleNextTx == true && AppSensorTransmissionStateOn) {
             ScheduleNextTx = false;
 
             // Schedule next packet transmission
@@ -497,10 +452,6 @@ DevAddr    = randr(0, 0x01FFFFFF);
             PRINTF("TRACE: Trying to send frame...\r\n");
 
             PrepareTxFrame(AppPort);
-
-            // Switch LED 1 ON
-            GpioWrite(&Led1, 0);
-            TimerStart(&Led1Timer);
 
             trySendingFrameAgain = SendFrame();
         }

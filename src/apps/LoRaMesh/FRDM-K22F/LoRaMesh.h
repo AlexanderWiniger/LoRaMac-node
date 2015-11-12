@@ -1,12 +1,12 @@
 /**
- * \file mesh.h
+ * \file LoRaMesh.h
  * \author Alexander Winiger (alexander.winiger@hslu.ch)
  * \date 11.11.2015
  * \brief Mesh LoRa network implementation
  *
  */
-#ifndef __MESH_H__
-#define __MESH_H__
+#ifndef __LORAMESH_H__
+#define __LORAMESH_H__
 
 /*!
  * LoRaMAC mote MAC commands
@@ -20,4 +20,7 @@ typedef enum
     MOTE_MAC_DEV_STATUS_ANS          = 0x06,
 }LoRaMacExtMoteCmd_t;
 
-#endif // __MESH_H__
+
+void LoRaMeshInit( void );
+
+#endif // __LORAMESH_H__
