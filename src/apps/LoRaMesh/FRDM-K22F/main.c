@@ -169,8 +169,6 @@ static uint8_t IsTxConfirmed = LORAWAN_CONFIRMED_MSG_ON;
  */
 static uint32_t TxDutyCycleTime;
 
-static TimerEvent_t TxNextPacketTimer;
-
 #if( OVER_THE_AIR_ACTIVATION != 0 )
 
 /*!
@@ -239,14 +237,6 @@ static void OnJoinReqTimerEvent( void )
 
 #endif
 
-/*!
- * \brief Function executed on TxNextPacket Timeout event
- */
-static void OnTxNextPacketTimerEvent(void)
-{
-    TimerStop(&TxNextPacketTimer);
-    TxNextPacket = true;
-}
 
 /*!
  * \brief Function to be executed on MAC layer event
@@ -266,8 +256,6 @@ static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
             if (flags->Bits.RxData == true) {
                 ProcessRxFrame(flags, info);
             }
-
-            DownlinkStatusUpdate = true;
         }
     }
 }
@@ -309,9 +297,6 @@ DevAddr    = randr(0, 0x01FFFFFF);
     TimerInit( &JoinReqTimer, OnJoinReqTimerEvent );
     TimerSetValue( &JoinReqTimer, OVER_THE_AIR_ACTIVATION_DUTYCYCLE );
 #endif
-
-    TxNextPacket = true;
-    TimerInit(&TxNextPacketTimer, OnTxNextPacketTimerEvent);
 
     LoRaMacSetAdrOn( LORAWAN_ADR_ON);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
