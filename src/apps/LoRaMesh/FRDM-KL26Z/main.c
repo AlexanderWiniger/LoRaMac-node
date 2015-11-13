@@ -1,22 +1,19 @@
-/*
- / _____)             _              | |
- ( (____  _____ ____ _| |_ _____  ____| |__
- \____ \| ___ |    (_   _) ___ |/ ___)  _ \
- _____) ) ____| | | || |_| ____( (___| | | |
- (______/|_____)_|_|_| \__)_____)\____)_| |_|
- (C)2013 Semtech
-
- Description: LoRaMac classA device implementation
-
- License: Revised BSD License, see LICENSE.TXT file include in the project
-
- Maintainer: Miguel Luis and Gregory Cristian
+/**
+ * \file main.c
+ * \author Alexander Winiger (alexander.winiger@hslu.ch)
+ * \date 12.11.2015
+ * \brief LoRaMesh implementation
+ *
  */
 #include <string.h>
 #include <math.h>
 #include "board.h"
 
 #include "LoRaMac.h"
+#include "LoRaMesh.h"
+
+#define LOG_LEVEL_DEBUG
+#include "debug.h"
 
 /*!
  * When set to 1 the application uses the Over-the-Air activation procedure
@@ -104,7 +101,7 @@
  *
  * \remark Please note that when ADR is enabled the end-device should be static
  */
-#define LORAWAN_ADR_ON                              0
+#define LORAWAN_ADR_ON                              false
 
 /*!
  * LoRaWAN ETSI duty cycle control enable/disable
@@ -121,7 +118,7 @@
 /*!
  * User application data buffer size
  */
-#define LORAWAN_APP_DATA_SIZE                       2
+#define LORAWAN_APP_DATA_SIZE                       23
 
 #if( OVER_THE_AIR_ACTIVATION != 0 )
 
@@ -192,30 +189,8 @@ static TimerEvent_t JoinReqTimer;
  */
 static bool TxNextPacket = true;
 static bool ScheduleNextTx = false;
-static bool DownlinkStatusUpdate = false;
 
 static LoRaMacCallbacks_t LoRaMacCallbacks;
-
-static bool AppLedStateOn = false;
-static bool AppLedStateChanged = false;
-static bool AppSensorTransmissionStateOn = true;
-static bool AppSensorTransmissionStateChanged = false;
-static bool NewSensorDataReceived = false;
-
-static accel_sensor_data_t SensorData;
-
-bool SwitchAPushEvent = false;
-bool SwitchBPushEvent = false;
-
-/*!
- * \brief Switch A IRQ callback
- */
-void SwitchAIrq(void);
-
-/*!
- * \brief Switch B IRQ callback
- */
-void SwitchBIrq(void);
 
 /*!
  * Prepares the frame buffer to be sent
@@ -225,8 +200,29 @@ static void PrepareTxFrame(uint8_t port)
     switch (port) {
         case 2:
         {
-            AppData[0] = AppLedStateOn;
-            AppData[1] = AppSensorTransmissionStateOn;
+            AppData[0] = 0x0F; /* SDUHDR */
+            AppData[1] = 0x56; /* Time byte 3 */
+            AppData[2] = 0x46; /* Time byte 2 */
+            AppData[3] = 0x21; /* Time byte 1 */
+            AppData[4] = 0xD9; /* Time byte 0 */
+            AppData[5] = 0x2B; /* Latitude byte 3 */
+            AppData[6] = 0x61; /* Latitude byte 2 */
+            AppData[7] = 0x75; /* Latitude byte 1 */
+            AppData[8] = 0xFA; /* Latitude byte 0 */
+            AppData[9] = 0x74; /* Longitude byte 3 */
+            AppData[10] = 0x24; /* Longitude byte 2 */
+            AppData[11] = 0xD3; /* Longitude byte 1 */
+            AppData[12] = 0xC9; /* Longitude byte 0 */
+            AppData[13] = 0x03; /* Altitude (GPS) byte 1 */
+            AppData[14] = 0xB9; /* Altitude (GPS) byte 0 */
+            AppData[15] = 0x03; /* Altitude (barometric) byte 1 */
+            AppData[16] = 0xD3; /* Altitude (barometric) byte 0 */
+            AppData[17] = 0x00; /* GroundSpeed byte 1 */
+            AppData[18] = 0x2A; /* GroundSpeed byte 0 */
+            AppData[19] = 0x01; /* VectorTrack byte 1 */
+            AppData[20] = 0x41; /* VectorTrack byte 0 */
+            AppData[21] = 0x00; /* WindSpeed byte 1 */
+            AppData[22] = 0xA7; /* WindSpeed byte 0 */
         }
             break;
         default:
@@ -238,21 +234,37 @@ static void ProcessRxFrame(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
 {
     switch (info->RxPort) // Check Rx port number
     {
-        case 1: // The application LED can be controlled on port 1 or 2
         case 2:
-            if (info->RxBufferSize == 15) {
-                AppLedStateOn = ((info->RxBuffer[0] & 0x01) == 0 ? false : true);
-                AppSensorTransmissionStateOn = ((info->RxBuffer[1] & 0x01) == 0 ? false : true);
+            if (info->RxBufferSize == LORAWAN_APP_DATA_SIZE) {
+                LOG_DEBUG("%-20s: %u", "Timestamp",
+                        (uint32_t)(
+                                (AppData[1] << 24) | (AppData[2] << 16) | (AppData[3] << 8)
+                                        | (AppData[4])));
+                LOG_DEBUG("%-20s: %u.%u", "Latitude", AppData[5],
+                        (uint32_t)((AppData[6] << 16) | (AppData[7] << 8) | (AppData[8])));
+                LOG_DEBUG("%-20s: %u.%u", "Longitude", AppData[9],
+                        (uint32_t)((AppData[10] << 16) | (AppData[11] << 8) | (AppData[12])));
+                LOG_DEBUG_IF(
+                        (((AppData[0] & SDUHDR_OPTION_LIST_MASK) | SDUHDR_OPTION_LIST_ALT_GPS_MASK)
+                                > 0), "%-20s: %u", "Altitude (GPS)",
+                        (uint16_t)((AppData[13] << 8) | AppData[14]));
+                LOG_DEBUG_IF(
+                        (((AppData[0] & SDUHDR_OPTION_LIST_MASK) | SDUHDR_OPTION_LIST_ALT_BAR_MASK)
+                                > 0), "%-20s: %u", "Altitude (bar.)",
+                        (uint16_t)((AppData[15] << 8) | AppData[16]));
+                LOG_DEBUG_IF(
+                        (((AppData[0] & SDUHDR_OPTION_LIST_MASK) | SDUHDR_OPTION_LIST_VEC_TRACK_MASK)
+                                > 0), "%-20s: %u", "Ground Speed",
+                        (uint16_t)((AppData[17] << 8) | AppData[18]));
+                LOG_DEBUG_IF(
+                        (((AppData[0] & SDUHDR_OPTION_LIST_MASK) | SDUHDR_OPTION_LIST_VEC_TRACK_MASK)
+                                > 0), "%-20s: %u", "Track",
+                        (uint16_t)((AppData[19] << 8) | AppData[20]));
+                LOG_DEBUG_IF(
+                        (((AppData[0] & SDUHDR_OPTION_LIST_MASK)
+                                | SDUHDR_OPTION_LIST_WIND_SPEED_MASK) > 0), "%-20s: %u",
+                        "Wind Speed", (uint16_t)((AppData[21] << 8) | AppData[22]));
 
-                SensorData.accelX = (uint16_t)((info->RxBuffer[2] << 8) | info->RxBuffer[3]);
-                SensorData.accelY = (uint16_t)((info->RxBuffer[4] << 8) | info->RxBuffer[5]);
-                SensorData.accelZ = (uint16_t)((info->RxBuffer[6] << 8) | info->RxBuffer[7]);
-
-                SensorData.magX = (uint16_t)((info->RxBuffer[9] << 8) | info->RxBuffer[10]);
-                SensorData.magY = (uint16_t)((info->RxBuffer[11] << 8) | info->RxBuffer[12]);
-                SensorData.magZ = (uint16_t)((info->RxBuffer[13] << 8) | info->RxBuffer[14]);
-
-                NewSensorDataReceived = true;
             }
             break;
         default:
@@ -310,8 +322,6 @@ static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
             if (flags->Bits.RxData == true) {
                 ProcessRxFrame(flags, info);
             }
-
-            DownlinkStatusUpdate = true;
         }
     }
     // Schedule a new transmission
@@ -338,22 +348,16 @@ int main(void)
     bool trySendingFrameAgain = false;
 
     BoardInitMcu();
-	PRINTF("DEBUG: Mcu initialized.\r\n");
-	BoardInitPeriph();
-	PRINTF("DEBUG: Peripherals initialized.\r\n");
+    LOG_DEBUG("Mcu initialized.");
+    BoardInitPeriph();
+    LOG_DEBUG("Peripherals initialized.");
 
-	/* Switch A & B */
-	GpioSetInterrupt(&SwitchA, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchAIrq);
-	GpioSetInterrupt(&SwitchB, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchBIrq);
+    LoRaMacCallbacks.MacEvent = OnMacEvent;
+    LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
+    LoRaMacInit(&LoRaMacCallbacks);
+    LOG_DEBUG("LoRaMac initialized.");
 
-	LoRaMacCallbacks.MacEvent = OnMacEvent;
-	LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
-	LoRaMacInit(&LoRaMacCallbacks);
-	PRINTF("DEBUG: LoRaMac initialized.\r\n");
-
-	AppLedStateChanged = true;
-	AppSensorTransmissionStateChanged = true;
-	IsNetworkJoined = false;
+    IsNetworkJoined = false;
 
 #if( OVER_THE_AIR_ACTIVATION == 0 )
     // Random seed initialization
@@ -363,6 +367,8 @@ int main(void)
 DevAddr    = randr(0, 0x01FFFFFF);
 
     LoRaMacInitNwkIds( LORAWAN_NETWORK_ID, DevAddr, NwkSKey, AppSKey);
+    LOG_DEBUG("LoRaMac network IDs initialized. Network ID: %u, DevAddr: %u.",
+    LORAWAN_NETWORK_ID, DevAddr);
     IsNetworkJoined = true;
 #else
     // Initialize LoRaMac device unique ID
@@ -380,6 +386,9 @@ DevAddr    = randr(0, 0x01FFFFFF);
     LoRaMacSetAdrOn( LORAWAN_ADR_ON);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
     LoRaMacSetPublicNetwork( LORAWAN_PUBLIC_NETWORK);
+    LoRaMacSetDeviceClass (CLASS_C);
+
+    LOG_DEBUG("Starting LoRa Mesh application...");
 
     while (1) {
         while (IsNetworkJoined == false) {
@@ -408,79 +417,32 @@ DevAddr    = randr(0, 0x01FFFFFF);
 #endif
         }
 
-        if (SwitchAPushEvent) {
-			DelayMs(20);    // Software debouncing
-			SwitchAPushEvent = false;
-			if (AppLedStateOn)
-				PRINTF("TRACE: Remotely disable LED.\r\n");
-			else
-				PRINTF("TRACE: Remotely enable LED.\r\n");
-			AppLedStateOn = !AppLedStateOn;
-			AppLedStateChanged = true;
-		}
+        if (ScheduleNextTx) {
+            ScheduleNextTx = false;
 
-		if (SwitchBPushEvent) {
-			DelayMs(20);    // Software debouncing
-			SwitchBPushEvent = false;
-			if (AppSensorTransmissionStateOn)
-				PRINTF("TRACE: Remotely disable sensor data collecting.\r\n");
-			else
-				PRINTF("TRACE: Remotely enable sensor data collecting.\r\n");
-			AppSensorTransmissionStateOn = !AppSensorTransmissionStateOn;
-			AppSensorTransmissionStateChanged = true;
-		}
+            // Schedule next packet transmission
+            TxDutyCycleTime = APP_TX_DUTYCYCLE + randr(-APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND);
+            TimerSetValue(&TxNextPacketTimer, TxDutyCycleTime);
+            TimerStart(&TxNextPacketTimer);
+        }
 
-		if (DownlinkStatusUpdate == true) {
-			DownlinkStatusUpdate = false;
-		}
+        if (trySendingFrameAgain == true) {
+            LOG_TRACE("Re-sending frame...");
+            trySendingFrameAgain = SendFrame();
+            LOG_TRACE_IF(trySendingFrameAgain, "No free channel. Try again later.");
+        }
 
-		if (NewSensorDataReceived) {
-			NewSensorDataReceived = false;
-			PRINTF("DATA: Accelerometer (x/y/z) \t%d \t%d \t%d\r\n", SensorData.accelX,
-					SensorData.accelY, SensorData.accelZ);
-			PRINTF("DATA: Magnetometer (x/y/z) \t%d \t%d \t%d\r\n", SensorData.magX,
-					SensorData.magY, SensorData.magZ);
-		}
+        if (TxNextPacket) {
+            LOG_TRACE("Trying to send frame...");
+            TxNextPacket = false;
 
-		if (ScheduleNextTx && AppSensorTransmissionStateOn) {
-			PRINTF("TRACE: Schedule next uplink packet.\r\n");
-			ScheduleNextTx = false;
+            PrepareTxFrame(AppPort);
 
-			// Schedule next packet transmission
-			TxDutyCycleTime = APP_TX_DUTYCYCLE + randr(-APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND);
-			TimerSetValue(&TxNextPacketTimer, TxDutyCycleTime);
-			TimerStart(&TxNextPacketTimer);
-		}
+            trySendingFrameAgain = SendFrame();
 
-		if (trySendingFrameAgain == true) {
-			PRINTF("TRACE: Re-sending frame...\r\n");
-			trySendingFrameAgain = SendFrame();
-			if (trySendingFrameAgain) PRINTF("TRACE: No free channel. Try again later.\r\n");
-		}
+            LOG_TRACE_IF(trySendingFrameAgain, "No free channel. Try again later.");
+        }
 
-		if (TxNextPacket) {
-			PRINTF("TRACE: Trying to send frame...\r\n");
-			TxNextPacket = false;
-			if (AppSensorTransmissionStateChanged) AppSensorTransmissionStateChanged = false;
-			if (AppLedStateChanged) AppLedStateChanged = false;
-
-			PrepareTxFrame(AppPort);
-
-			trySendingFrameAgain = SendFrame();
-
-			if (trySendingFrameAgain) PRINTF("TRACE: No free channel. Try again later.\r\n");
-		}
-
-		TimerLowPowerHandler();
+        TimerLowPowerHandler();
     }
-}
-
-void SwitchAIrq(void)
-{
-    SwitchAPushEvent = true;
-}
-
-void SwitchBIrq(void)
-{
-    SwitchBPushEvent = true;
 }

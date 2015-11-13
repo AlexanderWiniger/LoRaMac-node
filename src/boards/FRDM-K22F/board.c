@@ -41,7 +41,7 @@ Gpio_t Irq2Fxos8700cq;
  */
 Adc_t Adc;
 I2c_t I2c;
-#if !defined(SX1276_BOARD_AVAILABLE)
+#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
 I2C_TypeDef Fxos;
 #endif
 Uart_t Lpuart;
@@ -145,7 +145,7 @@ void BoardInitPeriph(void)
     GpioInit(&SwitchA, SWITCH_A, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&SwitchB, SWITCH_B, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
-#if !defined(SX1276_BOARD_AVAILABLE)
+#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
     /* Init the IRQ GPIO pins*/
     GpioInit(&Irq1Fxos8700cq, IRQ_1_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Irq2Fxos8700cq, IRQ_2_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
@@ -233,7 +233,7 @@ void BoardInitMcu(void)
         CLOCK_SYS_SetConfiguration(&g_defaultClockConfigRun);
 #endif
 
-#if !defined(SX1276_BOARD_AVAILABLE)
+#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
         /* OS initialization */
         OSA_Init();
         /*! I2C channel to be used by digital 3D accelerometer */

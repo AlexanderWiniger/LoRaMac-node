@@ -90,6 +90,21 @@
 			<location>C:/workspace/eclipse/LoRaMac-node/src/boards/mcu/kinetis</location>
 		</link>
 		<link>
+			<name>src/boards/mcu/kinetis/kl26z</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>src/boards/mcu/kinetis/utilities</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>src/boards/mcu/kinetis/kl26z/startup</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
 			<name>src/boards/mcu/kinetis/utilities/fsl_debug_console.c</name>
 			<type>1</type>
 			<locationURI>KSDK_LOC/platform/utilities/src/fsl_debug_console.c</locationURI>

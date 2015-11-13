@@ -63,15 +63,27 @@
 #error "Please define a modem in the compiler options."
 #endif
 
+#define RECEIVE_DELAY1								2500000
+
+static TimerEvent_t TxPacketTimer;
+
 static bool channelActivityDetected;
 static bool txDone;
 static bool cadDone;
+static bool rxDone;
+static bool sendPacket;
 
 static uint8_t TxBuffer[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '\0' };
 static uint32_t TxBufferSize = 12;
 
+static uint8_t RxBuffer[64];
+static uint32_t RxBufferSize;
+
+static int8_t Snr;
+static int16_t Rssi;
+
 static uint32_t Channels[] = { LC1, LC2, LC3 };
-static uint8_t SelectedChannel = 0;
+static uint8_t SelectedChannel;
 
 /*!
  * Radio events function pointer
@@ -129,8 +141,12 @@ int main(void)
     RadioEvents.CadDone = OnCadDone;
 
     txDone = false;
-    cadDone = false;
-    channelActivityDetected = false;
+	cadDone = false;
+	channelActivityDetected = false;
+	rxDone = false;
+	sendPacket = false;
+
+	SelectedChannel = 1;
 
     Radio.Init(&RadioEvents);
     PRINTF("TRACE: Radio initialized.\r\n");
@@ -166,8 +182,8 @@ int main(void)
 #endif
 
     srand1 (BoardGetRandomSeed() );
-
-PRINTF    ("Start channel activity detection...\r\n");
+#if 0
+    PRINTF("Start channel activity detection...\r\n");
     Radio.StartCad();
 
     while (1) {
@@ -191,17 +207,36 @@ PRINTF    ("Start channel activity detection...\r\n");
             Radio.StartCad();
         }
     }
+#else
+    PRINTF("Start package receiving...\r\n");
+	Radio.Rx(0);
+
+	while(1){
+		if(rxDone) {
+			rxDone = false;
+//			TimerSetValue(&TxPacketTimer, RECEIVE_DELAY1);
+//			TimerStart(&TxPacketTimer);
+			PRINTF("TRACE: %s - Incoming message. %u bytes. (%d/%d)\r\n", __FUNCTION__, RxBufferSize, Rssi, Snr);
+			for(uint8_t i = 0; i < RxBufferSize; i++) {
+				PRINTF("%02x", RxBuffer[i]);
+			}
+			PRINTF("\r\n");
+			Radio.Rx(0);
+		}
+	}
+#endif
 }
 
 void OnCadDone(bool cad)
 {
-    Radio.Standby();
+    Radio.Sleep();
     cadDone = true;
     channelActivityDetected = cad;
 }
 
 void OnTxDone(void)
 {
+	Radio.Sleep();
     PRINTF("TRACE: Test frame on channel %u sent.\r\n", Channels[0]);
     txDone = true;
 }
@@ -209,19 +244,27 @@ void OnTxDone(void)
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr)
 {
     Radio.Sleep();
+    rxDone = true;
+    RxBufferSize = size;
+    Rssi = rssi;
+    Snr = snr;
+    memcpy(RxBuffer, payload, RxBufferSize);
 }
 
 void OnTxTimeout(void)
 {
+	PRINTF("TRACE: %s.\r\n", __FUNCTION__);
     Radio.Sleep();
 }
 
 void OnRxTimeout(void)
 {
+	PRINTF("TRACE: %s.\r\n", __FUNCTION__);
     Radio.Sleep();
 }
 
 void OnRxError(void)
 {
+	PRINTF("TRACE: %s.\r\n", __FUNCTION__);
     Radio.Sleep();
 }
