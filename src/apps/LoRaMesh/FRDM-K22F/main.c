@@ -358,6 +358,12 @@ int main(void)
     BoardInitPeriph();
     LOG_DEBUG("Peripherals initialized.");
 
+#if 1
+    LoRaMeshCallbacks_t callbacks;
+    LoRaMeshInit(&callbacks);
+    for (;;) {
+    }
+#else
     LoRaMacCallbacks.MacEvent = OnMacEvent;
     LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
     LoRaMacInit(&LoRaMacCallbacks);
@@ -370,11 +376,11 @@ int main(void)
     srand1 (BoardGetRandomSeed() );
     // Choose a random device address based on Board unique ID
     // NwkAddr rand [0, 33554431]
-DevAddr    = randr(0, 0x01FFFFFF);
+    DevAddr = randr(0, 0x01FFFFFF);
 
     LoRaMacInitNwkIds( LORAWAN_NETWORK_ID, DevAddr, NwkSKey, AppSKey);
     LOG_DEBUG("LoRaMac network IDs initialized. Network ID: %u, DevAddr: %u.",
-    LORAWAN_NETWORK_ID, DevAddr);
+            LORAWAN_NETWORK_ID, DevAddr);
     IsNetworkJoined = true;
 #else
     // Initialize LoRaMac device unique ID
@@ -451,4 +457,5 @@ DevAddr    = randr(0, 0x01FFFFFF);
 
         TimerLowPowerHandler();
     }
+#endif
 }

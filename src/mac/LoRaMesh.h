@@ -47,7 +47,7 @@ typedef enum {
 /*!
  * LoRaMesh event information
  */
-typedef struct {
+typedef struct LoRaMeshEventInfo_s {
     LoRaMeshEventInfoStatus_t Status;
     bool TxAckReceived;
     uint8_t TxNbRetries;
@@ -66,7 +66,7 @@ typedef struct {
  * LoRaMAC events structure
  * Used to notify upper layers of MAC events
  */
-typedef struct sLoRaMeshCallbacks {
+typedef struct LoRaMeshCallbacks_s {
     /*!
      * MAC layer event callback prototype.
      *
@@ -77,11 +77,96 @@ typedef struct sLoRaMeshCallbacks {
 } LoRaMeshCallbacks_t;
 
 /*!
+ * LoRaMesh slot info structure
+ */
+typedef struct LoRaMeshSlotInfo_s {
+    uint32_t Frequency;
+    uint8_t Periodicity;
+    uint8_t Duration;
+} LoRaMeshSlotInfo_t;
+
+/*!
+ * LoRaMesh child node info structure
+ */
+typedef struct LoRaMeshChildNodeInfo_s {
+    uint32_t Address;
+    uint8_t NwkSKey[16];
+    uint8_t AppSKey[16];
+    uint32_t UpLinkCounter;
+    LoRaMeshSlotInfo_t UplinkSlot;
+} LoRaMeshChildNodeInfo_t;
+
+/*!
+ * LoRaMesh altitude data structure.
+ */
+typedef struct LoRaMeshAltitude_s {
+    uint16_t GPS;
+    uint16_t Barometric;
+} LoRaMeshAltitude_t;
+
+/*!
+ * LoRaMesh track data structure.
+ */
+typedef struct LoRaMeshVectorTrack_s {
+    uint16_t GroundSpeed;
+    uint16_t Track;
+} LoRaMeshVectorTrack_t;
+
+/*!
+ * LoRaMesh position data structure.
+ */
+typedef struct LoRaMeshPosition_s {
+    uint32_t Latitude;
+    uint32_t Longitude;
+} LoRaMeshPosition_t;
+
+/*!
+ * LoRaMesh pilot data structure.
+ */
+typedef struct LoRaMeshPilotData_s {
+    uint32_t Time;
+    LoRaMeshPosition_t Position;
+    LoRaMeshAltitude_t Altitude;
+    LoRaMeshVectorTrack_t VectorTrack;
+    uint16_t WindSpeed;
+} LoRaMeshPilotData_t;
+
+/*!
  * LoRaMAC layer initialization
  *
  * \param [IN] callabcks       Pointer to a structure defining the LoRaMAC
  *                             callback functions.
  */
 void LoRaMeshInit(LoRaMeshCallbacks_t *callabcks);
+
+/*!
+ * \brief Add child node at the tail of the list.
+ *
+ * \param childNode Child Node to append
+ */
+void AddChildNode(LoRaMeshChildNodeInfo_t* childNode);
+
+/*!
+ * \brief Remove child node from the list.
+ *
+ * \param devAddr Device address of child node to remove.
+ * \return LoRaMeshChildNodeInfo_t Removed child node.
+ */
+LoRaMeshChildNodeInfo_t* RemoveChildNode(uint32_t devAddr);
+
+/*!
+ * \brief Remove child node at specified position from the list.
+ *
+ * \param devAddr Device address of child node to find.
+ * \return LoRaMeshChildNodeInfo_t* Returns pointer to the found child node or NULL if not found.
+ */
+LoRaMeshChildNodeInfo_t* FindChildNode(uint32_t devAddr);
+
+/*!
+ * \brief Print out child node list.
+ *
+ * \param reverseOrder Print out the list in reversed order.
+ */
+void PrintChildNodeList(bool reverseOrder);
 
 #endif // __LORAMESH_H__
