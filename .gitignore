@@ -212,3 +212,4 @@ pip-log.txt
 .mr.developer.cfg
 *.o
 *.d
+Eclipse/FRDM-KL26Z/LoRaMac/classA/.settings/language.settings.xml
