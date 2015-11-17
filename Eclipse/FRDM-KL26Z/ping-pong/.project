@@ -40,6 +40,11 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>src/peripherals</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
 			<name>src/radio</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/src/radio</locationURI>
@@ -63,6 +68,16 @@
 			<name>src/boards/mcu</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>src/peripherals/fxos.c</name>
+			<type>1</type>
+			<location>C:/workspace/eclipse/LoRaMac-node/src/peripherals/fxos.c</location>
+		</link>
+		<link>
+			<name>src/peripherals/fxos.h</name>
+			<type>1</type>
+			<location>C:/workspace/eclipse/LoRaMac-node/src/peripherals/fxos.h</location>
 		</link>
 		<link>
 			<name>src/apps/ping-pong/FRDM-KL26Z</name>
