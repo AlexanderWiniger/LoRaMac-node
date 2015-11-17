@@ -78,7 +78,7 @@
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.1974041637" name="Cross ARM C Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker">
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.gcsections.1002779873" name="Remove unused sections (-Xlinker --gc-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.gcsections" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.scriptfile.546811098" name="Script files (-T)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.scriptfile" valueType="stringList">
-									<listOptionValue builtIn="false" value="&quot;C:\workspace\eclipse\LoRaMac-node\src\boards\mcu\kinetis\k20d\linker\MK20Z128xxx5_flash.ld&quot;"/>
+									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis/k20d/linker/MK20D128xxx5_flash.ld"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.libs.317943591" name="Libraries (-l)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="m"/>
@@ -134,8 +134,13 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash.1280129383.1545273096" name="Create flash image" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash.1280129383"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize.1316586412.1151931955" name="Print size" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize.1316586412"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.22060622.1833201122" name="Enable all common warnings (-Wall)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.22060622"/>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.631373069" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.529930552"/>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1593276255" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.580586975"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform" isAbstract="false" osList="all" superClass="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform"/>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.631373069" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.529930552">
+								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input.1900835544" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input"/>
+							</tool>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1593276255" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.580586975">
+								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.583944214" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input"/>
+							</tool>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1649317540" name="Cross ARM C++ Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.2102323122"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.693936915" name="Cross ARM C Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.1974041637"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.374307074" name="Cross ARM C++ Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.558451432"/>
