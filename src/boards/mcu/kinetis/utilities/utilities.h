@@ -9,6 +9,7 @@
 #ifndef __UTILITIES_H__
 #define __UTILITIES_H__
 
+#if defined(CPU_MKL26Z128VLH4) || defined(CPU_MK22FN512VLH12)
 #include "fsl_i2c_master_driver.h"
 
 /*!
@@ -24,6 +25,10 @@ typedef struct {
     i2c_device_t slave;
     i2c_master_state_t state;
 } I2C_TypeDef;
+#else
+typedef uint32_t ADC_TypeDef;
+typedef uint32_t I2C_TypeDef;
+#endif
 
 /*!
  * \brief Returns the minimum value betwen a and b
