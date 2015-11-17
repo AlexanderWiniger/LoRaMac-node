@@ -124,8 +124,11 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.559342003.1742859919" name="LoRaMac.c" rcbsApplicability="disable" resourcePath="src/mac/LoRaMac.c" toolsToInvoke="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.437929334.1847688055">
+						<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.437929334.1847688055" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.437929334"/>
+					</fileInfo>
 					<sourceEntries>
-						<entry excluding="src/radio/sx1272|src/boards/mcu/kinetis/k22f" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/mac/LoRaMac.c|src/radio/sx1272|src/boards/mcu/kinetis/k22f" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

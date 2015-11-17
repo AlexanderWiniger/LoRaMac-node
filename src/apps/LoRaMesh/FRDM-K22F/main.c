@@ -9,10 +9,9 @@
 #include <math.h>
 #include "board.h"
 
-#include "LoRaMac.h"
 #include "LoRaMesh.h"
 
-#define LOG_LEVEL_DEBUG
+#define LOG_LEVEL_TRACE
 #include "debug.h"
 
 /*!
@@ -90,6 +89,15 @@
  */
 #define APP_TX_DUTYCYCLE                            1000000  // 5 [s] value in us
 #define APP_TX_DUTYCYCLE_RND                        1000000  // 1 [s] value in us
+
+/*!
+ *  Pilot data header option list.
+ */
+#define SDUHDR_OPTION_LIST_MASK                     0x0F
+#define SDUHDR_OPTION_LIST_ALT_GPS_MASK             0x08
+#define SDUHDR_OPTION_LIST_ALT_BAR_MASK             0x04
+#define SDUHDR_OPTION_LIST_VEC_TRACK_MASK           0x02
+#define SDUHDR_OPTION_LIST_WIND_SPEED_MASK          0x01
 
 /*!
  * LoRaWAN confirmed messages
@@ -191,6 +199,33 @@ static bool TxNextPacket = true;
 static bool ScheduleNextTx = false;
 
 static LoRaMacCallbacks_t LoRaMacCallbacks;
+
+/*!
+ * LoRaMac altitude data structure.
+ */
+typedef struct Altitude_s {
+    uint16_t GPS;
+    uint16_t Barometric;
+} Altitude_t;
+
+/*!
+ * LoRaMac track data structure.
+ */
+typedef struct VectorTrack_s {
+    uint16_t GroundSpeed;
+    uint16_t Track;
+} VectorTrack_t;
+
+/*!
+ * LoRaMac pilot data structure.
+ */
+typedef struct PilotData_s {
+    uint32_t Time;
+    Position_t Position;
+    Altitude_t Altitude;
+    VectorTrack_t VectorTrack;
+    uint16_t WindSpeed;
+} PilotData_t;
 
 /*!
  * Prepares the frame buffer to be sent
@@ -358,29 +393,20 @@ int main(void)
     BoardInitPeriph();
     LOG_DEBUG("Peripherals initialized.");
 
-#if 1
-    LoRaMeshCallbacks_t callbacks;
-    LoRaMeshInit(&callbacks);
-    for (;;) {
-    }
-#else
     LoRaMacCallbacks.MacEvent = OnMacEvent;
     LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
     LoRaMacInit(&LoRaMacCallbacks);
-    LOG_DEBUG("LoRaMac initialized.");
+    LOG_DEBUG("LoRaMesh initialized.");
 
     IsNetworkJoined = false;
 
 #if( OVER_THE_AIR_ACTIVATION == 0 )
-    // Random seed initialization
-    srand1 (BoardGetRandomSeed() );
-    // Choose a random device address based on Board unique ID
-    // NwkAddr rand [0, 33554431]
-    DevAddr = randr(0, 0x01FFFFFF);
+    // NwkAddr
+    DevAddr = 0x013D02AB;
 
     LoRaMacInitNwkIds( LORAWAN_NETWORK_ID, DevAddr, NwkSKey, AppSKey);
-    LOG_DEBUG("LoRaMac network IDs initialized. Network ID: %u, DevAddr: %u.",
-            LORAWAN_NETWORK_ID, DevAddr);
+    LOG_DEBUG("LoRaMesh network IDs initialized. Network ID: %u, DevAddr: 0x%08x.",
+    LORAWAN_NETWORK_ID, DevAddr);
     IsNetworkJoined = true;
 #else
     // Initialize LoRaMac device unique ID
@@ -457,5 +483,4 @@ int main(void)
 
         TimerLowPowerHandler();
     }
-#endif
 }

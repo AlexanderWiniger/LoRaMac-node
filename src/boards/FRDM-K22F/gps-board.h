@@ -10,6 +10,14 @@
 #define __GPS_BOARD_H_
 
 /*!
+ * Position data structure.
+ */
+typedef struct Position_s {
+    uint32_t Latitude;
+    uint32_t Longitude;
+} Position_t;
+
+/*!
  * \brief Low level Initialisation of the UART and IRQ for the GPS
  */
 void GpsMcuInit(void);

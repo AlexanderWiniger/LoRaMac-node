@@ -9,10 +9,15 @@
 #define __BOARD_H__
 
 #include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
 #include "fsl_device_registers.h"
 #include "fsl_debug_console.h"
 #include "fsl_port_hal.h"
 #include "utilities.h"
+#include "LinkedList.h"
 #include "timer.h"
 #include "delay.h"
 #include "gpio.h"
