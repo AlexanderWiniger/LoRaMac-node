@@ -267,7 +267,6 @@ int main(void)
         }
 
         TimerLowPowerHandler();
-
     }
 }
 
