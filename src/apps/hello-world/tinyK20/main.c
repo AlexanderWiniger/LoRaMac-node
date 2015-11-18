@@ -9,7 +9,8 @@
 #include "board.h"
 #include "uart.h"
 
-#define PRINTF
+#define LOG_LEVEL_TRACE
+#include "debug.h"
 
 /*------------------------- Local Defines --------------------------------*/
 
@@ -17,10 +18,7 @@
 static TimerEvent_t Led1Timer;
 volatile bool Led1TimerEvent = false;
 
-/*!
- * \brief Switch A IRQ callback
- */
-void SwitchAIrq(void);
+static bool AppLedStateOn;
 
 /*!
  * \brief Function executed on Led 1 Timeout event
@@ -37,26 +35,31 @@ int main(void)
 {
     // Target board initialisation
     BoardInitMcu();
-    PRINTF("TRACE: Mcu initialized.\r\n");
+    LOG_TRACE("Mcu initialized.");
     BoardInitPeriph();
-    PRINTF("TRACE: Peripherals initialized.\r\n");
+    LOG_TRACE("Peripherals initialized.");
 
     TimerInit(&Led1Timer, OnLed1TimerEvent);
     TimerSetValue(&Led1Timer, 250000);
 
     // Switch LED 1 ON
     GpioWrite(&Led1, 0);
+    AppLedStateOn = true;
     TimerStart(&Led1Timer);
 
     // Print the initial banner
-    PRINTF("\r\nHello World!\r\n\r\n");
+    LOG_DEBUG_BARE("\r\nHello World!\r\n\r\n");
 
     while (1) {
         if (Led1TimerEvent == true) {
             Led1TimerEvent = false;
 
             // Switch LED 1 OFF
-            GpioWrite(&Led1, 1);
+            if (AppLedStateOn)
+                GpioWrite(&Led1, 1);
+            else
+                GpioWrite(&Led1, 0);
+            AppLedStateOn = !AppLedStateOn;
             TimerStart(&Led1Timer);
         }
     }
