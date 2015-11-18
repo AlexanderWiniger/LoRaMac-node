@@ -13,7 +13,7 @@
  * Variables
  ******************************************************************************/
 typedef enum {
-    UART_0, UART_1, UART_2, LPUART, UART_USB_CDC = 255,
+    UART_0, UART_1, UART_2, UART_USB_CDC = 255,
 } UartId_t;
 
 /*!
