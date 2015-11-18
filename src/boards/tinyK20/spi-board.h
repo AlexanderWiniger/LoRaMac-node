@@ -9,18 +9,21 @@
 #ifndef __SPI_MCU_H__
 #define __SPI_MCU_H__
 
+/* Defines constant value arrays for the baud rate pre-scalar and scalar divider values.*/
+static const uint32_t s_baudratePrescaler[] = { 2, 3, 5, 7 };
+static const uint32_t s_baudrateScaler[] = { 2, 4, 6, 8, 16, 32, 64, 128, 256, 512, 1024, 2048,
+        4096, 8192, 16384, 32768 };
+
 /*!
  * LoRaMac SPI typedef
  */
-/* \todo define correct SPI_TypeDef */
-typedef uint32_t SPI_TypeDef;
+typedef SPI_MemMapPtr SPI_TypeDef;
 
 /*!
  * SPI driver structure definition
  */
 struct Spi_s {
-    uint32_t instance;
-    SPI_TypeDef *Spi;
+    SPI_TypeDef Spi;
     bool isSlave;
     Gpio_t Mosi;
     Gpio_t Miso;

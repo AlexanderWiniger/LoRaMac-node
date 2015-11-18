@@ -81,23 +81,23 @@
 
 #if defined(SX1276_BOARD_EMBED)
 
-#define RADIO_RESET                    PB_0
+#define RADIO_RESET                    PB_17
 
-#define RADIO_SPI_INSTANCE             1
-#define RADIO_MOSI                     PD_6
-#define RADIO_MISO                     PD_7
-#define RADIO_SCLK                     PD_5
-#define RADIO_NSS                      PD_4
+#define RADIO_SPI_INSTANCE             0
+#define RADIO_MOSI                     PC_6
+#define RADIO_MISO                     PC_7
+#define RADIO_SCLK                     PC_5
+#define RADIO_NSS                      PD_0
 
-#define RADIO_DIO_0                    PB_16
-#define RADIO_DIO_1                    PA_2
-#define RADIO_DIO_2                    PA_4
-#define RADIO_DIO_3                    PB_18
-#define RADIO_DIO_4_A                  PB_19
-#define RADIO_DIO_4_B                  PC_2
-#define RADIO_DIO_5                    PA_1
+#define RADIO_DIO_0                    PD_1
+#define RADIO_DIO_1                    PD_2
+#define RADIO_DIO_2                    PD_3
+#define RADIO_DIO_3                    PD_5
+#define RADIO_DIO_4_A                  PD_6
+#define RADIO_DIO_4_B                  NC
+#define RADIO_DIO_5                    PD_7
 
-#define RADIO_ANT_SWITCH_RX_TX         PB_3
+#define RADIO_ANT_SWITCH_RX_TX         PB_16
 
 #else
 

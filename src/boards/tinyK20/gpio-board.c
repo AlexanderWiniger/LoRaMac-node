@@ -95,7 +95,7 @@ static alternate_fct_user_config_t alternateFctCfg[] = {
         .muxConfig = kPortMuxAlt3, ///> UART1_RX
     },
     {
-        .pinName = PC_4,
+        .pinName = PD_0,
         .muxConfig = kPortMuxAlt2, ///> SPI0_PCS0
     },
     {

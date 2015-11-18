@@ -50,9 +50,7 @@ void BoardInitMcu(void)
         low_level_init();
 
         /*! SPI channel to be used by Semtech SX1276 */
-#if defined(SX1276_BOARD_FREEDOM) || defined(SX1276_BOARD_EMBED)
-        SX1276.Spi.instance = RADIO_SPI_INSTANCE;
-        SX1276.Spi.isSlave = false;
+#if defined(SX1276_BOARD_EMBED)
         SpiInit(&SX1276.Spi, RADIO_MOSI, RADIO_MISO, RADIO_SCLK, NC);
         SX1276IoInit();
 #endif
@@ -83,7 +81,7 @@ void BoardInitMcu(void)
 
 void BoardDeInitMcu(void)
 {
-#if defined(SX1276_BOARD_FREEDOM) || defined(SX1276_BOARD_EMBED)
+#if defined(SX1276_BOARD_EMBED)
     SpiDeInit(&SX1276.Spi);
     SX1276IoDeInit();
 #endif
