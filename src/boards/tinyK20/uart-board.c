@@ -13,7 +13,7 @@
 #include "debug.h"
 
 static UART_MemMapPtr g_uartBase[] = UART_BASE_PTRS;
-static IRQInterruptIndex g_uartIrq[] = { INT_UART0_RX_TX, INT_UART1_RX_TX, INT_UART2_RX_TX };
+static IRQInterruptIndex g_uartIrq[] = { UART0_RX_TX_IRQn, UART1_RX_TX_IRQn, UART2_RX_TX_IRQn };
 
 void UartMcuInit(Uart_t *obj, uint8_t uartId, PinNames tx, PinNames rx)
 {

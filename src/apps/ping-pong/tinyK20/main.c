@@ -128,9 +128,17 @@ int main(void)
 
     // Target board initialisation
     BoardInitMcu();
-    LOG_TRACE("Mcu initialized.\r\n");
+    LOG_TRACE("Mcu initialized.");
     BoardInitPeriph();
-    LOG_TRACE("Peripherals initialized.\r\n");
+    LOG_TRACE("Peripherals initialized.");
+
+    /* Set pin muxing to gpio */
+    PORTC_BASE_PTR->PCR[2] = (((PORTC_BASE_PTR->PCR[2]) & ~(PORT_PCR_MUX_MASK | PORT_PCR_ISF_MASK))
+            | PORT_PCR_MUX(1));
+    /* Write pin output */
+    PTC_BASE_PTR->PSOR = (1U << 2);
+    /* Set pin direction */
+    PTC_BASE_PTR->PDDR |= (1U << 2);
 
 // Radio initialization
     RadioEvents.TxDone = OnTxDone;
@@ -140,7 +148,7 @@ int main(void)
     RadioEvents.RxError = OnRxError;
 
     Radio.Init(&RadioEvents);
-    LOG_TRACE("Radio initialized.\r\n");
+    LOG_TRACE("Radio initialized.");
 
     Radio.SetChannel(RF_FREQUENCY);
 
@@ -196,10 +204,10 @@ int main(void)
                             }
                             DelayMs(1);
                             Radio.Send(Buffer, BufferSize);
-                        } else if (strncmp((const char*) Buffer, (const char*) PingMsg, 4) == 0) { // A master already exists then become a slave
+                        } else if (strncmp((const char*) Buffer, (const char*) PingMsg, 4) == 0) {   // A master already exists then become a slave
                             isMaster = false;
                             Radio.Rx( RX_TIMEOUT_VALUE);
-                        } else // valid reception but neither a PING or a PONG message
+                        } else   // valid reception but neither a PING or a PONG message
                         {    // Set device as master ans start again
                             isMaster = true;
                             Radio.Rx( RX_TIMEOUT_VALUE);
@@ -222,7 +230,7 @@ int main(void)
                             }
                             DelayMs(1);
                             Radio.Send(Buffer, BufferSize);
-                        } else // valid reception but not a PING as expected
+                        } else   // valid reception but not a PING as expected
                         {    // Set device as master and start again
                             isMaster = true;
                             Radio.Rx( RX_TIMEOUT_VALUE);
@@ -294,6 +302,7 @@ void OnTxTimeout(void)
 
 void OnRxTimeout(void)
 {
+//    PTC_BASE_PTR->PTOR = (1U << 2);
     Radio.Sleep();
     State = RX_TIMEOUT;
 }

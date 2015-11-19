@@ -96,14 +96,14 @@ void RtcInit(void)
         RTC_BASE_PTR->IER &= (RTC_IER_TIIE_MASK | RTC_IER_TOIE_MASK | RTC_IER_TAIE_MASK
                 | RTC_IER_TSIE_MASK);
 
-        NVIC_BASE_PTR->ICPR[(((uint32_t) (int32_t) INT_RTC) >> 5UL)] = (uint32_t)(
-                1UL << (((uint32_t) (int32_t) INT_RTC) & 0x1FUL));
-        NVIC_BASE_PTR->ICPR[(((uint32_t) (int32_t) INT_RTC_Seconds) >> 5UL)] = (uint32_t)(
-                1UL << (((uint32_t) (int32_t) INT_RTC_Seconds) & 0x1FUL));
-        NVIC_BASE_PTR->ISER[(((uint32_t) (int32_t) INT_RTC) >> 5UL)] = (uint32_t)(
-                1UL << (((uint32_t) (int32_t) INT_RTC) & 0x1FUL));
-        NVIC_BASE_PTR->ISER[(((uint32_t) (int32_t) INT_RTC_Seconds) >> 5UL)] = (uint32_t)(
-                1UL << (((uint32_t) (int32_t) INT_RTC_Seconds) & 0x1FUL));
+        NVIC_BASE_PTR->ICPR[(((uint32_t) (int32_t) RTC_IRQn) >> 5UL)] = (uint32_t)(
+                1UL << (((uint32_t) (int32_t) RTC_IRQn) & 0x1FUL));
+        NVIC_BASE_PTR->ICPR[(((uint32_t) (int32_t) RTC_Seconds_IRQn) >> 5UL)] = (uint32_t)(
+                1UL << (((uint32_t) (int32_t) RTC_Seconds_IRQn) & 0x1FUL));
+        NVIC_BASE_PTR->ISER[(((uint32_t) (int32_t) RTC_IRQn) >> 5UL)] = (uint32_t)(
+                1UL << (((uint32_t) (int32_t) RTC_IRQn) & 0x1FUL));
+        NVIC_BASE_PTR->ISER[(((uint32_t) (int32_t) RTC_Seconds_IRQn) >> 5UL)] = (uint32_t)(
+                1UL << (((uint32_t) (int32_t) RTC_Seconds_IRQn) & 0x1FUL));
 
         RtcInitalized = true;
     }

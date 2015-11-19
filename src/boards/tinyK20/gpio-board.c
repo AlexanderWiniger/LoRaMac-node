@@ -80,43 +80,43 @@ typedef struct {
 static alternate_fct_user_config_t alternateFctCfg[] = {
     {
         .pinName = PA_1,
-        .muxConfig = kPortMuxAlt2, ///> UART0_RX
+        .muxConfig = kPortMuxAlt2,   ///> UART0_RX
     },
     {
         .pinName = PA_2,
-        .muxConfig = kPortMuxAlt2, ///> UART0_TX
+        .muxConfig = kPortMuxAlt2,   ///> UART0_TX
     },
     {
         .pinName = PC_4,
-        .muxConfig = kPortMuxAlt3, ///> UART1_TX
+        .muxConfig = kPortMuxAlt3,   ///> UART1_TX
     },
     {
         .pinName = PC_3,
-        .muxConfig = kPortMuxAlt3, ///> UART1_RX
+        .muxConfig = kPortMuxAlt3,   ///> UART1_RX
     },
     {
         .pinName = PD_0,
-        .muxConfig = kPortMuxAlt2, ///> SPI0_PCS0
+        .muxConfig = kPortMuxAlt2,   ///> SPI0_PCS0
     },
     {
         .pinName = PC_5,
-        .muxConfig = kPortMuxAlt2, ///> SPI0_SCK
+        .muxConfig = kPortMuxAlt2,   ///> SPI0_SCK
     },
     {
         .pinName = PC_6,
-        .muxConfig = kPortMuxAlt2, ///> SPI0_MOSI
+        .muxConfig = kPortMuxAlt2,   ///> SPI0_MOSI
     },
     {
         .pinName = PC_7,
-        .muxConfig = kPortMuxAlt2, ///> SPI0_MISO
+        .muxConfig = kPortMuxAlt2,   ///> SPI0_MISO
     },
     {
         .pinName = PB_3,
-        .muxConfig = kPortMuxAlt2, ///> I2C0_SDA
+        .muxConfig = kPortMuxAlt2,   ///> I2C0_SDA
     },
     {
         .pinName = PB_2,
-        .muxConfig = kPortMuxAlt2, ///> I2C0_SCL
+        .muxConfig = kPortMuxAlt2,   ///> I2C0_SCL
     },
     {
         .pinName = PIN_OUT_OF_RANGE,
@@ -189,8 +189,7 @@ void GpioMcuInit(Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, Pi
             else
                 g_gpioBase[obj->portIndex]->PCOR = (1U << obj->pinIndex);
             /* Set pin direction */
-            g_gpioBase[obj->portIndex]->PDDR = ((g_gpioBase[obj->portIndex]->PDDR)
-                    | (1U << obj->pinIndex));
+            g_gpioBase[obj->portIndex]->PDDR |= (1U << obj->pinIndex);
 
             if (config == PIN_OPEN_DRAIN) {
                 g_portBase[obj->portIndex]->PCR[obj->pinIndex] |= PORT_PCR_ODE_MASK;
@@ -284,7 +283,7 @@ void GpioMcuSetInterrupt(Gpio_t *obj, IrqModes irqMode, IrqPriorities irqPriorit
     /* Configure NVIC */
     if (intConfig) {
         /* Enable port interrupt.*/
-        NVIC_BASE_PTR->ISER[1] |= NVIC_ISER_SETENA(INT_PORTA + obj->portIndex);
+        NVIC_BASE_PTR->ISER[(((uint32_t)(int32_t)(PORTA_IRQn + obj->portIndex)) >> 5UL)] = (uint32_t)(1UL << (((uint32_t)(int32_t)(PORTA_IRQn + obj->portIndex)) & 0x1FUL));
     }
 }
 
@@ -413,8 +412,6 @@ void PORTD_IRQHandler(void)
     PORTD_ISFR = ~0u;
 
     if (pendingInt & 0x1)
-        GpioDIrq[1]();
-    else if ((pendingInt & (1U << 0)) >> 0)
         GpioDIrq[0]();
     else if ((pendingInt & (1U << 1)) >> 1)
         GpioDIrq[1]();

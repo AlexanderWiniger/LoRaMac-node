@@ -355,6 +355,7 @@ void SX1276SetRxConfig(RadioModems_t modem, uint32_t bandwidth, uint32_t datarat
         uint8_t payloadLen, bool crcOn, bool freqHopOn, uint8_t hopPeriod, bool iqInverted,
         bool rxContinuous)
 {
+    LOG_TRACE("Entering %s...", __FUNCTION__);
     SX1276SetModem(modem);
 
     switch (modem) {
@@ -429,7 +430,7 @@ void SX1276SetRxConfig(RadioModems_t modem, uint32_t bandwidth, uint32_t datarat
                             & RFLR_MODEMCONFIG1_CODINGRATE_MASK
                             & RFLR_MODEMCONFIG1_IMPLICITHEADER_MASK) | (bandwidth << 4)
                             | (coderate << 1) | fixLen);
-            LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_MODEMCONFIG1,
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_MODEMCONFIG1,
                     SX1276Read(REG_LR_MODEMCONFIG1));
 
             SX1276Write(REG_LR_MODEMCONFIG2,
@@ -438,29 +439,29 @@ void SX1276SetRxConfig(RadioModems_t modem, uint32_t bandwidth, uint32_t datarat
                             & RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK) | (datarate << 4)
                             | (crcOn << 2)
                             | ((symbTimeout >> 8) & ~RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK));
-            LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_MODEMCONFIG2,
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_MODEMCONFIG2,
                     SX1276Read(REG_LR_MODEMCONFIG2));
 
             SX1276Write(REG_LR_MODEMCONFIG3,
                     (SX1276Read(REG_LR_MODEMCONFIG3) & RFLR_MODEMCONFIG3_LOWDATARATEOPTIMIZE_MASK)
                             | (SX1276.Settings.LoRa.LowDatarateOptimize << 3));
-            LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_MODEMCONFIG3,
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_MODEMCONFIG3,
                     SX1276Read(REG_LR_MODEMCONFIG3));
 
             SX1276Write(REG_LR_SYMBTIMEOUTLSB, (uint8_t)(symbTimeout & 0xFF));
-            LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_SYMBTIMEOUTLSB,
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_SYMBTIMEOUTLSB,
                     SX1276Read(REG_LR_SYMBTIMEOUTLSB));
 
             SX1276Write(REG_LR_PREAMBLEMSB, (uint8_t)((preambleLen >> 8) & 0xFF));
-            LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_PREAMBLEMSB,
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_PREAMBLEMSB,
                     SX1276Read(REG_LR_PREAMBLEMSB));
             SX1276Write(REG_LR_PREAMBLELSB, (uint8_t)(preambleLen & 0xFF));
-            LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_PREAMBLELSB,
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_PREAMBLELSB,
                     SX1276Read(REG_LR_PREAMBLELSB));
 
             if (fixLen == 1) {
                 SX1276Write(REG_LR_PAYLOADLENGTH, payloadLen);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_PAYLOADLENGTH,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_PAYLOADLENGTH,
                         SX1276Read(REG_LR_PAYLOADLENGTH));
             }
 
@@ -468,10 +469,10 @@ void SX1276SetRxConfig(RadioModems_t modem, uint32_t bandwidth, uint32_t datarat
                 SX1276Write(REG_LR_PLLHOP,
                         (SX1276Read(REG_LR_PLLHOP) & RFLR_PLLHOP_FASTHOP_MASK)
                                 | RFLR_PLLHOP_FASTHOP_ON);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_PLLHOP,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_PLLHOP,
                         SX1276Read(REG_LR_PLLHOP));
                 SX1276Write(REG_LR_HOPPERIOD, SX1276.Settings.LoRa.HopPeriod);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_HOPPERIOD,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_HOPPERIOD,
                         SX1276Read(REG_LR_HOPPERIOD));
             }
 
@@ -492,24 +493,25 @@ void SX1276SetRxConfig(RadioModems_t modem, uint32_t bandwidth, uint32_t datarat
                 SX1276Write(REG_LR_DETECTOPTIMIZE,
                         (SX1276Read(REG_LR_DETECTOPTIMIZE) & RFLR_DETECTIONOPTIMIZE_MASK)
                                 | RFLR_DETECTIONOPTIMIZE_SF6);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_DETECTOPTIMIZE,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTOPTIMIZE,
                         SX1276Read(REG_LR_DETECTOPTIMIZE));
                 SX1276Write(REG_LR_DETECTIONTHRESHOLD, RFLR_DETECTIONTHRESH_SF6);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_DETECTIONTHRESHOLD,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTIONTHRESHOLD,
                         SX1276Read(REG_LR_DETECTIONTHRESHOLD));
             } else {
                 SX1276Write(REG_LR_DETECTOPTIMIZE,
                         (SX1276Read(REG_LR_DETECTOPTIMIZE) & RFLR_DETECTIONOPTIMIZE_MASK)
                                 | RFLR_DETECTIONOPTIMIZE_SF7_TO_SF12);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_DETECTOPTIMIZE,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTOPTIMIZE,
                         SX1276Read(REG_LR_DETECTOPTIMIZE));
                 SX1276Write(REG_LR_DETECTIONTHRESHOLD, RFLR_DETECTIONTHRESH_SF7_TO_SF12);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_DETECTIONTHRESHOLD,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTIONTHRESHOLD,
                         SX1276Read(REG_LR_DETECTIONTHRESHOLD));
             }
         }
             break;
     }
+    LOG_TRACE("Leaving %s...", __FUNCTION__);
 }
 
 void SX1276SetTxConfig(RadioModems_t modem, int8_t power, uint32_t fdev, uint32_t bandwidth,
@@ -518,6 +520,8 @@ void SX1276SetTxConfig(RadioModems_t modem, int8_t power, uint32_t fdev, uint32_
 {
     uint8_t paConfig = 0;
     uint8_t paDac = 0;
+
+    LOG_TRACE("Entering %s...", __FUNCTION__);
 
     SX1276SetModem(modem);
 
@@ -563,9 +567,9 @@ void SX1276SetTxConfig(RadioModems_t modem, int8_t power, uint32_t fdev, uint32_
                 | (uint8_t)((uint16_t)(power + 1) & 0x0F);
     }
     SX1276Write(REG_PACONFIG, paConfig);
-    LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_PACONFIG, SX1276Read(REG_PACONFIG));
+    LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_PACONFIG, SX1276Read(REG_PACONFIG));
     SX1276Write(REG_PADAC, paDac);
-    LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_PADAC, SX1276Read(REG_PADAC));
+    LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_PADAC, SX1276Read(REG_PADAC));
 
     switch (modem) {
         case MODEM_FSK:
@@ -636,10 +640,10 @@ void SX1276SetTxConfig(RadioModems_t modem, int8_t power, uint32_t fdev, uint32_
                 SX1276Write(REG_LR_PLLHOP,
                         (SX1276Read(REG_LR_PLLHOP) & RFLR_PLLHOP_FASTHOP_MASK)
                                 | RFLR_PLLHOP_FASTHOP_ON);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_PLLHOP,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_PLLHOP,
                         SX1276Read(REG_LR_PLLHOP));
                 SX1276Write(REG_LR_HOPPERIOD, SX1276.Settings.LoRa.HopPeriod);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_HOPPERIOD,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_HOPPERIOD,
                         SX1276Read(REG_LR_HOPPERIOD));
             }
 
@@ -648,51 +652,52 @@ void SX1276SetTxConfig(RadioModems_t modem, int8_t power, uint32_t fdev, uint32_
                             & RFLR_MODEMCONFIG1_CODINGRATE_MASK
                             & RFLR_MODEMCONFIG1_IMPLICITHEADER_MASK) | (bandwidth << 4)
                             | (coderate << 1) | fixLen);
-            LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_MODEMCONFIG1,
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_MODEMCONFIG1,
                     SX1276Read(REG_LR_MODEMCONFIG1));
 
             SX1276Write(REG_LR_MODEMCONFIG2,
                     (SX1276Read(REG_LR_MODEMCONFIG2) & RFLR_MODEMCONFIG2_SF_MASK
                             & RFLR_MODEMCONFIG2_RXPAYLOADCRC_MASK) | (datarate << 4)
                             | (crcOn << 2));
-            LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_MODEMCONFIG2,
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_MODEMCONFIG2,
                     SX1276Read(REG_LR_MODEMCONFIG2));
 
             SX1276Write(REG_LR_MODEMCONFIG3,
                     (SX1276Read(REG_LR_MODEMCONFIG3) & RFLR_MODEMCONFIG3_LOWDATARATEOPTIMIZE_MASK)
                             | (SX1276.Settings.LoRa.LowDatarateOptimize << 3));
-            LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_MODEMCONFIG3,
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_MODEMCONFIG3,
                     SX1276Read(REG_LR_MODEMCONFIG3));
 
             SX1276Write(REG_LR_PREAMBLEMSB, (preambleLen >> 8) & 0x00FF);
-            LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_PREAMBLEMSB,
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_PREAMBLEMSB,
                     SX1276Read(REG_LR_PREAMBLEMSB));
             SX1276Write(REG_LR_PREAMBLELSB, preambleLen & 0xFF);
-            LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_PREAMBLELSB,
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_PREAMBLELSB,
                     SX1276Read(REG_LR_PREAMBLELSB));
 
             if (datarate == 6) {
                 SX1276Write(REG_LR_DETECTOPTIMIZE,
                         (SX1276Read(REG_LR_DETECTOPTIMIZE) & RFLR_DETECTIONOPTIMIZE_MASK)
                                 | RFLR_DETECTIONOPTIMIZE_SF6);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_DETECTOPTIMIZE,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTOPTIMIZE,
                         SX1276Read(REG_LR_DETECTOPTIMIZE));
                 SX1276Write(REG_LR_DETECTIONTHRESHOLD, RFLR_DETECTIONTHRESH_SF6);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_DETECTIONTHRESHOLD,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTIONTHRESHOLD,
                         SX1276Read(REG_LR_DETECTIONTHRESHOLD));
             } else {
                 SX1276Write(REG_LR_DETECTOPTIMIZE,
                         (SX1276Read(REG_LR_DETECTOPTIMIZE) & RFLR_DETECTIONOPTIMIZE_MASK)
                                 | RFLR_DETECTIONOPTIMIZE_SF7_TO_SF12);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_DETECTOPTIMIZE,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTOPTIMIZE,
                         SX1276Read(REG_LR_DETECTOPTIMIZE));
                 SX1276Write(REG_LR_DETECTIONTHRESHOLD, RFLR_DETECTIONTHRESH_SF7_TO_SF12);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_DETECTIONTHRESHOLD,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTIONTHRESHOLD,
                         SX1276Read(REG_LR_DETECTIONTHRESHOLD));
             }
         }
             break;
     }
+    LOG_TRACE("Leaving %s...", __FUNCTION__);
 }
 
 uint32_t SX1276GetTimeOnAir(RadioModems_t modem, uint8_t pktLen)
@@ -865,6 +870,7 @@ void SX1276SetStby(void)
 
 void SX1276SetRx(uint32_t timeout)
 {
+    LOG_TRACE("Entering %s...", __FUNCTION__);
     bool rxContinuous = false;
 
     switch (SX1276.Settings.Modem) {
@@ -903,27 +909,27 @@ void SX1276SetRx(uint32_t timeout)
                         ((SX1276Read(REG_LR_INVERTIQ) & RFLR_INVERTIQ_TX_MASK
                                 & RFLR_INVERTIQ_RX_MASK) | RFLR_INVERTIQ_RX_ON
                                 | RFLR_INVERTIQ_TX_OFF));
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_INVERTIQ,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_INVERTIQ,
                         SX1276Read(REG_LR_INVERTIQ));
                 SX1276Write(REG_LR_INVERTIQ2, RFLR_INVERTIQ2_ON);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_INVERTIQ2,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_INVERTIQ2,
                         SX1276Read(REG_LR_INVERTIQ2));
             } else {
                 SX1276Write(REG_LR_INVERTIQ,
                         ((SX1276Read(REG_LR_INVERTIQ) & RFLR_INVERTIQ_TX_MASK
                                 & RFLR_INVERTIQ_RX_MASK) | RFLR_INVERTIQ_RX_OFF
                                 | RFLR_INVERTIQ_TX_OFF));
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_INVERTIQ,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_INVERTIQ,
                         SX1276Read(REG_LR_INVERTIQ));
                 SX1276Write(REG_LR_INVERTIQ2, RFLR_INVERTIQ2_OFF);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_INVERTIQ2,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_INVERTIQ2,
                         SX1276Read(REG_LR_INVERTIQ2));
             }
 
             // ERRATA 2.3 - Receiver Spurious Reception of a LoRa Signal
             if (SX1276.Settings.LoRa.Bandwidth < 9) {
                 SX1276Write(REG_LR_DETECTOPTIMIZE, SX1276Read(REG_LR_DETECTOPTIMIZE) & 0x7F);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_DETECTOPTIMIZE,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTOPTIMIZE,
                         SX1276Read(REG_LR_DETECTOPTIMIZE));
                 SX1276Write(REG_LR_TEST30, 0x00);
                 switch (SX1276.Settings.LoRa.Bandwidth) {
@@ -963,7 +969,7 @@ void SX1276SetRx(uint32_t timeout)
                 }
             } else {
                 SX1276Write(REG_LR_DETECTOPTIMIZE, SX1276Read(REG_LR_DETECTOPTIMIZE) | 0x80);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_DETECTOPTIMIZE,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTOPTIMIZE,
                         SX1276Read(REG_LR_DETECTOPTIMIZE));
             }
 
@@ -976,7 +982,7 @@ void SX1276SetRx(uint32_t timeout)
                         RFLR_IRQFLAGS_VALIDHEADER | RFLR_IRQFLAGS_TXDONE | RFLR_IRQFLAGS_CADDONE |
                         //RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
                                 RFLR_IRQFLAGS_CADDETECTED);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_IRQFLAGSMASK,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_IRQFLAGSMASK,
                         SX1276Read(REG_LR_IRQFLAGSMASK));
 
                 // DIO0=RxDone, DIO2=FhssChangeChannel
@@ -984,7 +990,7 @@ void SX1276SetRx(uint32_t timeout)
                         (SX1276Read(REG_DIOMAPPING1) & RFLR_DIOMAPPING1_DIO0_MASK
                                 & RFLR_DIOMAPPING1_DIO2_MASK) | RFLR_DIOMAPPING1_DIO0_00
                                 | RFLR_DIOMAPPING1_DIO2_00);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_DIOMAPPING1,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING1,
                         SX1276Read(REG_DIOMAPPING1));
             } else {
                 SX1276Write(
@@ -993,14 +999,14 @@ void SX1276SetRx(uint32_t timeout)
                                              //RFLR_IRQFLAGS_PAYLOADCRCERROR |
                         RFLR_IRQFLAGS_VALIDHEADER | RFLR_IRQFLAGS_TXDONE | RFLR_IRQFLAGS_CADDONE
                                 | RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL | RFLR_IRQFLAGS_CADDETECTED);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_IRQFLAGSMASK,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_IRQFLAGSMASK,
                         SX1276Read(REG_LR_IRQFLAGSMASK));
 
                 // DIO0=RxDone
                 SX1276Write(REG_DIOMAPPING1,
                         (SX1276Read(REG_DIOMAPPING1) & RFLR_DIOMAPPING1_DIO0_MASK)
                                 | RFLR_DIOMAPPING1_DIO0_00);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_DIOMAPPING1,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING1,
                         SX1276Read(REG_DIOMAPPING1));
             }
             SX1276Write(REG_LR_FIFORXBASEADDR, 0);
@@ -1036,10 +1042,12 @@ void SX1276SetRx(uint32_t timeout)
             SX1276SetOpMode (RFLR_OPMODE_RECEIVER_SINGLE);
         }
     }
+    LOG_TRACE("Leaving %s...", __FUNCTION__);
 }
 
 void SX1276SetTx(uint32_t timeout)
 {
+    LOG_TRACE("Entering %s...", __FUNCTION__);
     TimerSetValue(&TxTimeoutTimer, timeout);
 
     switch (SX1276.Settings.Modem) {
@@ -1071,7 +1079,7 @@ void SX1276SetTx(uint32_t timeout)
                                 RFLR_IRQFLAGS_CADDONE |
                                 //RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
                                 RFLR_IRQFLAGS_CADDETECTED);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_IRQFLAGSMASK,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_IRQFLAGSMASK,
                         SX1276Read(REG_LR_IRQFLAGSMASK));
 
                 // DIO0=TxDone, DIO2=FhssChangeChannel
@@ -1079,7 +1087,7 @@ void SX1276SetTx(uint32_t timeout)
                         (SX1276Read(REG_DIOMAPPING1) & RFLR_DIOMAPPING1_DIO0_MASK
                                 & RFLR_DIOMAPPING1_DIO2_MASK) | RFLR_DIOMAPPING1_DIO0_01
                                 | RFLR_DIOMAPPING1_DIO2_00);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_DIOMAPPING1,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING1,
                         SX1276Read(REG_DIOMAPPING1));
             } else {
                 SX1276Write(REG_LR_IRQFLAGSMASK,
@@ -1089,14 +1097,14 @@ void SX1276SetTx(uint32_t timeout)
                                 //RFLR_IRQFLAGS_TXDONE |
                                 RFLR_IRQFLAGS_CADDONE | RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL
                                 | RFLR_IRQFLAGS_CADDETECTED);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_LR_IRQFLAGSMASK,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_IRQFLAGSMASK,
                         SX1276Read(REG_LR_IRQFLAGSMASK));
 
                 // DIO0=TxDone
                 SX1276Write(REG_DIOMAPPING1,
                         (SX1276Read(REG_DIOMAPPING1) & RFLR_DIOMAPPING1_DIO0_MASK)
                                 | RFLR_DIOMAPPING1_DIO0_01);
-                LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_DIOMAPPING1,
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING1,
                         SX1276Read(REG_DIOMAPPING1));
             }
         }
@@ -1106,6 +1114,7 @@ void SX1276SetTx(uint32_t timeout)
     SX1276.Settings.State = RF_TX_RUNNING;
     TimerStart(&TxTimeoutTimer);
     SX1276SetOpMode (RF_OPMODE_TRANSMITTER);
+    LOG_TRACE("Leaving %s...", __FUNCTION__);
 }
 
 void SX1276StartCad(void)
@@ -1180,6 +1189,7 @@ void SX1276Reset(void)
 void SX1276SetOpMode(uint8_t opMode)
 {
     static uint8_t opModePrev = RF_OPMODE_STANDBY;
+    LOG_TRACE("Entering %s...", __FUNCTION__);
 
     if (opMode != opModePrev) {
         opModePrev = opMode;
@@ -1194,17 +1204,20 @@ void SX1276SetOpMode(uint8_t opMode)
             }
         }
         SX1276Write(REG_OPMODE, (SX1276Read(REG_OPMODE) & RF_OPMODE_MASK) | opMode);
-        LOG_TRACE("Writing at 0x%02x:\t 0x%02x.", __FUNCTION__, REG_OPMODE, SX1276Read(REG_OPMODE));
+        LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_OPMODE, SX1276Read(REG_OPMODE));
     }
+    LOG_TRACE("Leaving %s...", __FUNCTION__);
 }
 
 void SX1276SetModem(RadioModems_t modem)
 {
+    LOG_TRACE("Entering %s...", __FUNCTION__);
     if (SX1276.Spi.Spi == NULL) {
         while (1)
             ;
     }
     if (SX1276.Settings.Modem == modem) {
+        LOG_TRACE("Leaving %s... (hasn't changed)", __FUNCTION__);
         return;
     }
 
@@ -1228,8 +1241,12 @@ void SX1276SetModem(RadioModems_t modem)
 
             SX1276Write(REG_DIOMAPPING1, 0x00);
             SX1276Write(REG_DIOMAPPING2, 0x00);
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_OPMODE, SX1276Read(REG_OPMODE));
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING1, SX1276Read(REG_DIOMAPPING1));
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING2, SX1276Read(REG_DIOMAPPING2));
             break;
     }
+    LOG_TRACE("Leaving %s...", __FUNCTION__);
 }
 
 void SX1276Write(uint8_t addr, uint8_t data)

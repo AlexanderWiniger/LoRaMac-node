@@ -5,16 +5,16 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.506236642" moduleId="org.eclipse.cdt.core.settings" name="Debug">
 				<externalSettings/>
 				<extensions>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="${cross_rm} -rf" description="" id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.506236642" name="Debug" parent="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="${cross_rm} -rf" description="" id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.506236642" name="Debug" parent="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug">
 					<folderInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.506236642." name="/" resourcePath="">
 						<toolChain id="ilg.gnuarmeclipse.managedbuild.cross.toolchain.elf.debug.1891703866" name="Cross ARM GCC" superClass="ilg.gnuarmeclipse.managedbuild.cross.toolchain.elf.debug">
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.2108618984" name="Optimization Level" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level" value="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.none" valueType="enumerated"/>
@@ -122,8 +122,44 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<folderInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.506236642.205679349" name="/" resourcePath="src/boards/mcu/kinetis/k20d">
+						<toolChain id="ilg.gnuarmeclipse.managedbuild.cross.toolchain.elf.debug.1641713512" name="Cross ARM GCC" superClass="ilg.gnuarmeclipse.managedbuild.cross.toolchain.elf.debug" unusedChildren="">
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.2108618984.1870667206" name="Optimization Level" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.2108618984"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.messagelength.1463078352.1547049693" name="Message length (-fmessage-length=0)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.messagelength.1463078352"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.signedchar.1498765318.1889039787" name="'char' is signed (-fsigned-char)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.signedchar.1498765318"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.functionsections.1357572799.54981635" name="Function sections (-ffunction-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.functionsections.1357572799"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.datasections.893609230.2066221971" name="Data sections (-fdata-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.datasections.893609230"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level.1731117323.1442871498" name="Debug level" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level.1731117323"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.format.1196570744.1967187822" name="Debug format" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.format.1196570744"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.toolchain.name.196702821.1548235410" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.toolchain.name.196702821"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.architecture.1416875389.151597197" name="Architecture" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.architecture.1416875389"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.family.1161653848.691311074" name="ARM family" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.family.1161653848"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.instructionset.251583941.725653781" name="Instruction set" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.instructionset.251583941"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.prefix.1609658498.1979191647" name="Prefix" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.prefix.1609658498"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.c.1001383192.743815836" name="C compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.c.1001383192"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.cpp.1081320299.1216054404" name="C++ compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.cpp.1081320299"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.ar.160191983.525136146" name="Archiver" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.ar.160191983"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.objcopy.1912351334.1287675357" name="Hex/Bin converter" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.objcopy.1912351334"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.objdump.665096345.941525428" name="Listing generator" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.objdump.665096345"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.size.1159101888.2087830340" name="Size command" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.size.1159101888"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.make.805040343.1431248521" name="Build command" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.make.805040343"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.rm.1899561359.219353648" name="Remove command" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.rm.1899561359"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash.939850968.19986833" name="Create flash image" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash.939850968"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize.61031150.314212661" name="Print size" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize.61031150"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.460726810.293592004" name="Enable all common warnings (-Wall)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.460726810"/>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.2143628958" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.769075865"/>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1101479483" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1522035452"/>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.965911022" name="Cross ARM C++ Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.261864439"/>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.455932484" name="Cross ARM C Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.1578635387"/>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.1638972355" name="Cross ARM C++ Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.1483097054"/>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.archiver.1748035639" name="Cross ARM GNU Archiver" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.archiver.832663941"/>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.createflash.2076075356" name="Cross ARM GNU Create Flash Image" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.createflash.1164260426"/>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.createlisting.1723375611" name="Cross ARM GNU Create Listing" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.createlisting.1107654632"/>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.printsize.1462324735" name="Cross ARM GNU Print Size" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.printsize.773398471"/>
+						</toolChain>
+					</folderInfo>
 					<sourceEntries>
-						<entry excluding="src/boards/mcu/kinetis/k22f|src/boards/mcu/kl26z/platform/hal/src/lpuart|src/boards/mcu/kl26z/platform/system/src/hwtimer/fsl_hwtimer_pit_irq.c|src/boards/mcu/kl26z/platform/system/src/hwtimer/fsl_hwtimer_pit.c|src/boards/mcu/kl26z/platform/system/src/power|src/boards/mcu/kl26z/platform/utilities/src|src/radio/sx1272" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/boards/mcu/kinetis/k20d|src/boards/mcu/kinetis/k22f|src/boards/mcu/kl26z/platform/hal/src/lpuart|src/boards/mcu/kl26z/platform/system/src/hwtimer/fsl_hwtimer_pit_irq.c|src/boards/mcu/kl26z/platform/system/src/hwtimer/fsl_hwtimer_pit.c|src/boards/mcu/kl26z/platform/system/src/power|src/boards/mcu/kl26z/platform/utilities/src|src/radio/sx1272" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -133,12 +169,12 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.956206463" moduleId="org.eclipse.cdt.core.settings" name="Release">
 				<externalSettings/>
 				<extensions>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
@@ -219,5 +255,12 @@
 		</scannerConfigBuildInfo>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
-	<storageModule moduleId="refreshScope"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Release">
+			<resource resourceType="PROJECT" workspacePath="/FRDM-KL26Z_ping-pong"/>
+		</configuration>
+		<configuration configurationName="Debug">
+			<resource resourceType="PROJECT" workspacePath="/FRDM-KL26Z_ping-pong"/>
+		</configuration>
+	</storageModule>
 </cproject>

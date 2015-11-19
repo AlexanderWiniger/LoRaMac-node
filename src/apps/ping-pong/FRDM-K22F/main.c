@@ -192,10 +192,10 @@ int main(void)
                             }
                             DelayMs(1);
                             Radio.Send(Buffer, BufferSize);
-                        } else if (strncmp((const char*) Buffer, (const char*) PingMsg, 4) == 0) { // A master already exists then become a slave
+                        } else if (strncmp((const char*) Buffer, (const char*) PingMsg, 4) == 0) {   // A master already exists then become a slave
                             isMaster = false;
                             Radio.Rx( RX_TIMEOUT_VALUE);
-                        } else // valid reception but neither a PING or a PONG message
+                        } else   // valid reception but neither a PING or a PONG message
                         {    // Set device as master ans start again
                             isMaster = true;
                             Radio.Rx( RX_TIMEOUT_VALUE);
@@ -217,7 +217,7 @@ int main(void)
                             }
                             DelayMs(1);
                             Radio.Send(Buffer, BufferSize);
-                        } else // valid reception but not a PING as expected
+                        } else   // valid reception but not a PING as expected
                         {    // Set device as master and start again
                             isMaster = true;
                             Radio.Rx( RX_TIMEOUT_VALUE);

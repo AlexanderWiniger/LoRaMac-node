@@ -24,7 +24,7 @@ typedef enum {
 void SpiInit(Spi_t *obj, PinNames mosi, PinNames miso, PinNames sclk, PinNames nss)
 {
     /* Check if a proper channel was selected */
-    if (obj->Spi == NULL) return;
+    if (obj == NULL) return;
 
     GpioInit(&obj->Mosi, mosi, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_DOWN, 0);
     GpioInit(&obj->Miso, miso, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_DOWN, 0);
@@ -223,7 +223,8 @@ uint16_t SpiInOut(Spi_t *obj, uint16_t outData)
     if (!(obj->isSlave)) {
         if (outData != 0x00) {
             /*! Write data to PUSHR */
-            obj->Spi->PUSHR = (cmd | ((uint32_t)(data & SPI_PUSHR_TXDATA_MASK)));
+            cmd |= ((uint32_t)(outData & SPI_PUSHR_TXDATA_MASK));
+            obj->Spi->PUSHR = cmd;
         } else {
             /*! Read data */
             /* Write command to PUSHR */

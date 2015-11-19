@@ -16,9 +16,6 @@
 #include "board.h"
 #include "radio.h"
 
-#include "fsl_port_hal.h"   /* \todo Debug purpose only */
-#include "fsl_gpio_driver.h"   /* \todo Debug purpose only */
-
 #if defined( USE_BAND_433 )
 
 #define RF_FREQUENCY                                434000000 // Hz
@@ -88,14 +85,6 @@ States_t State = LOWPOWER;
 int8_t RssiValue = 0;
 int8_t SnrValue = 0;
 
-/* Declare Output GPIO pins */
-gpio_output_pin_user_config_t dbgPin = {
-    .pinName = GPIO_MAKE_PIN(GPIOE_IDX, 1),
-    .config.outputLogic = 1,
-    .config.slewRate = kPortSlowSlewRate,
-    .config.driveStrength = kPortLowDriveStrength,
-}; /* \todo Debug purpose only */
-
 /*!
  * Radio events function pointer
  */
@@ -139,9 +128,6 @@ int main(void)
     PRINTF("TRACE: Mcu initialized.\r\n");
     BoardInitPeriph();
     PRINTF("TRACE: Peripherals initialized.\r\n");
-
-    PORT_HAL_SetMuxMode(PORTE, 1u, kPortMuxAsGpio); /* \todo Debug purpose only */
-    GPIO_DRV_OutputPinInit (&dbgPin); /* \todo Debug purpose only */
 
 // Radio initialization
     RadioEvents.TxDone = OnTxDone;
@@ -310,7 +296,6 @@ void OnTxTimeout(void)
 
 void OnRxTimeout(void)
 {
-    GPIO_DRV_TogglePinOutput(dbgPin.pinName); /* \todo Debug purpose only */
     Radio.Sleep();
     State = RX_TIMEOUT;
 }

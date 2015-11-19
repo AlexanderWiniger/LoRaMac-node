@@ -54,7 +54,7 @@ void TimerHwInit(void)
     SysTick_BASE_PTR->RVR = divider - 1u;
 
     /* Run timer and enable interrupt */
-    SysTick_BASE_PTR->CSR |= SysTick_CSR_ENABLE_MASK | SysTick_CSR_TICKINT_MASK;
+    SysTick_BASE_PTR->CSR |= (SysTick_CSR_ENABLE_MASK | SysTick_CSR_TICKINT_MASK);
 }
 
 void TimerHwDeInit(void)
@@ -192,6 +192,8 @@ void TimerIncrementTickCounter(void)
  */
 void SysTick_Handler(void)
 {
+    PTC_BASE_PTR->PTOR = (1U << 2);
+
     TimerIncrementTickCounter();
 
     if (TimerTickCounter == TimeoutCntValue) {
