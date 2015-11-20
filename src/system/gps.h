@@ -1,23 +1,22 @@
 /*
  / _____)             _              | |
-( (____  _____ ____ _| |_ _____  ____| |__
+ ( (____  _____ ____ _| |_ _____  ____| |__
  \____ \| ___ |    (_   _) ___ |/ ___)  _ \
  _____) ) ____| | | || |_| ____( (___| | | |
-(______/|_____)_|_|_| \__)_____)\____)_| |_|
-    (C)2013 Semtech
+ (______/|_____)_|_|_| \__)_____)\____)_| |_|
+ (C)2013 Semtech
 
-Description: Generic driver for the GPS receiver UP501
+ Description: Generic driver for the GPS receiver UP501
 
-License: Revised BSD License, see LICENSE.TXT file include in the project
+ License: Revised BSD License, see LICENSE.TXT file include in the project
 
-Maintainer: Miguel Luis and Gregory Cristian
-*/
+ Maintainer: Miguel Luis and Gregory Cristian
+ */
 #ifndef __GPS_H__
 #define __GPS_H__
 
 /* Structure to handle the GPS parsed data in ASCII */
-typedef struct
-{
+typedef struct {
     char NmeaDataType[6];
     char NmeaUtcTime[11];
     char NmeaDataStatus[2];
@@ -35,7 +34,7 @@ typedef struct
     char NmeaSpeed[8];
     char NmeaDetectionAngle[8];
     char NmeaDate[8];
-}tNmeaGpsData;
+} tNmeaGpsData;
 
 extern tNmeaGpsData NmeaGpsData;
 
@@ -64,6 +63,13 @@ bool GpsGetPpsDetectedState( void );
 bool GpsHasFix( void );
 
 /*!
+ * \brief Gets the current unix time
+ *
+ * \retval Unix time
+ */
+uint32_t GpsGetCurrentUnixTime( void );
+
+/*!
  * \brief Converts the latest Position (latitude and longitude) into a binary
  *        number
  */
@@ -84,7 +90,7 @@ void GpsConvertPositionFromStringToNumerical( void );
  *
  * \retval status [SUCCESS, FAIL]
  */
-uint8_t GpsGetLatestGpsPositionDouble ( double *lati, double *longi );
+uint8_t GpsGetLatestGpsPositionDouble( double *lati, double *longi );
 
 /*!
  * \brief Gets the latest Position (latitude and Longitude) as two binary values
@@ -95,7 +101,7 @@ uint8_t GpsGetLatestGpsPositionDouble ( double *lati, double *longi );
  *
  * \retval status [SUCCESS, FAIL]
  */
-uint8_t GpsGetLatestGpsPositionBinary ( int32_t *latiBin, int32_t *longiBin );
+uint8_t GpsGetLatestGpsPositionBinary( int32_t *latiBin, int32_t *longiBin );
 
 /*!
  * \brief Parses the NMEA sentence.
@@ -114,7 +120,7 @@ uint8_t GpsParseGpsData( int8_t *rxBuffer, int32_t rxBufferSize );
  *
  * \retval altitude
  */
-uint16_t GpsGetLatestGpsAltitude (void);
+uint16_t GpsGetLatestGpsAltitude( void );
 
 /*!
  * \brief Format GPS data into numeric and binary formats
