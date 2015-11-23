@@ -18,6 +18,9 @@
 
 #include "LoRaMac.h"
 
+#define LOG_LEVEL_TRACE
+#include "debug.h"
+
 /*!
  * When set to 1 the application uses the Over-the-Air activation procedure
  * When set to 0 the application uses the Personalization activation procedure
@@ -342,14 +345,14 @@ int main(void)
     bool trySendingFrameAgain = false;
 
     BoardInitMcu();
-    PRINTF("DEBUG: Mcu initialized.\r\n");
+    LOG_DEBUG("Mcu initialized.");
     BoardInitPeriph();
-    PRINTF("DEBUG: Peripherals initialized.\r\n");
+    LOG_DEBUG("Peripherals initialized.");
 
     LoRaMacCallbacks.MacEvent = OnMacEvent;
     LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
     LoRaMacInit(&LoRaMacCallbacks);
-    PRINTF("DEBUG: LoRaMac initialized.\r\n");
+    LOG_DEBUG("LoRaMac initialized.");
 
     IsNetworkJoined = false;
 
@@ -379,7 +382,7 @@ DevAddr    = randr(0, 0x01FFFFFF);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
     LoRaMacSetPublicNetwork( LORAWAN_PUBLIC_NETWORK);
 
-    PRINTF("DEBUG: Starting class A application...\r\n");
+    LOG_DEBUG("Starting class A application...");
 
     while (1) {
         while (IsNetworkJoined == false) {
@@ -412,10 +415,10 @@ DevAddr    = randr(0, 0x01FFFFFF);
             AppLedStateChanged = false;
             if (AppLedStateOn) {
                 GpioWrite(&Led1, 0);
-                PRINTF("TRACE: LED was remotely disabled.\r\n");
+                LOG_TRACE("LED was remotely disabled.");
             } else {
                 GpioWrite(&Led1, 1);
-                PRINTF("TRACE: LED was remotely enabled.\r\n");
+                LOG_TRACE("LED was remotely enabled.");
             }
         }
 
@@ -423,10 +426,10 @@ DevAddr    = randr(0, 0x01FFFFFF);
             AppSensorTransmissionStateChanged = false;
             if (AppSensorTransmissionStateOn) {
                 ScheduleNextTx = true;
-                PRINTF("TRACE: Sensor data collecting was remotely enabled.\r\n");
+                LOG_TRACE("Sensor data collecting was remotely enabled.");
             } else {
                 TimerStop(&TxNextPacketTimer);
-                PRINTF("TRACE: Sensor data collecting was remotely disabled.\r\n");
+                LOG_TRACE("Sensor data collecting was remotely disabled.");
             }
         }
 

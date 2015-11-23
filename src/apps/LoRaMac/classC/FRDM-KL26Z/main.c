@@ -11,6 +11,9 @@
 
 #include "LoRaMac.h"
 
+#define LOG_LEVEL_TRACE
+#include "debug.h"
+
 /*!
  * When set to 1 the application uses the Over-the-Air activation procedure
  * When set to 0 the application uses the Personalization activation procedure
@@ -189,11 +192,6 @@ static bool DownlinkStatusUpdate = false;
 
 static LoRaMacCallbacks_t LoRaMacCallbacks;
 
-static bool AppLedStateOn = false;
-static bool AppLedStateChanged = false;
-static bool AppSensorTransmissionStateOn = true;
-static bool AppSensorTransmissionStateChanged = false;
-
 /*!
  * Prepares the frame buffer to be sent
  */
@@ -206,27 +204,25 @@ static void PrepareTxFrame(uint8_t port)
             uint8_t batteryLevel = 0;
 
             if (FxosReadSensorData(&sensorData) == FAIL) {
-                PRINTF("ERROR: Failed to retrieve sensor data!\r\n");
+                LOG_ERROR("Failed to retrieve sensor data!");
                 return;
             }
 
             batteryLevel = BoardGetBatteryLevel();       // 1 (very low) to 254 (fully charged)
 
-            AppData[0] = AppLedStateOn;
-            AppData[1] = AppSensorTransmissionStateOn;
-            AppData[2] = (sensorData.accelX >> 8) & 0xFF;
-            AppData[3] = sensorData.accelX & 0xFF;
-            AppData[4] = (sensorData.accelY >> 8) & 0xFF;
-            AppData[5] = sensorData.accelY & 0xFF;
-            AppData[6] = (sensorData.accelZ >> 8) & 0xFF;
-            AppData[7] = sensorData.accelZ & 0xFF;
-            AppData[8] = batteryLevel;
-            AppData[9] = (sensorData.magX >> 8) & 0xFF;
-            AppData[10] = sensorData.magX & 0xFF;
-            AppData[11] = (sensorData.magY >> 8) & 0xFF;
-            AppData[12] = sensorData.magY & 0xFF;
-            AppData[13] = (sensorData.magZ >> 8) & 0xFF;
-            AppData[14] = sensorData.magZ & 0xFF;
+            AppData[0] = (sensorData.accelX >> 8) & 0xFF;
+            AppData[1] = sensorData.accelX & 0xFF;
+            AppData[2] = (sensorData.accelY >> 8) & 0xFF;
+            AppData[3] = sensorData.accelY & 0xFF;
+            AppData[4] = (sensorData.accelZ >> 8) & 0xFF;
+            AppData[5] = sensorData.accelZ & 0xFF;
+            AppData[6] = batteryLevel;
+            AppData[7] = (sensorData.magX >> 8) & 0xFF;
+            AppData[8] = sensorData.magX & 0xFF;
+            AppData[9] = (sensorData.magY >> 8) & 0xFF;
+            AppData[10] = sensorData.magY & 0xFF;
+            AppData[11] = (sensorData.magZ >> 8) & 0xFF;
+            AppData[12] = sensorData.magZ & 0xFF;
         }
             break;
         default:
@@ -238,19 +234,9 @@ static void ProcessRxFrame(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
 {
     switch (info->RxPort) // Check Rx port number
     {
-        case 1: // The application LED can be controlled on port 1 or 2
+        case 1:
         case 2:
-            if (info->RxBufferSize == 2) {
-                if (AppLedStateOn != (info->RxBuffer[0] & 0x01)) {
-                    AppLedStateOn = ((info->RxBuffer[0] & 0x01) == 0 ? false : true);
-                    AppLedStateChanged = true;
-                }
-
-                if (AppSensorTransmissionStateOn != (info->RxBuffer[1] & 0x01)) {
-                    AppSensorTransmissionStateOn = ((info->RxBuffer[1] & 0x01) == 0 ? false : true);
-                    AppSensorTransmissionStateChanged = true;
-                }
-            }
+            LOG_TRACE("Received packet with %u bytes.", info->RxBufferSize);
             break;
         default:
             break;
@@ -335,14 +321,14 @@ int main(void)
     bool trySendingFrameAgain = false;
 
     BoardInitMcu();
-    PRINTF("DEBUG: Mcu initialized.\r\n");
+    LOG_DEBUG("Mcu initialized.");
     BoardInitPeriph();
-    PRINTF("DEBUG: Peripherals initialized.\r\n");
+    LOG_DEBUG("Peripherals initialized.");
 
     LoRaMacCallbacks.MacEvent = OnMacEvent;
     LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
     LoRaMacInit(&LoRaMacCallbacks);
-    PRINTF("DEBUG: LoRaMac initialized.\r\n");
+    LOG_DEBUG("LoRaMac initialized.");
 
     IsNetworkJoined = false;
 
@@ -400,34 +386,12 @@ DevAddr    = randr(0, 0x01FFFFFF);
 #endif
         }
 
-        if (AppLedStateChanged) {
-            AppLedStateChanged = false;
-            if (AppLedStateOn) {
-                GpioWrite(&Led1, 0);
-                PRINTF("TRACE: LED was remotely disabled.\r\n");
-            } else {
-                GpioWrite(&Led1, 1);
-                PRINTF("TRACE: LED was remotely enabled.\r\n");
-            }
-        }
-
-        if (AppSensorTransmissionStateChanged) {
-            AppSensorTransmissionStateChanged = false;
-            if (AppSensorTransmissionStateOn) {
-                ScheduleNextTx = true;
-                PRINTF("TRACE: Sensor data collecting was remotely enabled.\r\n");
-            } else {
-                TimerStop(&TxNextPacketTimer);
-                PRINTF("TRACE: Sensor data collecting was remotely disabled.\r\n");
-            }
-        }
-
         if (DownlinkStatusUpdate == true) {
             DownlinkStatusUpdate = false;
         }
 
-        if (ScheduleNextTx && AppSensorTransmissionStateOn) {
-            PRINTF("TRACE: Schedule next uplink packet.\r\n");
+        if (ScheduleNextTx) {
+            LOG_TRACE("Schedule next uplink packet.");
             ScheduleNextTx = false;
 
             // Schedule next packet transmission
@@ -437,20 +401,20 @@ DevAddr    = randr(0, 0x01FFFFFF);
         }
 
         if (trySendingFrameAgain) {
-            PRINTF("TRACE: Re-sending frame...\r\n");
+            LOG_TRACE("Re-sending frame...");
             trySendingFrameAgain = SendFrame();
-            if (trySendingFrameAgain) PRINTF("TRACE: No free channel. Try again later.\r\n");
+            if (trySendingFrameAgain) LOG_TRACE("No free channel. Try again later.");
         }
 
         if (TxNextPacket) {
-            PRINTF("TRACE: Trying to send frame...\r\n");
+            LOG_TRACE("Trying to send frame...");
             TxNextPacket = false;
 
             PrepareTxFrame(AppPort);
 
             trySendingFrameAgain = SendFrame();
 
-            if (trySendingFrameAgain) PRINTF("TRACE: No free channel. Try again later.\r\n");
+            if (trySendingFrameAgain) LOG_TRACE("No free channel. Try again later.");
         }
 
         TimerLowPowerHandler();

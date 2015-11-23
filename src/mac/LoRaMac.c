@@ -17,6 +17,9 @@ Maintainer: Miguel Luis and Gregory Cristian
 #include "LoRaMacCrypto.h"
 #include "LoRaMac.h"
 
+#define LOG_LEVEL_TRACE
+#include "debug.h"
+
 /*!
  * Maximum PHY layer payload size
  */
@@ -1701,6 +1704,7 @@ static void LoRaMacProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8
  */
 static void OnRadioTxDone( void )
 {
+    LOG_TRACE("Frame successfully transmitted.");
     TimerTime_t curTime = TimerGetCurrentTime( );
     if( LoRaMacDeviceClass != CLASS_C )
     {
@@ -1729,11 +1733,8 @@ static void OnRadioTxDone( void )
     {
         TimerSetValue( &RxWindowTimer1, RxWindow1Delay );
         TimerStart( &RxWindowTimer1 );
-        if( LoRaMacDeviceClass != CLASS_C )
-        {
-            TimerSetValue( &RxWindowTimer2, RxWindow2Delay );
-            TimerStart( &RxWindowTimer2 );
-        }
+        TimerSetValue( &RxWindowTimer2, RxWindow2Delay );
+        TimerStart( &RxWindowTimer2 );
     }
     else
     {
@@ -1773,6 +1774,8 @@ static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t
     uint8_t *appSKey = LoRaMacAppSKey;
     
     bool isMicOk = false;
+
+    LOG_TRACE("Received frame.");
 
     if( LoRaMacDeviceClass != CLASS_C )
     {
@@ -2069,6 +2072,7 @@ static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t
  */
 static void OnRadioTxTimeout( void )
 {
+    LOG_ERROR("Tx timeout occurred.");
     if( LoRaMacDeviceClass != CLASS_C )
     {
         Radio.Sleep( );
@@ -2087,9 +2091,16 @@ static void OnRadioTxTimeout( void )
  */
 static void OnRadioRxTimeout( void )
 {
+    LOG_ERROR("Rx timeout occurred (Slot %d).", LoRaMacEventFlags.Bits.RxSlot);
     if( LoRaMacDeviceClass != CLASS_C )
     {
         Radio.Sleep( );
+    }
+    else
+    {
+        OnRxWindow2TimerEvent( );
+        if (LoRaMacEventFlags.Bits.RxSlot == 0)
+            LoRaMacEventFlags.Bits.Tx = 1;
     }
     if( LoRaMacEventFlags.Bits.RxSlot == 1 )
     {
@@ -2103,14 +2114,19 @@ static void OnRadioRxTimeout( void )
  */
 static void OnRadioRxError( void )
 {
+    LOG_ERROR("Rx error occurred (Slot %d).", LoRaMacEventFlags.Bits.RxSlot);
     if( LoRaMacDeviceClass != CLASS_C )
     {
         Radio.Sleep( );
     }
+    else
+    {
+        OnRxWindow2TimerEvent( );
+    }
     if( LoRaMacEventFlags.Bits.RxSlot == 1 )
     {
         LoRaMacEventFlags.Bits.Tx = 1;
-        LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_RX2_ERROR;
+        LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_RX2_TIMEOUT;
     }
 }
 
@@ -2193,6 +2209,7 @@ static void OnRxWindow1TimerEvent( void )
     {// LoRa 250 kHz
         bandwidth  = 1;
     }
+    LOG_TRACE("Open single Rx window 1 (Channel : %u / DR: %u).", Channels[Channel].Frequency, datarate);
     LoRaMacRxWindowSetup( Channels[Channel].Frequency, datarate, bandwidth, symbTimeout, false );
 #elif ( defined( USE_BAND_915 ) || defined( USE_BAND_915_HYBRID ) )
     datarate = datarateOffsets[ChannelsDatarate][Rx1DrOffset];
@@ -2257,10 +2274,12 @@ static void OnRxWindow2TimerEvent( void )
 #endif
     if( LoRaMacDeviceClass != CLASS_C )
     {
+        LOG_TRACE("Open single Rx window 2 (Channel : %u / DR: %u).", Rx2Channel.Frequency, Rx2Channel.Datarate);
         LoRaMacRxWindowSetup( Rx2Channel.Frequency, Rx2Channel.Datarate, bandwidth, symbTimeout, false );
     }
     else
     {
+        LOG_TRACE("Open continuous Rx window 2 (Channel : %u / DR: %u).", Rx2Channel.Frequency, Rx2Channel.Datarate);
         LoRaMacRxWindowSetup( Rx2Channel.Frequency, Rx2Channel.Datarate, bandwidth, symbTimeout, true );
     }
 }

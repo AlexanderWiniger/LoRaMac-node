@@ -87,7 +87,7 @@
 /*!
  * Defines the application data transmission duty cycle
  */
-#define APP_TX_DUTYCYCLE                            1000000  // 5 [s] value in us
+#define APP_TX_DUTYCYCLE                            2000000  // 5 [s] value in us
 #define APP_TX_DUTYCYCLE_RND                        1000000  // 1 [s] value in us
 
 /*!
@@ -203,7 +203,7 @@ static LoRaMacCallbacks_t LoRaMacCallbacks;
 /*!
  * Prepares the frame buffer to be sent
  */
-static void PrepareTxFrame(uint8_t port)
+static void PrepareTxFrame( uint8_t port )
 {
     switch (port) {
         case 2:
@@ -238,12 +238,12 @@ static void PrepareTxFrame(uint8_t port)
     }
 }
 
-static void ProcessRxFrame(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
+static void ProcessRxFrame( LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info )
 {
     switch (info->RxPort) // Check Rx port number
     {
         case 2:
-            if (info->RxBufferSize == LORAWAN_APP_DATA_SIZE) {
+            if ( info->RxBufferSize == LORAWAN_APP_DATA_SIZE ) {
                 LOG_DEBUG("%-20s: %u", "Timestamp",
                         (uint32_t)(
                                 (AppData[1] << 24) | (AppData[2] << 16) | (AppData[3] << 8)
@@ -280,11 +280,11 @@ static void ProcessRxFrame(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
     }
 }
 
-static bool SendFrame(void)
+static bool SendFrame( void )
 {
     uint8_t sendFrameStatus = 0;
 
-    if (IsTxConfirmed == false) {
+    if ( IsTxConfirmed == false ) {
         sendFrameStatus = LoRaMacSendFrame(AppPort, AppData, AppDataSize);
     } else {
         sendFrameStatus = LoRaMacSendConfirmedFrame(AppPort, AppData, AppDataSize, 8);
@@ -315,19 +315,19 @@ static void OnJoinReqTimerEvent( void )
 /*!
  * \brief Function to be executed on MAC layer event
  */
-static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
+static void OnMacEvent( LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info )
 {
-    if (flags->Bits.JoinAccept == 1) {
+    if ( flags->Bits.JoinAccept == 1 ) {
 #if( OVER_THE_AIR_ACTIVATION != 0 )
         TimerStop( &JoinReqTimer );
 #endif
         IsNetworkJoined = true;
     } else {
-        if (flags->Bits.Tx == 1) {
+        if ( flags->Bits.Tx == 1 ) {
         }
 
-        if (flags->Bits.Rx == 1) {
-            if (flags->Bits.RxData == true) {
+        if ( flags->Bits.Rx == 1 ) {
+            if ( flags->Bits.RxData == true ) {
                 ProcessRxFrame(flags, info);
             }
         }
@@ -339,7 +339,7 @@ static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
 /*!
  * \brief Function executed on TxNextPacket Timeout event
  */
-static void OnTxNextPacketTimerEvent(void)
+static void OnTxNextPacketTimerEvent( void )
 {
     TimerStop(&TxNextPacketTimer);
     TxNextPacket = true;
@@ -348,7 +348,7 @@ static void OnTxNextPacketTimerEvent(void)
 /**
  * Main application entry point.
  */
-int main(void)
+int main( void )
 {
 #if( OVER_THE_AIR_ACTIVATION != 0 )
     uint8_t sendFrameStatus = 0;
@@ -388,7 +388,7 @@ int main(void)
     TxNextPacket = true;
     TimerInit(&TxNextPacketTimer, OnTxNextPacketTimerEvent);
 
-    LoRaMeshAddChildNode(0x013D02AB); /* Add static child node */
+    LoRaMeshAddChildNode(0x017A02AB); /* Add static child node */
 
     LoRaMacSetAdrOn( LORAWAN_ADR_ON);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
@@ -424,7 +424,7 @@ int main(void)
 #endif
         }
 
-        if (ScheduleNextTx) {
+        if ( ScheduleNextTx ) {
             ScheduleNextTx = false;
 
             // Schedule next packet transmission
@@ -433,13 +433,13 @@ int main(void)
             TimerStart(&TxNextPacketTimer);
         }
 
-        if (trySendingFrameAgain == true) {
+        if ( trySendingFrameAgain == true ) {
             LOG_TRACE("Re-sending frame...");
             trySendingFrameAgain = SendFrame();
             LOG_TRACE_IF(trySendingFrameAgain, "No free channel. Try again later.");
         }
 
-        if (TxNextPacket) {
+        if ( TxNextPacket ) {
             LOG_TRACE("Trying to send frame...");
             TxNextPacket = false;
 

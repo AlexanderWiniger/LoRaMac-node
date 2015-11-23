@@ -9,6 +9,9 @@
 #include "board.h"
 #include "radio.h"
 
+#define LOG_LEVEL_TRACE
+#include "debug.h"
+
 #if defined( USE_BAND_433 )
 
 #define RF_FREQUENCY                                434000000 // Hz
@@ -19,7 +22,7 @@
 
 #elif defined( USE_BAND_868 )
 
-#define RF_FREQUENCY                                868000000 // Hz
+#define RF_FREQUENCY                                868100000 // Hz
 
 #elif defined( USE_BAND_915 )
 
@@ -108,12 +111,12 @@ bool SwitchBPushEvent = false;
 /*!
  * \brief Switch A IRQ callback
  */
-void SwitchAIrq(void);
+void SwitchAIrq( void );
 
 /*!
  * \brief Switch B IRQ callback
  */
-void SwitchBIrq(void);
+void SwitchBIrq( void );
 
 /*!
  * Radio events function pointer
@@ -123,41 +126,41 @@ static RadioEvents_t RadioEvents;
 /*!
  * \brief Function to be executed on Radio Tx Done event
  */
-void OnTxDone(void);
+void OnTxDone( void );
 
 /*!
  * \brief Function to be executed on Radio Rx Done event
  */
-void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr);
+void OnRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr );
 
 /*!
  * \brief Function executed on Radio Tx Timeout event
  */
-void OnTxTimeout(void);
+void OnTxTimeout( void );
 
 /*!
  * \brief Function executed on Radio Rx Timeout event
  */
-void OnRxTimeout(void);
+void OnRxTimeout( void );
 
 /*!
  * \brief Function executed on Radio Rx Error event
  */
-void OnRxError(void);
+void OnRxError( void );
 
 /*!
  * Prepares the frame buffer to be sent
  */
-static void PrepareTxFrame(void)
+static void PrepareTxFrame( void )
 {
     AppData[0] = AppLedStateOn;
     AppData[1] = AppSensorTransmissionStateOn;
 }
 
-static uint8_t ProcessRxFrame(void)
+static uint8_t ProcessRxFrame( void )
 {
-    if (ReceivedDataSize != AppDataSize) {
-        PRINTF("ERROR: Unexpected data format in rx frame!\r\n");
+    if ( ReceivedDataSize != AppDataSize ) {
+        LOG_ERROR("Unexpected data format in rx frame!");
         return FAIL;
     }
 
@@ -178,13 +181,13 @@ static uint8_t ProcessRxFrame(void)
 /**
  * Main application entry point.
  */
-int main(void)
+int main( void )
 {
 // Target board initialisation
     BoardInitMcu();
-    PRINTF("\r\n\r\nTRACE: Mcu initialized.\r\n");
+    LOG_DEBUG("Mcu initialized.");
     BoardInitPeriph();
-    PRINTF("TRACE: Peripherals initialized.\r\n");
+    LOG_DEBUG("Peripherals initialized.");
 
     /* Switch A & B */
     GpioSetInterrupt(&SwitchA, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchAIrq);
@@ -198,7 +201,7 @@ int main(void)
     RadioEvents.RxError = OnRxError;
 
     Radio.Init(&RadioEvents);
-    PRINTF("TRACE: Radio initialized.\r\n");
+    LOG_DEBUG("Radio initialized.");
 
     Radio.SetChannel(RF_FREQUENCY);
 
@@ -232,25 +235,25 @@ int main(void)
 
     Radio.Rx(APP_RX_TIMEOUT);
 
-    PRINTF("\r\nSensor Application starting...\r\n");
+    LOG_DEBUG("\r\nSensor Application starting...");
 
     while (1) {
         switch (State) {
             case BUTTON_PUSHED:
-                if (SwitchAPushEvent) {
+                if ( SwitchAPushEvent ) {
                     SwitchAPushEvent = false;
-                    if (AppLedStateOn)
-                        PRINTF("TRACE: Remotely disable LED.\r\n");
+                    if ( AppLedStateOn )
+                        LOG_TRACE("Remotely disable LED.");
                     else
-                        PRINTF("TRACE: Remotely enable LED.\r\n");
+                        LOG_TRACE("Remotely enable LED.");
                     AppLedStateOn = !AppLedStateOn;
                     State = TX;
-                } else if (SwitchBPushEvent) {
+                } else if ( SwitchBPushEvent ) {
                     SwitchBPushEvent = false;
-                    if (AppSensorTransmissionStateOn)
-                        PRINTF("TRACE: Remotely disable sensor data collecting.\r\n");
+                    if ( AppSensorTransmissionStateOn )
+                        LOG_TRACE("Remotely disable sensor data collecting.");
                     else
-                        PRINTF("TRACE: Remotely enable sensor data collecting.\r\n");
+                        LOG_TRACE("Remotely enable sensor data collecting.");
                     AppSensorTransmissionStateOn = !AppSensorTransmissionStateOn;
                     State = TX;
                 } else {
@@ -258,30 +261,30 @@ int main(void)
                 }
                 break;
             case RX:
-                PRINTF("TRACE: Frame received.\r\n");
-                if (ProcessRxFrame() == SUCCESS) {
-                    PRINTF("DATA: Accelerometer (x/y/z) \t%d \t%d \t%d\r\n", SensorData.accelX,
-                            SensorData.accelY, SensorData.accelZ);
-                    PRINTF("DATA: Magnetometer (x/y/z) \t%d \t%d \t%d\r\n", SensorData.magX,
+                LOG_TRACE("Frame received.");
+                if ( ProcessRxFrame() == SUCCESS ) {
+                    LOG_DEBUG_BARE("DATA: Accelerometer (x/y/z) \t%d \t%d \t%d\r\n",
+                            SensorData.accelX, SensorData.accelY, SensorData.accelZ);
+                    LOG_DEBUG_BARE("DATA: Magnetometer (x/y/z) \t%d \t%d \t%d\r\n", SensorData.magX,
                             SensorData.magY, SensorData.magZ);
                 }
                 Radio.Rx(APP_RX_TIMEOUT);
                 State = LOWPOWER;
                 break;
             case TX:
-                PRINTF("TRACE: Trying to send frame...\r\n");
+                LOG_TRACE("Trying to send frame...");
                 PrepareTxFrame();
                 Radio.Send(AppData, AppDataSize);
                 State = LOWPOWER;
                 break;
             case RX_TIMEOUT:
             case RX_ERROR:
-                PRINTF("DEBUG: Rx timeout occured!\r\n");
+                LOG_TRACE("Rx timeout occured!");
                 Radio.Rx(APP_RX_TIMEOUT);
                 State = LOWPOWER;
                 break;
             case TX_TIMEOUT:
-                PRINTF("DEBUG: Tx timeout occured!\r\n");
+                LOG_TRACE("Tx timeout occured!");
                 Radio.Rx(APP_RX_TIMEOUT);
                 State = LOWPOWER;
                 break;
@@ -295,7 +298,7 @@ int main(void)
     }
 }
 
-void SwitchAIrq(void)
+void SwitchAIrq( void )
 {
     DelayMs(20);    // Software debouncing
     PORT_HAL_ClearPortIntFlag (PORTB_BASE_PTR);
@@ -303,7 +306,7 @@ void SwitchAIrq(void)
     State = BUTTON_PUSHED;
 }
 
-void SwitchBIrq(void)
+void SwitchBIrq( void )
 {
     DelayMs(20);    // Software debouncing
     PORT_HAL_ClearPortIntFlag (PORTC_BASE_PTR);
@@ -311,37 +314,37 @@ void SwitchBIrq(void)
     State = BUTTON_PUSHED;
 }
 
-void OnTxDone(void)
+void OnTxDone( void )
 {
-    PRINTF("TRACE: Frame sent successfully.\r\n");
+    LOG_TRACE("Frame sent successfully.");
     Radio.Rx(APP_RX_TIMEOUT);
     State = LOWPOWER;
 }
 
-void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr)
+void OnRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr )
 {
     Radio.Sleep();
     ReceivedDataSize = size;
     memcpy(AppData, payload, ReceivedDataSize);
     RssiValue = rssi;
     SnrValue = snr;
-    PRINTF("TRACE: Measured rssi and snr values (%d / %d)\r\n", RssiValue, SnrValue);
+    LOG_TRACE("Measured rssi and snr values (%d / %d)", RssiValue, SnrValue);
     State = RX;
 }
 
-void OnTxTimeout(void)
+void OnTxTimeout( void )
 {
     Radio.Sleep();
     State = TX_TIMEOUT;
 }
 
-void OnRxTimeout(void)
+void OnRxTimeout( void )
 {
     Radio.Sleep();
     State = RX_TIMEOUT;
 }
 
-void OnRxError(void)
+void OnRxError( void )
 {
     Radio.Sleep();
     State = RX_ERROR;

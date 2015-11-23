@@ -7,6 +7,7 @@
  */
 
 #include "board.h"
+#include <inttypes.h>
 
 #include "LoRaMacCrypto.h"
 #include "LoRaMesh.h"
@@ -292,14 +293,24 @@ static TimerEvent_t RxWindowTimer1;
 static TimerEvent_t RxWindowTimer2;
 
 /*!
- * LoRaMac synchronized reception windows timer
+ * LoRaMesh synchronized reception windows timer
  */
 static TimerEvent_t SynchRxWindowTimer;
 
 /*!
- * LoRaMac advertising beacon timer
+ * LoRaMesh advertising beacon timer
  */
-static TimerEvent_t AdvertisingBeaconTimer;
+static TimerEvent_t AdvBcnTimer;
+
+/*!
+ * LoRaMesh advertising beacon send delay timer
+ */
+static TimerEvent_t AdvBcnSendDelayTimer;
+
+/*!
+ * LoRaMesh advertising beacon send delay timer
+ */
+static TimerEvent_t AdvBcnRxWindowTimer;
 
 /*!
  * Acknowledge timeout timer. Used for packet retransmissions.
@@ -490,7 +501,17 @@ static void OnRxSynchWindowTimerEvent( void );
 /*!
  * Function executed on advertising beacon timer event
  */
-static void OnAdvertisingBeaconTimerEvent( void );
+static void OnAdvBcnTimerEvent( void );
+
+/*!
+ * Function executed on advertising beacon send delay timer event
+ */
+static void OnAdvBcnSendDelayTimerEvent( void );
+
+/*!
+ * Function executed on advertising beacon reception window timer event
+ */
+static void OnAdvBcnRxWindowTimerEvent( void );
 
 /*!
  * Function executed on AckTimeout timer event
@@ -756,7 +777,11 @@ void LoRaMacInit( LoRaMacCallbacks_t *callbacks )
     TimerInit(&RxWindowTimer2, OnRxWindow2TimerEvent);
     TimerInit(&SynchRxWindowTimer, OnRxSynchWindowTimerEvent);
     TimerInit(&AckTimeoutTimer, OnAckTimeoutTimerEvent);
-    TimerInit(&AdvertisingBeaconTimer, OnAdvertisingBeaconTimerEvent);
+    TimerInit(&AdvBcnTimer, OnAdvBcnTimerEvent);
+    TimerInit(&AdvBcnSendDelayTimer, OnAdvBcnSendDelayTimerEvent);
+    TimerInit(&AdvBcnRxWindowTimer, OnAdvBcnRxWindowTimerEvent);
+
+    TimerSetValue(&AdvBcnTimer, ADV_BEACON_INTERVAL);
 
     TimerInit(&MacStateCheckTimer, OnMacStateCheckTimerEvent);
     TimerSetValue(&MacStateCheckTimer, MAC_STATE_CHECK_TIMEOUT);
@@ -792,6 +817,9 @@ void LoRaMacInitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint
     LoRaMacDevAddr = devAddr;
     LoRaMacMemCpy(nwkSKey, LoRaMacNwkSKey, 16);
     LoRaMacMemCpy(appSKey, LoRaMacAppSKey, 16);
+
+    /* Start advertising */
+    TimerStart(&AdvBcnTimer);
 
     IsLoRaMacNetworkJoined = true;
 }
@@ -1167,6 +1195,18 @@ void LoRaMacRxWindowSetup( uint32_t freq, int8_t datarate, uint32_t bandwidth, u
     }
 }
 
+void LoRaMacBcnRxWindowSetup( void )
+{
+    Radio.SetChannel(ADV_BEACON_FREQUENCY);
+    if ( ADV_BEACON_DATARATE == DR_7 ) {
+        Radio.SetRxConfig(MODEM_FSK, 50e3, Datarates[ADV_BEACON_DATARATE] * 1e3, 0, 83.333e3, 5, 0,
+                true, ADV_BEACON_LEN, false, false, 0, false, true);
+    } else {
+        Radio.SetRxConfig(MODEM_LORA, ADV_BEACON_BANDWIDTH, Datarates[ADV_BEACON_DATARATE], 1, 0, 8,
+                5, true, ADV_BEACON_LEN, false, false, 0, false, true);
+    }
+}
+
 void LoRaMeshAddChildNode( uint32_t nodeAddr )
 {
     ChildNodeInfo_t* childNode = CreateChildNode(nodeAddr, (uint8_t*) &LoRaMacNwkSKey,
@@ -1185,10 +1225,12 @@ uint8_t LoRaMeshSendAdvertisingBeacon( void )
 {
     uint32_t timestamp;
 
+    LOG_TRACE("Trying to send advertising beacon.");
+
     /* Configure LoRa transceiver */
     Radio.SetChannel(AdvertisingSlot.Frequency);
     Radio.SetTxConfig(MODEM_LORA, TxPowers[ADV_BEACON_TX_POWER], 0, ADV_BEACON_BANDWIDTH,
-            ADV_BEACON_DATARATE, 1, 8, true, false, 0, 0, false, 3e6);
+            Datarates[ADV_BEACON_DATARATE], 1, 8, true, false, 0, 0, false, 3e6);
 
     LoRaMacState |= MAC_TX_RUNNING;
     /* Starts the MAC layer status check timer */
@@ -1218,10 +1260,19 @@ uint8_t LoRaMeshSendAdvertisingBeacon( void )
     LoRaMacBuffer[12] = (uint8_t)((AdvertisingSlot.Periodicity / 1000000) & 0xFF); // Periodicity is transmitted in seconds
     LoRaMacBuffer[13] = (uint8_t)((AdvertisingSlot.Duration / 1000) & 0xFF); // Periodicity is transmitted in milliseconds
 
+//    LOG_TRACE_BARE("DATA: ");
+//    for ( uint32_t i = 0; i < ADV_BEACON_LEN; i++ ) {
+//        LOG_TRACE_BARE("0x%02x ", LoRaMacBuffer[i]);
+//    }
+//    LOG_TRACE_BARE("\r\n");
+
     LoRaMacBufferPktLen = ADV_BEACON_LEN;
 
     /* Start channel activity detection */
     Radio.StartCad();
+
+    /* Set event flag */
+    LoRaMacEventFlags.Bits.Advertising = 1;
 
     return 0;
 }
@@ -1247,6 +1298,7 @@ void OnRadioTxDone( void )
 {
     LOG_TRACE("Transmitted successfully.");
     TimerTime_t curTime = TimerGetCurrentTime();
+
     if ( LoRaMacDeviceClass != CLASS_C ) {
         Radio.Sleep();
     } else {
@@ -1265,13 +1317,17 @@ void OnRadioTxDone( void )
     AggregatedLastTxDoneTime = curTime;
     AggregatedTimeOff = AggregatedTimeOff + (TxTimeOnAir * AggregatedDCycle - TxTimeOnAir);
 
-    if ( IsRxWindowsEnabled == true ) {
-        TimerSetValue(&RxWindowTimer1, RxWindow1Delay);
+    if ( LoRaMacEventFlags.Bits.Advertising == 1 ) {
+        LoRaMacEventFlags.Bits.Advertising = 0;
+        /* Open advertising beacon reception window */
+        LoRaMacBcnRxWindowSetup();
+    } else if ( IsRxWindowsEnabled == true ) {
+        if ( RxWindowTimer1.ReloadValue != RxWindow1Delay )
+            TimerSetValue(&RxWindowTimer1, RxWindow1Delay);
+        if ( RxWindowTimer2.ReloadValue != RxWindow2Delay )
+            TimerSetValue(&RxWindowTimer2, RxWindow2Delay);
         TimerStart(&RxWindowTimer1);
-//        if (LoRaMacDeviceClass != CLASS_C) {
-        TimerSetValue(&RxWindowTimer2, RxWindow2Delay);
         TimerStart(&RxWindowTimer2);
-//        }
     } else {
         LoRaMacEventFlags.Bits.Tx = 1;
         LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_OK;
@@ -1403,11 +1459,17 @@ void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr )
 
 void OnCadDone( bool channelActivityDetected )
 {
+    uint64_t curTime = TimerGetCurrentTime();
+    Radio.Sleep();
     if ( !channelActivityDetected ) {
-        LOG_TRACE("Channel clear. Send packet now.");
+        LOG_TRACE("Channel clear. Send packet now (%d%d)", *(((int*) (&curTime)) + 1), curTime);
         Radio.Send(LoRaMacBuffer, LoRaMacBufferPktLen);
     } else {
-        TimerSetValue(&TxDelayedTimer, randr(0, 2500));
+        uint32_t delay = randr(0, (AdvertisingSlot.Duration - AdvBcnSendDelayTimer.ReloadValue));
+        curTime += (uint64_t) delay;
+        LOG_TRACE("Channel NOT clear. Send packet in %d (%d%d)", delay, *(((int*) (&curTime)) + 1),
+                curTime);
+        TimerSetValue(&TxDelayedTimer, delay);
         TimerStart(&TxDelayedTimer);
     }
 }
@@ -1434,11 +1496,14 @@ void OnRadioTxTimeout( void )
 void OnRadioRxTimeout( void )
 {
     LOG_ERROR("Rx timeout occurred (Slot %d).", LoRaMacEventFlags.Bits.RxSlot);
+
     if ( LoRaMacDeviceClass != CLASS_C ) {
         Radio.Sleep();
     } else {
+        if ( LoRaMacEventFlags.Bits.RxSlot == 1 ) LoRaMacEventFlags.Bits.Tx = 1;
         OnRxWindow2TimerEvent();
     }
+
     if ( LoRaMacEventFlags.Bits.RxSlot == 2 ) {
         LoRaMacEventFlags.Bits.Tx = 1;
         LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_RX2_TIMEOUT;
@@ -1455,7 +1520,7 @@ void OnRadioRxError( void )
     }
     if ( LoRaMacEventFlags.Bits.RxSlot == 2 ) {
         LoRaMacEventFlags.Bits.Tx = 1;
-        LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_RX2_ERROR;
+        LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_RX2_TIMEOUT;
     }
 }
 
@@ -1485,7 +1550,8 @@ void OnRxWindow1TimerEvent( void )
     if ( datarate == DR_6 ) { // LoRa 250 kHz
         bandwidth = 1;
     }
-    LOG_TRACE("Open Rx window 1 (Channel : %u / DR: %u).", Channels[Channel].Frequency, datarate);
+    LOG_TRACE("Open Rx window 1 (Channel : %u / DR: %u).", Channels[Channel].Frequency,
+            Datarates[datarate]);
     LoRaMacRxWindowSetup(Channels[Channel].Frequency, datarate, bandwidth, symbTimeout, false);
 }
 
@@ -1512,12 +1578,12 @@ void OnRxWindow2TimerEvent( void )
 
     if ( LoRaMacDeviceClass != CLASS_C ) {
         LOG_TRACE("Open single Rx window 2 (Channel : %u / DR: %u).", Rx2Channel.Frequency,
-                Rx2Channel.Datarate);
+                Datarates[Rx2Channel.Datarate]);
         LoRaMacRxWindowSetup(Rx2Channel.Frequency, Rx2Channel.Datarate, bandwidth, symbTimeout,
                 false);
     } else {
         LOG_TRACE("Open continuous Rx window 2 (Channel : %u / DR: %u).", Rx2Channel.Frequency,
-                Rx2Channel.Datarate);
+                Datarates[Rx2Channel.Datarate]);
         LoRaMacRxWindowSetup(Rx2Channel.Frequency, Rx2Channel.Datarate, bandwidth, symbTimeout,
                 true);
     }
@@ -1528,21 +1594,62 @@ void OnRxSynchWindowTimerEvent( void )
 
 }
 
-void OnAdvertisingBeaconTimerEvent( void )
+void OnAdvBcnRxWindowTimerEvent( void )
 {
-    TimerStop(&AdvertisingBeaconTimer);
+    TimerStop(&AdvBcnRxWindowTimer);
+
+    if ( LoRaMacEventFlags.Bits.RxSlot == 0 ) {
+        uint64_t curTime = TimerGetCurrentTime();
+        LOG_TRACE("Advertising beacon reception window closed (%d%d)", *(((int*) (&curTime)) + 1),
+                curTime);
+        Radio.Sleep();
+    }
+}
+
+void OnAdvBcnTimerEvent( void )
+{
+    uint64_t curTime = TimerGetCurrentTime();
+    LOG_TRACE("Advertising beacon timer event occurred (%d%d)", *(((int*) (&curTime)) + 1),
+            curTime);
+
+    TimerStop(&AdvBcnTimer);
     LoRaMacEventFlags.Bits.Rx = 0;
 
-    if ( CoordinatorAddr != 0 ) {
-        LoRaMeshSendAdvertisingBeacon();
-        /* Open advertising beacon reception window */
-        LoRaMacRxWindowSetup(ADV_BEACON_FREQUENCY, ADV_BEACON_DATARATE, ADV_BEACON_BANDWIDTH, 5,
-                false);
-    } else {
-        /* Open advertising beacon reception window */
-        LoRaMacRxWindowSetup(ADV_BEACON_FREQUENCY, ADV_BEACON_DATARATE, ADV_BEACON_BANDWIDTH, 5,
-                true);
+    if ( AdvertisingSlot.Periodicity != AdvBcnTimer.ReloadValue ) {
+        /* Check if advertising slot periodicity */
+        TimerSetValue(&AdvBcnTimer, AdvertisingSlot.Periodicity);
     }
+    /* Schedule next advertising beacon */
+    TimerStart(&AdvBcnTimer);
+
+    /* Randomize sending of advertising beacon */
+    TimerSetValue(&AdvBcnSendDelayTimer, randr(0, AdvertisingSlot.Duration));
+    /* Start advertising beacon send delay timer */
+    TimerStart(&AdvBcnSendDelayTimer);
+
+    /* Open advertising beacon reception window */
+    LoRaMacBcnRxWindowSetup();
+
+    if ( IsLoRaMacNetworkJoined ) {
+        TimerSetValue(&AdvBcnRxWindowTimer, AdvertisingSlot.Duration);
+    } else {
+        TimerSetValue(&AdvBcnRxWindowTimer, AdvertisingSlot.Duration * 3);
+    }
+    /* Start advertising beacon send delay timer */
+    TimerStart(&AdvBcnRxWindowTimer);
+}
+
+void OnAdvBcnSendDelayTimerEvent( void )
+{
+    uint64_t currTime = TimerGetCurrentTime();
+    LOG_TRACE("Advertising beacon send delay timer event occurred (%d%d)",
+            *(((int*) (&currTime)) + 1), currTime);
+
+    TimerStop(&AdvBcnSendDelayTimer);
+    Radio.Standby();
+
+    /* Send advertising beacon */
+    LoRaMeshSendAdvertisingBeacon();
 }
 
 void OnMacStateCheckTimerEvent( void )
@@ -1644,16 +1751,16 @@ void OnAckTimeoutTimerEvent( void )
  *****************************************************************************/
 void ProcessAdvertisingBeacon( uint8_t *payload, uint16_t size )
 {
-    uint32_t nwkId, cAddr;
+    uint32_t nwkId, cAddr, advTime, advPeriodicity, advDuration;
 
     nwkId = (payload[0] & 0xFF);
     nwkId |= ((payload[1] & 0xFF) << 8);
     nwkId |= ((payload[2] & 0xFF) << 16);
 
-    if ( IsLoRaMacNetworkJoined && (nwkId != LoRaMacNwkID) ) return; /* Advertising beacon from different network */
+    if ( IsLoRaMacNetworkJoined && (nwkId != LoRaMacNetID) ) return; /* Advertising beacon from different network */
 
     if ( !IsLoRaMacNetworkJoined ) {
-        /* Join network */
+        /* Send join request */
     }
 
     cAddr = (uint32_t)(payload[4] & 0xFF);
@@ -1674,30 +1781,33 @@ void ProcessAdvertisingBeacon( uint8_t *payload, uint16_t size )
             uint8_t cRank, nRank;
             cRank = (uint8_t)(payload[3] & 0xF);
             nRank = CalculateNodeRank();
-            if ( (nRank > cRank) && EvaluateNominationProbability(nRank) ) {
-                /* Nominate ourself */
-                CoordinatorAddr = LoRaMacDevAddr;
-            } else {
-                /* Vote for the other node */
-                uint32_t advTime, advPeriodicity, advDuration;
 
-                advTime = (uint32_t)(payload[8] & 0xFF);
-                advTime |= (uint32_t)((payload[9] & 0xFF) << 8);
-                advTime |= (uint32_t)((payload[10] & 0xFF) << 16);
-                advTime |= (uint32_t)((payload[11] & 0xFF) << 24);
-                advPeriodicity = (uint32_t)((payload[12] & 0xFF) * 1000000);
-                advDuration = (uint32_t)((payload[13] & 0xFF) * 1000);
-
-                if ( AdvertisingSlot.Periodicity != advPeriodicity ) {
-                    /* Advertising slot periodicity changed */
-                }
-                if ( AdvertisingSlot.Duration != advDuration ) {
-                    /* Advertising slot duration changed */
-                }
-            }
+            if ( (nRank > cRank) && EvaluateNominationProbability(nRank) )
+                CoordinatorAddr = LoRaMacDevAddr; /* Nominate ourself */
+            else
+                CoordinatorAddr = cAddr; /* Vote for the other node */
         }
-    } else {
-        /* Coordinator still the same, schedule next advertising slot */
+    }
+
+    advTime = (uint32_t)(payload[8] & 0xFF);
+    advTime |= (uint32_t)((payload[9] & 0xFF) << 8);
+    advTime |= (uint32_t)((payload[10] & 0xFF) << 16);
+    advTime |= (uint32_t)((payload[11] & 0xFF) << 24);
+    advPeriodicity = (uint32_t)((payload[12] & 0xFF) * 1000000);
+    advDuration = (uint32_t)((payload[13] & 0xFF) * 1000);
+
+    if ( AdvertisingSlot.Periodicity != advPeriodicity ) {
+        /* Advertising slot periodicity changed */
+        uint32_t nextBcnDelay;
+        AdvertisingSlot.Periodicity = advPeriodicity;
+        nextBcnDelay = advTime - GpsGetCurrentUnixTime();
+        TimerStop(&AdvBcnTimer);
+        TimerSetValue(&AdvBcnTimer, nextBcnDelay);
+        TimerStart(&AdvBcnTimer);
+    }
+    if ( AdvertisingSlot.Duration != advDuration ) {
+        /* Advertising slot duration changed */
+        AdvertisingSlot.Duration = advDuration;
     }
 }
 

@@ -57,7 +57,7 @@
 /*!
  * Advertising beacon data rate
  */
-#define ADV_BEACON_DATARATE                         DR_1
+#define ADV_BEACON_DATARATE                         DR_5
 
 /*!
  * Advertising beacon bandwidth
@@ -77,7 +77,7 @@
 /*!
  * Advertising beacon reception window in us
  */
-#define ADV_BEACON_DURATION                         5000
+#define ADV_BEACON_DURATION                         3000000
 
 /*!
  * Advertising beacon reception window in us
@@ -268,15 +268,17 @@ typedef union {
  *                  RxSlot = 3: Time-synchronized receive window
  */
 typedef union {
-    uint8_t Value;
+    uint16_t Value;
     struct {
         uint8_t Tx :1;
         uint8_t Rx :1;
         uint8_t RxData :1;
         uint8_t Multicast :1;
+        uint8_t Advertising :1;
         uint8_t RxSlot :2;
         uint8_t LinkCheck :1;
         uint8_t JoinAccept :1;
+        uint8_t Reserved :7;
     } Bits;
 } LoRaMacEventFlags_t;
 
@@ -550,6 +552,11 @@ uint8_t LoRaMacSendOnChannel( ChannelParams_t channel, LoRaMacHeader_t *macHdr,
  */
 void LoRaMacRxWindowSetup( uint32_t freq, int8_t datarate, uint32_t bandwidth, uint16_t timeout,
         bool rxContinuous );
+
+/*!
+ * \brief Initializes and open the advertising beacon reception window.
+ */
+void LoRaMacBcnRxWindowSetup( void );
 
 /*!
  * LoRaMesh add child node to the network.

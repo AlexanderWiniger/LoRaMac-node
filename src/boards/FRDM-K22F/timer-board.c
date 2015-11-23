@@ -45,7 +45,7 @@ volatile TimerTime_t TimeoutCntValue = 0;
 /*!
  * Increment the Hardware Timer tick counter
  */
-void TimerIncrementTickCounter(void);
+void TimerIncrementTickCounter( void );
 
 /*!
  * Counter used for the Delay operations
@@ -55,11 +55,11 @@ volatile uint32_t TimerDelayCounter = 0;
 /*!
  * @brief Hardware timer callback function
  */
-void hwtimer_callback(void* data);
+void hwtimer_callback( void* data );
 
-extern void HWTIMER_SYS_SystickIsrAction(void);
+extern void HWTIMER_SYS_SystickIsrAction( void );
 
-void TimerHwInit(void)
+void TimerHwInit( void )
 {
     /*!
      * Init hardware timer (SysTick)
@@ -81,7 +81,7 @@ void TimerHwInit(void)
     PIT_DRV_InitUs(HWTIMER_PIT_INSTANCE, HWTIMER_DELAY_CHANNEL);
 }
 
-void TimerHwDeInit(void)
+void TimerHwDeInit( void )
 {
     /* DeInit hardware timer (SysTick) */
     HWTIMER_SYS_Deinit(&hwtimer);
@@ -90,39 +90,39 @@ void TimerHwDeInit(void)
     PIT_DRV_Deinit (HWTIMER_PIT_INSTANCE);
 }
 
-uint32_t TimerHwGetMinimumTimeout(void)
+uint32_t TimerHwGetMinimumTimeout( void )
 {
     return (ceil(2 * HWTIMER_PERIOD));
 }
 
-void TimerHwStart(uint32_t val)
+void TimerHwStart( uint32_t val )
 {
     TimerTickCounterContext = TimerHwGetTimerValue();
 
-    if (val <= HWTIMER_PERIOD + 1) {
+    if ( val <= HWTIMER_PERIOD + 1 ) {
         TimeoutCntValue = TimerTickCounterContext + 1;
     } else {
         TimeoutCntValue = TimerTickCounterContext + ((val - 1) / HWTIMER_PERIOD);
     }
 }
 
-void TimerHwStop(void)
+void TimerHwStop( void )
 {
     /* Stop hardware timer */
     HWTIMER_SYS_Stop(&hwtimer);
 }
 
-void TimerHwDelayMs(uint32_t delay)
+void TimerHwDelayMs( uint32_t delay )
 {
     PIT_DRV_DelayUs(delay * 1000);
 }
 
-TimerTime_t TimerHwGetElapsedTime(void)
+TimerTime_t TimerHwGetElapsedTime( void )
 {
     return (((TimerHwGetTimerValue() - TimerTickCounterContext) + 1) * HWTIMER_PERIOD);
 }
 
-TimerTime_t TimerHwGetTimerValue(void)
+TimerTime_t TimerHwGetTimerValue( void )
 {
     TimerTime_t val = 0;
 
@@ -135,13 +135,12 @@ TimerTime_t TimerHwGetTimerValue(void)
     return (val);
 }
 
-TimerTime_t TimerHwGetTime(void)
+TimerTime_t TimerHwGetTime( void )
 {
-
     return TimerHwGetTimerValue() * HWTIMER_PERIOD;
 }
 
-void TimerIncrementTickCounter(void)
+void TimerIncrementTickCounter( void )
 {
     INT_SYS_DisableIRQGlobal();
 
@@ -150,23 +149,23 @@ void TimerIncrementTickCounter(void)
     INT_SYS_EnableIRQGlobal();
 }
 
-void hwtimer_callback(void* data)
+void hwtimer_callback( void* data )
 {
     TimerIncrementTickCounter();
 
-    if (TimerTickCounter == TimeoutCntValue) {
+    if ( TimerTickCounter == TimeoutCntValue ) {
         TimerIrqHandler();
     }
 }
 /*!
  * @brief Interrupt service routine.
  */
-void SysTick_Handler(void)
+void SysTick_Handler( void )
 {
     HWTIMER_SYS_SystickIsrAction();
 }
 
-void TimerHwEnterLowPowerStopMode(void)
+void TimerHwEnterLowPowerStopMode( void )
 {
 #ifndef USE_DEBUGGER
     __WFI();
