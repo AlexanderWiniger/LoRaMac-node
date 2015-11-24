@@ -81,7 +81,7 @@
 
 #if defined(SX1276_BOARD_EMBED)
 
-#define RADIO_RESET                    PB_17
+#define RADIO_RESET                    PC_1
 
 #define RADIO_SPI_INSTANCE             0
 #define RADIO_MOSI                     PC_6
@@ -89,15 +89,15 @@
 #define RADIO_SCLK                     PC_5
 #define RADIO_NSS                      PD_0
 
-#define RADIO_DIO_0                    PD_7
-#define RADIO_DIO_1                    PD_6
-#define RADIO_DIO_2                    PD_5
-#define RADIO_DIO_3                    PD_3
-#define RADIO_DIO_4_A                  PD_2
+#define RADIO_DIO_0                    PA_0
+#define RADIO_DIO_1                    PA_1
+#define RADIO_DIO_2                    PA_2
+#define RADIO_DIO_3                    PA_3
+#define RADIO_DIO_4_A                  PB_16
 #define RADIO_DIO_4_B                  NC
-#define RADIO_DIO_5                    PD_1
+#define RADIO_DIO_5                    PB_17
 
-#define RADIO_ANT_SWITCH_RX_TX         PB_16
+#define RADIO_ANT_SWITCH_RX_TX         PC_0
 
 #else
 
@@ -121,11 +121,17 @@
 
 #endif /* SX1276_BOARD */
 
+#define UART0_RX                       PD_7
+#define UART0_TX                       PD_6
 #define UART1_RX                       PC_3
 #define UART1_TX                       PC_4
+#define UART2_RX                       PD_2
+#define UART2_TX                       PD_3
 
-#define I2C_SCL                        PB_2
-#define I2C_SDA                        PB_3
+#define I2C_SCL                        PB_0
+#define I2C_SDA                        PB_1
+
+#define PPS                            PC_2
 
 /*!
  * LED GPIO pin objects
