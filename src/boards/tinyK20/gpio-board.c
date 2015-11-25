@@ -79,12 +79,12 @@ typedef struct {
 
 static alternate_fct_user_config_t alternateFctCfg[] = {
     {
-        .pinName = PA_1,
-        .muxConfig = kPortMuxAlt2,   ///> UART0_RX
+        .pinName = PD_7,
+        .muxConfig = kPortMuxAlt3,   ///> UART0_RX
     },
     {
-        .pinName = PA_2,
-        .muxConfig = kPortMuxAlt2,   ///> UART0_TX
+        .pinName = PD_6,
+        .muxConfig = kPortMuxAlt3,   ///> UART0_TX
     },
     {
         .pinName = PC_4,
@@ -123,29 +123,29 @@ static alternate_fct_user_config_t alternateFctCfg[] = {
     }
 };
 
-void GpioMcuInit(Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, PinTypes type,
-        uint32_t value)
+void GpioMcuInit( Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, PinTypes type,
+        uint32_t value )
 {
-    if (pin == NC) {
+    if ( pin == NC ) {
         return;
     }
 
-    if (pin < NR_OF_PINS_PORTA) {
+    if ( pin < NR_OF_PINS_PORTA ) {
         obj->pinIndex = pinsPortA[pin];
         obj->portIndex = 0;
         /* Enable clock gating */
         SIM_BASE_PTR->SCGC5 |= SIM_SCGC5_PORTA_MASK;
-    } else if (pin < NR_OF_PINS_PORTAB) {
+    } else if ( pin < NR_OF_PINS_PORTAB ) {
         obj->pinIndex = pinsPortB[(pin - NR_OF_PINS_PORTA)];
         obj->portIndex = 1;
         /* Enable clock gating */
         SIM_BASE_PTR->SCGC5 |= SIM_SCGC5_PORTB_MASK;
-    } else if (pin < NR_OF_PINS_PORTABC) {
+    } else if ( pin < NR_OF_PINS_PORTABC ) {
         obj->pinIndex = pinsPortC[(pin - NR_OF_PINS_PORTAB)];
         obj->portIndex = 2;
         /* Enable clock gating */
         SIM_BASE_PTR->SCGC5 |= SIM_SCGC5_PORTC_MASK;
-    } else if (pin < NR_OF_PINS_PORTABCD) {
+    } else if ( pin < NR_OF_PINS_PORTABCD ) {
         obj->pinIndex = pinsPortD[(pin - NR_OF_PINS_PORTABC)];
         obj->portIndex = 3;
         /* Enable clock gating */
@@ -167,7 +167,7 @@ void GpioMcuInit(Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, Pi
             g_gpioBase[obj->portIndex]->PDDR = ((g_gpioBase[obj->portIndex]->PDDR)
                     & ~(1U << obj->pinIndex));
 
-            if (type != PIN_NO_PULL) {
+            if ( type != PIN_NO_PULL ) {
                 /* Enable internal pullup or pulldown */
                 g_portBase[obj->portIndex]->PCR[obj->pinIndex] =
                         (((g_portBase[obj->portIndex]->PCR[obj->pinIndex]) & ~(PORT_PCR_PE_MASK))
@@ -184,17 +184,17 @@ void GpioMcuInit(Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, Pi
                     (((g_portBase[obj->portIndex]->PCR[obj->pinIndex])
                             & ~(PORT_PCR_MUX_MASK | PORT_PCR_ISF_MASK)) | PORT_PCR_MUX(1));
             /* Write pin output */
-            if (value > 0)
+            if ( value > 0 )
                 g_gpioBase[obj->portIndex]->PSOR = (1U << obj->pinIndex);
             else
                 g_gpioBase[obj->portIndex]->PCOR = (1U << obj->pinIndex);
             /* Set pin direction */
             g_gpioBase[obj->portIndex]->PDDR |= (1U << obj->pinIndex);
 
-            if (config == PIN_OPEN_DRAIN) {
+            if ( config == PIN_OPEN_DRAIN ) {
                 g_portBase[obj->portIndex]->PCR[obj->pinIndex] |= PORT_PCR_ODE_MASK;
             } else {
-                if (type != PIN_NO_PULL) {
+                if ( type != PIN_NO_PULL ) {
                     /* Enable internal pullup or pulldown */
                     g_portBase[obj->portIndex]->PCR[obj->pinIndex] =
                             (((g_portBase[obj->portIndex]->PCR[obj->pinIndex]) & ~(PORT_PCR_PE_MASK))
@@ -210,7 +210,7 @@ void GpioMcuInit(Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, Pi
         {
             uint8_t i = 0;
             while (alternateFctCfg[i].pinName != PIN_OUT_OF_RANGE) {
-                if (alternateFctCfg[i].pinName == pin) {
+                if ( alternateFctCfg[i].pinName == pin ) {
                     g_portBase[obj->portIndex]->PCR[obj->pinIndex] =
                             (((g_portBase[obj->portIndex]->PCR[obj->pinIndex])
                                     & ~(PORT_PCR_MUX_MASK | PORT_PCR_ISF_MASK))
@@ -219,7 +219,7 @@ void GpioMcuInit(Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, Pi
                 }
                 i++;
             }
-            if (config == PIN_OPEN_DRAIN) {
+            if ( config == PIN_OPEN_DRAIN ) {
                 g_portBase[obj->portIndex]->PCR[obj->pinIndex] |= PORT_PCR_ODE_MASK;
             }
         }
@@ -235,22 +235,22 @@ void GpioMcuInit(Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, Pi
     }
 }
 
-void GpioMcuSetInterrupt(Gpio_t *obj, IrqModes irqMode, IrqPriorities irqPriority,
-        GpioIrqHandler *irqHandler)
+void GpioMcuSetInterrupt( Gpio_t *obj, IrqModes irqMode, IrqPriorities irqPriority,
+        GpioIrqHandler *irqHandler )
 {
     uint8_t intConfig;
 
-    if (irqHandler == NULL) {
+    if ( irqHandler == NULL ) {
         return;
     }
 
-    if (obj->portIndex == 0)
+    if ( obj->portIndex == 0 )
         GpioAIrq[obj->pinIndex & 0x1F] = irqHandler;
-    else if (obj->portIndex == 1)
+    else if ( obj->portIndex == 1 )
         GpioBIrq[obj->pinIndex & 0x1F] = irqHandler;
-    else if (obj->portIndex == 2)
+    else if ( obj->portIndex == 2 )
         GpioCIrq[obj->pinIndex & 0x0F] = irqHandler;
-    else if (obj->portIndex == 3)
+    else if ( obj->portIndex == 3 )
         GpioDIrq[obj->pinIndex & 0x07] = irqHandler;
     else
         return;
@@ -281,21 +281,22 @@ void GpioMcuSetInterrupt(Gpio_t *obj, IrqModes irqMode, IrqPriorities irqPriorit
                             & PORT_PCR_IRQC_MASK)));
 
     /* Configure NVIC */
-    if (intConfig) {
+    if ( intConfig ) {
         /* Enable port interrupt.*/
-        NVIC_BASE_PTR->ISER[(((uint32_t)(int32_t)(PORTA_IRQn + obj->portIndex)) >> 5UL)] = (uint32_t)(1UL << (((uint32_t)(int32_t)(PORTA_IRQn + obj->portIndex)) & 0x1FUL));
+        NVIC_BASE_PTR->ISER[(((uint32_t)(int32_t)(PORTA_IRQn + obj->portIndex)) >> 5UL)] =
+                (uint32_t)(1UL << (((uint32_t)(int32_t)(PORTA_IRQn + obj->portIndex)) & 0x1FUL));
     }
 }
 
-void GpioMcuRemoveInterrupt(Gpio_t *obj)
+void GpioMcuRemoveInterrupt( Gpio_t *obj )
 {
-    if (obj->portIndex == 0)
+    if ( obj->portIndex == 0 )
         GpioAIrq[obj->pinIndex & 0x1F] = NULL;
-    else if (obj->portIndex == 1)
+    else if ( obj->portIndex == 1 )
         GpioBIrq[obj->pinIndex & 0x1F] = NULL;
-    else if (obj->portIndex == 2)
+    else if ( obj->portIndex == 2 )
         GpioCIrq[obj->pinIndex & 0x0F] = NULL;
-    else if (obj->portIndex == 3)
+    else if ( obj->portIndex == 3 )
         GpioDIrq[obj->pinIndex & 0x07] = NULL;
     else
         return;
@@ -307,125 +308,125 @@ void GpioMcuRemoveInterrupt(Gpio_t *obj)
                     | ((((uint32_t)(((uint32_t)(0)) << PORT_PCR_IRQC_SHIFT)) & PORT_PCR_IRQC_MASK)));
 }
 
-void GpioMcuWrite(Gpio_t *obj, uint32_t value)
+void GpioMcuWrite( Gpio_t *obj, uint32_t value )
 {
-    if ((obj == NULL) || (obj->port == NULL)) {
+    if ( (obj == NULL) || (obj->port == NULL) ) {
         while (1)
             ;
     }
 // Check if pin is not connected
-    if (obj->pin == NC) {
+    if ( obj->pin == NC ) {
         return;
     }
 
     /* Write pin output */
-    if (value > 0)
+    if ( value > 0 )
         g_gpioBase[obj->portIndex]->PSOR = (1U << obj->pinIndex);
     else
         g_gpioBase[obj->portIndex]->PCOR = (1U << obj->pinIndex);
 }
 
-uint32_t GpioMcuRead(Gpio_t *obj)
+uint32_t GpioMcuRead( Gpio_t *obj )
 {
-    if (obj == NULL) {
+    if ( obj == NULL ) {
         while (1)
             ;
     }
 // Check if pin is not connected
-    if (obj->pin == NC) {
+    if ( obj->pin == NC ) {
         return 0;
     }
     return ((g_gpioBase[obj->portIndex]->PDIR) >> obj->pinIndex);
 }
 
-void PORTA_IRQHandler(void)
+void PORTA_IRQHandler( void )
 {
     uint32_t pendingInt = PORTA_ISFR;
 
     /* Clear interrupt flag.*/
     PORTA_ISFR = ~0u;
 
-    if (pendingInt & 0x1)
+    if ( pendingInt & 0x1 )
         GpioAIrq[0]();
-    else if ((pendingInt & (1U << 1)) >> 1)
+    else if ( (pendingInt & (1U << 1)) >> 1 )
         GpioAIrq[1]();
-    else if ((pendingInt & (1U << 2)) >> 2)
+    else if ( (pendingInt & (1U << 2)) >> 2 )
         GpioAIrq[2]();
-    else if ((pendingInt & (1U << 3)) >> 3)
+    else if ( (pendingInt & (1U << 3)) >> 3 )
         GpioAIrq[3]();
-    else if ((pendingInt & (1U << 4)) >> 4) GpioAIrq[4]();
+    else if ( (pendingInt & (1U << 4)) >> 4 ) GpioAIrq[4]();
     /* PTA5 to PTA31 can't be used as GPIO */
 }
 
-void PORTB_IRQHandler(void)
+void PORTB_IRQHandler( void )
 {
     uint32_t pendingInt = PORTB_ISFR;
 
     /* Clear interrupt flag.*/
     PORTB_ISFR = ~0u;
 
-    if (pendingInt & 0x1)
+    if ( pendingInt & 0x1 )
         GpioBIrq[0]();
-    else if ((pendingInt & (1U << 1)) >> 1)
+    else if ( (pendingInt & (1U << 1)) >> 1 )
         GpioBIrq[1]();
-    else if ((pendingInt & (1U << 2)) >> 2)
+    else if ( (pendingInt & (1U << 2)) >> 2 )
         GpioBIrq[2]();
-    else if ((pendingInt & (1U << 3)) >> 3)
+    else if ( (pendingInt & (1U << 3)) >> 3 )
         GpioBIrq[3]();
     /* PTB4 to PTB15 can't be used as GPIO */
-    else if ((pendingInt & (1U << 16)) >> 16)
+    else if ( (pendingInt & (1U << 16)) >> 16 )
         GpioBIrq[16]();
-    else if ((pendingInt & (1U << 17)) >> 17) GpioBIrq[17]();
+    else if ( (pendingInt & (1U << 17)) >> 17 ) GpioBIrq[17]();
     /* PTB18 to PTB31 can't be used as GPIO */
 }
 
-void PORTC_IRQHandler(void)
+void PORTC_IRQHandler( void )
 {
     uint32_t pendingInt = PORTC_ISFR;
 
     /* Clear interrupt flag.*/
     PORTC_ISFR = ~0u;
 
-    if (pendingInt & 0x1)
+    if ( pendingInt & 0x1 )
         GpioCIrq[0]();
-    else if ((pendingInt & (1U << 1)) >> 1)
+    else if ( (pendingInt & (1U << 1)) >> 1 )
         GpioCIrq[1]();
-    else if ((pendingInt & (1U << 2)) >> 2)
+    else if ( (pendingInt & (1U << 2)) >> 2 )
         GpioCIrq[2]();
-    else if ((pendingInt & (1U << 3)) >> 3)
+    else if ( (pendingInt & (1U << 3)) >> 3 )
         GpioCIrq[3]();
-    else if ((pendingInt & (1U << 4)) >> 4)
+    else if ( (pendingInt & (1U << 4)) >> 4 )
         GpioCIrq[4]();
-    else if ((pendingInt & (1U << 5)) >> 5)
+    else if ( (pendingInt & (1U << 5)) >> 5 )
         GpioCIrq[5]();
-    else if ((pendingInt & (1U << 6)) >> 6)
+    else if ( (pendingInt & (1U << 6)) >> 6 )
         GpioCIrq[6]();
-    else if ((pendingInt & (1U << 7)) >> 7) GpioCIrq[7]();
+    else if ( (pendingInt & (1U << 7)) >> 7 ) GpioCIrq[7]();
     /* PTC8 to PTC31 can't be used as GPIO */
 }
 
-void PORTD_IRQHandler(void)
+void PORTD_IRQHandler( void )
 {
     uint32_t pendingInt = PORTD_ISFR;
 
     /* Clear interrupt flag.*/
     PORTD_ISFR = ~0u;
 
-    if (pendingInt & 0x1)
+    if ( pendingInt & 0x1 )
         GpioDIrq[0]();
-    else if ((pendingInt & (1U << 1)) >> 1)
+    else if ( (pendingInt & (1U << 1)) >> 1 )
         GpioDIrq[1]();
-    else if ((pendingInt & (1U << 2)) >> 2)
+    else if ( (pendingInt & (1U << 2)) >> 2 )
         GpioDIrq[2]();
-    else if ((pendingInt & (1U << 3)) >> 3)
+    else if ( (pendingInt & (1U << 3)) >> 3 )
         GpioDIrq[3]();
-    else if ((pendingInt & (1U << 4)) >> 4)
+    else if ( (pendingInt & (1U << 4)) >> 4 )
         GpioDIrq[4]();
-    else if ((pendingInt & (1U << 5)) >> 5)
+    else if ( (pendingInt & (1U << 5)) >> 5 )
         GpioDIrq[5]();
-    else if ((pendingInt & (1U << 6)) >> 6)
+    else if ( (pendingInt & (1U << 6)) >> 6 )
         GpioDIrq[6]();
-    else if ((pendingInt & (1U << 7)) >> 7) GpioDIrq[7]();
+    else if ( (pendingInt & (1U << 7)) >> 7 ) GpioDIrq[7]();
     /* PTD8 to PTD31 can't be used as GPIO */
 }
 

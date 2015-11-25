@@ -11,6 +11,7 @@
  * LED GPIO pin objects
  */
 Gpio_t Led1;
+Gpio_t GpsPps;
 
 /*!
  * MCU objects
@@ -27,25 +28,28 @@ Uart_t UartUsb;
 /*!
  * Initializes the unused GPIO to a known status
  */
-static void BoardUnusedIoInit(void);
+static void BoardUnusedIoInit( void );
 
 /*!
  * Flag to indicate if the MCU is Initialized
  */
 static bool McuInitialized = false;
 
-void BoardInitPeriph(void)
+void BoardInitPeriph( void )
 {
-    /* Init the LED GPIO pins */
+    /* Init GPIO pins */
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+
+    /* Init GPS */
+    GpsInit();
 
     // Switch LED 1 OFF
     GpioWrite(&Led1, 1);
 }
 
-void BoardInitMcu(void)
+void BoardInitMcu( void )
 {
-    if (McuInitialized == false) {
+    if ( McuInitialized == false ) {
         /* Initialize low level components */
         low_level_init();
 
@@ -58,10 +62,6 @@ void BoardInitMcu(void)
 #if defined( USE_USB_CDC )
         UartInit( &UartUsb, UART_USB_CDC, NC, NC );
         UartConfig( &UartUsb, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL );
-#elif defined(DEBUG)
-        GpioInit(&Uart1.Tx, UART1_TX, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
-        GpioInit(&Uart1.Rx, UART1_RX, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
-        TimerSetLowPowerEnable(false);
 #elif( LOW_POWER_MODE_ENABLE )
         TimerSetLowPowerEnable( true );
 #else
@@ -69,7 +69,7 @@ void BoardInitMcu(void)
 #endif
         BoardUnusedIoInit();
 
-        if (TimerGetLowPowerEnable() == true) {
+        if ( TimerGetLowPowerEnable() == true ) {
             RtcInit();
         } else {
             TimerHwInit();
@@ -79,7 +79,7 @@ void BoardInitMcu(void)
     }
 }
 
-void BoardDeInitMcu(void)
+void BoardDeInitMcu( void )
 {
 #if defined(SX1276_BOARD_EMBED)
     SpiDeInit(&SX1276.Spi);
@@ -89,20 +89,20 @@ void BoardDeInitMcu(void)
     McuInitialized = false;
 }
 
-uint8_t BoardGetBatteryLevel(void)
+uint8_t BoardGetBatteryLevel( void )
 {
     /* Device is connected to an external power source*/
     return 0;
 }
 
-uint32_t BoardGetRandomSeed(void)
+uint32_t BoardGetRandomSeed( void )
 {
     int32_t randout = 0;
 
     return randout;
 }
 
-void BoardGetUniqueId(uint8_t *id)
+void BoardGetUniqueId( uint8_t *id )
 {
     id[0] = (ID1 + ID3) >> 24;
     id[1] = (ID1 + ID3) >> 16;
@@ -114,7 +114,7 @@ void BoardGetUniqueId(uint8_t *id)
     id[7] = (ID2 + ID4);
 }
 
-static void BoardUnusedIoInit(void)
+static void BoardUnusedIoInit( void )
 {
 // \todo Initialize unused gpio to knwon state
 }
