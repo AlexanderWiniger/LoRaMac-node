@@ -52,20 +52,30 @@ void UartMcuConfig(Uart_t *obj, UartMode_t mode, uint32_t baudrate, WordLength_t
         uartSourceClock = CLOCK_SYS_GetLpuartFreq(0);
 
         lpuart_parity_mode_t parityMode;
-        if (parity == NO_PARITY) parityMode = kLpuartParityDisabled;
-        else if (parity == EVEN_PARITY) parityMode = kLpuartParityEven;
-        else if (parity == ODD_PARITY) parityMode = kLpuartParityOdd;
-        else parityMode = kLpuartParityDisabled;
+        if (parity == NO_PARITY)
+            parityMode = kLpuartParityDisabled;
+        else if (parity == EVEN_PARITY)
+            parityMode = kLpuartParityEven;
+        else if (parity == ODD_PARITY)
+            parityMode = kLpuartParityOdd;
+        else
+            parityMode = kLpuartParityDisabled;
 
         lpuart_stop_bit_count_t stopBitCnt;
-        if (stopBits == UART_1_STOP_BIT) stopBitCnt = kLpuartOneStopBit;
-        else if (stopBits == UART_2_STOP_BIT) stopBitCnt = kLpuartTwoStopBit;
-        else stopBitCnt = kLpuartOneStopBit;
+        if (stopBits == UART_1_STOP_BIT)
+            stopBitCnt = kLpuartOneStopBit;
+        else if (stopBits == UART_2_STOP_BIT)
+            stopBitCnt = kLpuartTwoStopBit;
+        else
+            stopBitCnt = kLpuartOneStopBit;
 
         lpuart_bit_count_per_char_t bitCntPerCh;
-        if (wordLength == UART_8_BIT) bitCntPerCh = kLpuart8BitsPerChar;
-        else if (wordLength == UART_9_BIT) bitCntPerCh = kLpuart9BitsPerChar;
-        else bitCntPerCh = kLpuart8BitsPerChar;
+        if (wordLength == UART_8_BIT)
+            bitCntPerCh = kLpuart8BitsPerChar;
+        else if (wordLength == UART_9_BIT)
+            bitCntPerCh = kLpuart9BitsPerChar;
+        else
+            bitCntPerCh = kLpuart8BitsPerChar;
 
         /* Initialize LPSCI baud rate, bit count, parity and stop bit. */
         LPUART_HAL_SetBaudRate(base, uartSourceClock, baudrate);
@@ -101,10 +111,14 @@ void UartMcuConfig(Uart_t *obj, UartMode_t mode, uint32_t baudrate, WordLength_t
         UART_HAL_DisableReceiver(base);
 
         uart_parity_mode_t parityMode;
-        if (parity == NO_PARITY) parityMode = kUartParityDisabled;
-        else if (parity == EVEN_PARITY) parityMode = kUartParityEven;
-        else if (parity == ODD_PARITY) parityMode = kUartParityOdd;
-        else parityMode = kUartParityDisabled;
+        if (parity == NO_PARITY)
+            parityMode = kUartParityDisabled;
+        else if (parity == EVEN_PARITY)
+            parityMode = kUartParityEven;
+        else if (parity == ODD_PARITY)
+            parityMode = kUartParityOdd;
+        else
+            parityMode = kUartParityDisabled;
 
 #if FSL_FEATURE_UART_HAS_STOP_BIT_CONFIG_SUPPORT
         uart_stop_bit_count_t stopBitCnt;
@@ -188,9 +202,9 @@ uint8_t UartMcuPutChar(Uart_t *obj, uint8_t data)
         } else {
             UART_HAL_SetIntMode(g_uartBase[obj->UartId], kUartIntTxDataRegEmpty, true);
         }
-        return 0; // OK
+        return 0;   // OK
     }
-    return 1; // Busy
+    return 1;   // Busy
 }
 
 uint8_t UartMcuGetChar(Uart_t *obj, uint8_t *data)
@@ -212,7 +226,7 @@ void UartInterruptHandler(Uart_t *obj)
 
     /* Transmission finished */
     if (UART_HAL_GetStatusFlag(g_uartBase[obj->UartId], kUartTxDataRegEmpty)
-            && UART_HAL_GetStatusFlag(UART1, kUartTxComplete)) {
+            && UART_HAL_GetStatusFlag(g_uartBase[obj->UartId], kUartTxComplete)) {
         if (!IsFifoEmpty(&obj->FifoTx)) {
             data = FifoPop(&obj->FifoTx);
             //  Write one byte to the transmit data register

@@ -9,6 +9,9 @@
 #include "board.h"
 #include "uart.h"
 
+#define LOG_LEVEL_DEBUG
+#include "debug.h"
+
 /*------------------------- Local Defines --------------------------------*/
 
 /*------------------------ Local Variables -------------------------------*/
@@ -65,9 +68,9 @@ int main(void)
 {
     // Target board initialisation
     BoardInitMcu();
-    PRINTF("TRACE: Mcu initialized.\r\n");
+    LOG_DEBUG("Mcu initialized.");
     BoardInitPeriph();
-    PRINTF("TRACE: Peripherals initialized.\r\n");
+    LOG_DEBUG("Peripherals initialized.");
 
     /* Switch A & B */
     GpioSetInterrupt(&SwitchA, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchAIrq);
@@ -87,7 +90,7 @@ int main(void)
     TimerStart(&Led1Timer);
 
     // Print the initial banner
-    PRINTF("\r\nHello World!\r\n\r\n");
+    LOG_DEBUG("\r\nHello World!\r\n");
 
     while (1) {
         if (Led1TimerEvent == true) {
@@ -125,18 +128,18 @@ int main(void)
             SwitchAPushEvent = false;
 
             if (FxosReadSensorData(&sensorData) != FAIL) {
-                PRINTF("Accelerometer (X/Y/Z):\t%d \t%d \t%d \r\n", sensorData.accelX,
+                LOG_DEBUG_BARE("DATA: Accelerometer (X/Y/Z):\t%d \t%d \t%d \r\n", sensorData.accelX,
                         sensorData.accelY, sensorData.accelZ);
-//                PRINTF("Magnetometer (X/Y/Z):\t%d \t%d \t%d \r\n", sensorData.magX, sensorData.magY,
+//                LOG_DEBUG_BARE("DATA: Magnetometer (X/Y/Z):\t%d \t%d \t%d \r\n", sensorData.magX, sensorData.magY,
 //                        sensorData.magZ);
             } else {
-                PRINTF("ERROR: Couldn't retrieve sensor data!\r\n");
+                LOG_ERROR("Couldn't retrieve sensor data!");
             }
         }
 
         if (SwitchBPushEvent) {
             SwitchBPushEvent = false;
-            PRINTF("Button B pushed!\r\n");
+            LOG_TRACE("Button B pushed!");
         }
     }
 }

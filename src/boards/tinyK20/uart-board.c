@@ -104,11 +104,9 @@ void UartMcuConfig(Uart_t *obj, UartMode_t mode, uint32_t baudrate, WordLength_t
     if (mode == TX_ONLY) {
         g_uartBase[obj->UartId]->C2 |= UART_C2_TE_MASK; /* Enable transmitter */
     } else if (mode == RX_ONLY) {
-        g_uartBase[obj->UartId]->C2 |= UART_C2_RE_MASK; /* Enable receiver interrupt */
-        g_uartBase[obj->UartId]->C2 |= UART_C2_RE_MASK; /* Enable receiver */
+        g_uartBase[obj->UartId]->C2 |= (UART_C2_RE_MASK | UART_C2_RIE_MASK); /* Enable receiver and receiver interrupt */
     } else {
-        g_uartBase[obj->UartId]->C2 |= UART_C2_RE_MASK; /* Enable receiver interrupt */
-        g_uartBase[obj->UartId]->C2 |= (UART_C2_TE_MASK | UART_C2_RE_MASK); /* Enable transmitter & receiver */
+        g_uartBase[obj->UartId]->C2 |= (UART_C2_RIE_MASK | UART_C2_TE_MASK | UART_C2_RE_MASK); /* Enable transmitter, receiver & receiver interrupt */
     }
 
     /* Enable interrupt for UARTx */
@@ -141,9 +139,9 @@ uint8_t UartMcuPutChar(Uart_t *obj, uint8_t data)
         __enable_irq();
         /* Enable the UART Transmit interrupt */
         g_uartBase[obj->UartId]->C2 |= UART_C2_TCIE_MASK;
-        return 0; // OK
+        return 0;   // OK
     }
-    return 1; // Busy
+    return 1;   // Busy
 }
 
 uint8_t UartMcuGetChar(Uart_t *obj, uint8_t *data)
@@ -152,9 +150,9 @@ uint8_t UartMcuGetChar(Uart_t *obj, uint8_t *data)
         __disable_irq();
         *data = FifoPop(&obj->FifoRx);
         __enable_irq();
-        return 0; // OK
+        return 0;   // OK
     }
-    return 1; // Busy
+    return 1;   // Busy
 }
 
 void UartInterruptHandler(Uart_t *obj)

@@ -29,6 +29,11 @@ Gpio_t SwitchA;
 Gpio_t SwitchB;
 
 /*!
+ * External GPS interrupt
+ */
+Gpio_t GpsPps;
+
+/*!
  * IRQ GPIO pin objects
  */
 #if !defined(SX1276_BOARD_AVAILABLE)
@@ -77,14 +82,14 @@ const clock_manager_user_config_t g_defaultClockConfigVlpr =
     },
     .simConfig =
     {
-        .pllFllSel = kClockPllFllSelFll, // PLLFLLSEL select FLL.
+        .pllFllSel = kClockPllFllSelFll,   // PLLFLLSEL select FLL.
         .er32kSrc = kClockEr32kSrcLpo,// ERCLK32K selection, use LPO.
         .outdiv1 = 0U,
         .outdiv4 = 4U,
     },
     .oscerConfig =
     {
-        .enable = true,  // OSCERCLK enable.
+        .enable = true,   // OSCERCLK enable.
         .enableInStop = false,// OSCERCLK disable in STOP mode.
     }
 };
@@ -118,7 +123,7 @@ const clock_manager_user_config_t g_defaultClockConfigRun =
     },
     .oscerConfig =
     {
-        .enable = true,  // OSCERCLK enable.
+        .enable = true,   // OSCERCLK enable.
         .enableInStop = false,// OSCERCLK disable in STOP mode.
     }
 };
@@ -153,6 +158,9 @@ void BoardInitPeriph(void)
     /* Initialize accelerometer */
     FxosInit (FXOS_I2C_ADDRESS);
 #endif
+
+    /* Init GPS */
+    GpsInit();
 
     /* Initialize RNGA */
     rnga_user_config_t

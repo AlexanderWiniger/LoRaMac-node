@@ -44,39 +44,50 @@ extern gpio_alternate_fct_user_config_t alternateFctConfigs[];
 gpio_alternate_fct_user_config_t alternateFctConfigs[] = {
     {
         .pinName = PE_0,
-        .muxConfig = kPortMuxAlt3, ///> UART1_TX
+        .muxConfig = kPortMuxAlt3,   ///> UART1_TX
     },
     {
         .pinName = PE_1,
-        .muxConfig = kPortMuxAlt3, ///> UART1_RX
+        .muxConfig = kPortMuxAlt3,   ///> UART1_RX
     },
     {
         .pinName = PD_4,
-        .muxConfig = kPortMuxAlt7, ///> SPI1_PCS0
+        .muxConfig = kPortMuxAlt7,   ///> SPI1_PCS0
     },
     {
         .pinName = PD_5,
-        .muxConfig = kPortMuxAlt7, ///> SPI1_SCK
+        .muxConfig = kPortMuxAlt7,   ///> SPI1_SCK
     },
+#if defined(SX1276_BOARD_EMBED) || defined(SX1276_BOARD_FREEDOM)
     {
         .pinName = PD_6,
-        .muxConfig = kPortMuxAlt7, ///> SPI1_MOSI
+        .muxConfig = kPortMuxAlt7,   ///> SPI1_MOSI
     },
     {
         .pinName = PD_7,
-        .muxConfig = kPortMuxAlt7, ///> SPI1_MISO
+        .muxConfig = kPortMuxAlt7,   ///> SPI1_MISO
+    },
+#else
+    {
+        .pinName = PD_6,
+        .muxConfig = kPortMuxAlt3,   ///> UART0_RX
     },
     {
+        .pinName = PD_7,
+        .muxConfig = kPortMuxAlt3,   ///> UART0_TX
+    },
+#endif
+    {
         .pinName = PE_0,
-        .muxConfig = kPortMuxAlt4, ///> RTC_CLKOUT
+        .muxConfig = kPortMuxAlt4,   ///> RTC_CLKOUT
     },
     {
         .pinName = PB_3,
-        .muxConfig = kPortMuxAlt2, ///> I2C0_SCL
+        .muxConfig = kPortMuxAlt2,   ///> I2C0_SCL
     },
     {
         .pinName = PB_2,
-        .muxConfig = kPortMuxAlt2, ///> I2C0_SDA
+        .muxConfig = kPortMuxAlt2,   ///> I2C0_SDA
     },
     {
         .pinName = PIN_OUT_OF_RANGE,
@@ -145,17 +156,17 @@ void GpioMcuInit(Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, Pi
     switch (mode) {
         case PIN_INPUT:
             /* Set current pin as gpio.*/
-            PORT_HAL_SetMuxMode(g_portBase[obj->portIndex], obj->pinIndex, kPortMuxAsGpio); // Configure pin muxing to gpio
-            GPIO_HAL_SetPinDir(g_gpioBase[obj->portIndex], obj->pinIndex, kGpioDigitalInput); // Set pin direction to input
+            PORT_HAL_SetMuxMode(g_portBase[obj->portIndex], obj->pinIndex, kPortMuxAsGpio);   // Configure pin muxing to gpio
+            GPIO_HAL_SetPinDir(g_gpioBase[obj->portIndex], obj->pinIndex, kGpioDigitalInput);   // Set pin direction to input
             PORT_HAL_SetPullCmd(g_portBase[obj->portIndex], obj->pinIndex,
-                    ((type == PIN_NO_PULL) ? false : true)); // Enable/Disable internal pull resistor
+                    ((type == PIN_NO_PULL) ? false : true));   // Enable/Disable internal pull resistor
             break;
         case PIN_OUTPUT:
-            PORT_HAL_SetMuxMode(g_portBase[obj->portIndex], obj->pinIndex, kPortMuxAsGpio); // Configure pin muxing to gpio
+            PORT_HAL_SetMuxMode(g_portBase[obj->portIndex], obj->pinIndex, kPortMuxAsGpio);   // Configure pin muxing to gpio
             PORT_HAL_SetOpenDrainCmd(obj->port, obj->pinIndex,
                     ((config == PIN_OPEN_DRAIN) ? true : false));
-            GPIO_HAL_WritePinOutput(g_gpioBase[obj->portIndex], obj->pinIndex, value); // Set default output level
-            GPIO_HAL_SetPinDir(g_gpioBase[obj->portIndex], obj->pinIndex, kGpioDigitalOutput); // Set pin direction to output
+            GPIO_HAL_WritePinOutput(g_gpioBase[obj->portIndex], obj->pinIndex, value);   // Set default output level
+            GPIO_HAL_SetPinDir(g_gpioBase[obj->portIndex], obj->pinIndex, kGpioDigitalOutput);   // Set pin direction to output
             break;
         case PIN_ALTERNATE_FCT:
         {
@@ -163,7 +174,7 @@ void GpioMcuInit(Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, Pi
             while (alternateFctConfigs[i].pinName != PIN_OUT_OF_RANGE) {
                 if (alternateFctConfigs[i].pinName == pin) {
                     PORT_HAL_SetMuxMode(g_portBase[obj->portIndex], obj->pinIndex,
-                            alternateFctConfigs[i].muxConfig); // Configure alternate function muxing to gpio
+                            alternateFctConfigs[i].muxConfig);   // Configure alternate function muxing to gpio
                     break;
                 }
                 i++;
@@ -173,7 +184,7 @@ void GpioMcuInit(Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, Pi
             break;
         }
         case PIN_ANALOGIC:
-            PORT_HAL_SetMuxMode(g_portBase[obj->portIndex], obj->pinIndex, kPortPinDisabled); // Set pin as disabled, but is used as an analog pin
+            PORT_HAL_SetMuxMode(g_portBase[obj->portIndex], obj->pinIndex, kPortPinDisabled);   // Set pin as disabled, but is used as an analog pin
             break;
         default:
             /* Nothing to do */
