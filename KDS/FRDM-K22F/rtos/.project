@@ -45,6 +45,11 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>src/peripherals</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
 			<name>src/system</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/src/system</locationURI>
@@ -83,6 +88,16 @@
 			<name>src/free-rtos/src</name>
 			<type>2</type>
 			<locationURI>KSDK_LOC/rtos/FreeRTOS/src</locationURI>
+		</link>
+		<link>
+			<name>src/peripherals/fxos.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/src/peripherals/fxos.c</locationURI>
+		</link>
+		<link>
+			<name>src/peripherals/fxos.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/src/peripherals/fxos.h</locationURI>
 		</link>
 		<link>
 			<name>src/apps/rtos/FRDM-K22F</name>

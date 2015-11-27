@@ -16,7 +16,7 @@
  * \param data Data pointer to be added to new element.
  * \return ListNodePointer_t Pointer to created list node element.
  */
-ListNodePointer_t CreateListNode(void* data)
+ListNodePointer_t CreateListNode( void* data )
 {
     ListNodePointer_t newNode = (ListNodePointer_t) malloc(sizeof(ListNode_t));
     newNode->data = data;
@@ -32,16 +32,16 @@ ListNodePointer_t CreateListNode(void* data)
  * \param node Pointer to the node to be deleted.
  * \return void* Pointer to data of the deleted element.
  */
-void* DeleteListNode(ListNodePointer_t node)
+void* DeleteListNode( ListNodePointer_t node )
 {
     void* tempData = node->data;
     free(node);
     return tempData;
 }
 
-ListPointer_t ListCreate(void)
+ListPointer_t ListCreate( void )
 {
-    ListPointer_t newList = (ListPointer_t) malloc(sizeof(List_t));
+    ListPointer_t newList = (ListPointer_t) malloc(sizeof(LinkedList_t));
     newList->count = 0;
     newList->head = NULL;
     newList->tail = NULL;
@@ -49,18 +49,18 @@ ListPointer_t ListCreate(void)
     return newList;
 }
 
-ListPointer_t ListCreateAndPopulate(void* dataArray, uint32_t size)
+ListPointer_t ListCreateAndPopulate( void* dataArray, uint32_t size )
 {
     ListPointer_t newList = ListCreate();
 
-    for (uint32_t i = 0; i < size; i++) {
+    for ( uint32_t i = 0; i < size; i++ ) {
         ListPushFront(newList, dataArray + i);
     }
 
     return newList;
 }
 
-void ListDelete(ListPointer_t list)
+void ListDelete( ListPointer_t list )
 {
     /* Delete all remaining elements */
     ListClear(list);
@@ -68,11 +68,11 @@ void ListDelete(ListPointer_t list)
     free(list);
 }
 
-ListNodePointer_t ListPushFront(ListPointer_t list, void* data)
+ListNodePointer_t ListPushFront( ListPointer_t list, void* data )
 {
     ListNodePointer_t tempNode = CreateListNode(data);
 
-    if (list->count == 0) {
+    if ( list->count == 0 ) {
         /* List is empty */
         list->head = tempNode;
         list->tail = tempNode;
@@ -86,14 +86,14 @@ ListNodePointer_t ListPushFront(ListPointer_t list, void* data)
     return tempNode;
 }
 
-void* ListPopFront(ListPointer_t list)
+void* ListPopFront( ListPointer_t list )
 {
     void* tempData;
 
-    if (list->count == 0) {
+    if ( list->count == 0 ) {
         /* List is empty */
         return NULL;
-    } else if (list->count == 1) {
+    } else if ( list->count == 1 ) {
         /* Last element */
         tempData = DeleteListNode(list->head);
         list->head = NULL;
@@ -109,11 +109,11 @@ void* ListPopFront(ListPointer_t list)
     return tempData;
 }
 
-ListNodePointer_t ListPushBack(ListPointer_t list, void* data)
+ListNodePointer_t ListPushBack( ListPointer_t list, void* data )
 {
     ListNodePointer_t tempNode = CreateListNode(data);
 
-    if (list->count == 0) {
+    if ( list->count == 0 ) {
         /* List is empty */
         list->head = tempNode;
         list->tail = tempNode;
@@ -127,14 +127,14 @@ ListNodePointer_t ListPushBack(ListPointer_t list, void* data)
     return tempNode;
 }
 
-void* ListPopBack(ListPointer_t list)
+void* ListPopBack( ListPointer_t list )
 {
     void* tempData;
 
-    if (list->count == 0) {
+    if ( list->count == 0 ) {
         /* List is empty */
         return NULL;
-    } else if (list->count == 1) {
+    } else if ( list->count == 1 ) {
         /* Last element */
         tempData = DeleteListNode(list->tail);
         list->head = NULL;
@@ -150,18 +150,18 @@ void* ListPopBack(ListPointer_t list)
     return tempData;
 }
 
-ListNodePointer_t ListInsert(ListPointer_t list, void* data, uint32_t position)
+ListNodePointer_t ListInsert( ListPointer_t list, void* data, uint32_t position )
 {
-    if (position > list->count) {
+    if ( position > list->count ) {
         return NULL;
     }
 
-    if (position == 0) {
+    if ( position == 0 ) {
         /* Add to head */
         ListPushFront(list, data);
     }
 
-    if (position == (list->count - 1)) {
+    if ( position == (list->count - 1) ) {
         /* Add to tail */
         ListPushBack(list, data);
     }
@@ -170,7 +170,7 @@ ListNodePointer_t ListInsert(ListPointer_t list, void* data, uint32_t position)
     ListNodePointer_t tempNode;
     ListNodePointer_t newNode = CreateListNode(data);
 
-    if (position < (list->count / 2)) {
+    if ( position < (list->count / 2) ) {
         /* Start at the head */
         cnt = 0;
         tempNode = list->head;
@@ -197,18 +197,18 @@ ListNodePointer_t ListInsert(ListPointer_t list, void* data, uint32_t position)
     return newNode;
 }
 
-void ListRemove(ListPointer_t list, void* data)
+void ListRemove( ListPointer_t list, void* data )
 {
-    if (list->count == 0) return;
+    if ( list->count == 0 ) return;
 
     ListNodePointer_t tempNode = ListFind(list, data);
 
-    if (tempNode == NULL) return;
+    if ( tempNode == NULL ) return;
 
-    if (tempNode == list->tail) {
+    if ( tempNode == list->tail ) {
         /* Check if found node is tail */
         ListPopBack(list);
-    } else if (tempNode == list->head) {
+    } else if ( tempNode == list->head ) {
         /* Check if found node is head */
         ListPopFront(list);
     } else {
@@ -219,21 +219,21 @@ void ListRemove(ListPointer_t list, void* data)
     list->count--;
 }
 
-ListNodePointer_t ListFind(ListPointer_t list, void* data)
+ListNodePointer_t ListFind( ListPointer_t list, void* data )
 {
     ListNodePointer_t tempNode = list->head;
     uint32_t cnt = 0;
 
     while (cnt < list->count) {
-        if (tempNode->data == data) return tempNode;
-        if (tempNode->next == NULL) break;
+        if ( tempNode->data == data ) return tempNode;
+        if ( tempNode->next == NULL ) break;
         tempNode = tempNode->next;
         cnt++;
     }
     return NULL;
 }
 
-void ListClear(ListPointer_t list)
+void ListClear( ListPointer_t list )
 {
     ListNodePointer_t curNode, nextNode;
     curNode = list->head;

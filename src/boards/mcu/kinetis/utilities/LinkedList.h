@@ -30,19 +30,19 @@ typedef struct List_s {
     uint32_t count;
     ListNodePointer_t head;
     ListNodePointer_t tail;
-} List_t;
+} LinkedList_t;
 
 /*!
  * List pointer type.
  */
-typedef List_t* ListPointer_t;
+typedef LinkedList_t* ListPointer_t;
 
 /*!
  * \brief Create empty list.
  *
  * \return ListPointer_t Pointer to created list.
  */
-ListPointer_t ListCreate(void);
+ListPointer_t ListCreate( void );
 
 /*!
  * \brief Create list with passed elements.
@@ -51,14 +51,14 @@ ListPointer_t ListCreate(void);
  * \param size Number of elements contained in dataArray.
  * \return ListPointer_t Pointer to the created list.
  */
-ListPointer_t ListCreateAndPopulate(void* dataArray, uint32_t size);
+ListPointer_t ListCreateAndPopulate( void* dataArray, uint32_t size );
 
 /*!
  * \brief Delete list.
  *
  * \param list Pointer to the list to be deleted.
  */
-void ListDelete(ListPointer_t list);
+void ListDelete( ListPointer_t list );
 
 /*!
  * \brief Insert element at beginning.
@@ -67,7 +67,7 @@ void ListDelete(ListPointer_t list);
  * \param data Data pointer that will be added to the element.
  * \return ListNodePointer_t Pointer to the added list node.
  */
-ListNodePointer_t ListPushFront(ListPointer_t list, void* data);
+ListNodePointer_t ListPushFront( ListPointer_t list, void* data );
 
 /*!
  * \brief Delete first element.
@@ -75,7 +75,7 @@ ListNodePointer_t ListPushFront(ListPointer_t list, void* data);
  * \param list Pointer to the list the element will be insert.
  * \return void* Pointer to the data from the deleted list node.
  */
-void* ListPopFront(ListPointer_t list);
+void* ListPopFront( ListPointer_t list );
 
 /*!
  * \brief Add element at the end.
@@ -84,7 +84,7 @@ void* ListPopFront(ListPointer_t list);
  * \param data Data pointer that will be added to the element.
  * \return ListNodePointer_t Pointer to the added list node.
  */
-ListNodePointer_t ListPushBack(ListPointer_t list, void* data);
+ListNodePointer_t ListPushBack( ListPointer_t list, void* data );
 
 /*!
  * \brief Delete last element.
@@ -92,7 +92,7 @@ ListNodePointer_t ListPushBack(ListPointer_t list, void* data);
  * \param list Pointer to the list the element will be insert.
  * \return void* Pointer to the data from the deleted list node.
  */
-void* ListPopBack(ListPointer_t list);
+void* ListPopBack( ListPointer_t list );
 
 /*!
  * \brief Insert element at position.
@@ -101,14 +101,14 @@ void* ListPopBack(ListPointer_t list);
  * \param data Data pointer that will be added to the element.
  * \param position Position of the element to be added.
  */
-ListNodePointer_t ListInsert(ListPointer_t list, void* data, uint32_t position);
+ListNodePointer_t ListInsert( ListPointer_t list, void* data, uint32_t position );
 
 /*!
  * \brief Remove element with specific value.
  *
  * \param list Pointer to the list the element will be insert.
  */
-void ListRemove(ListPointer_t list, void* data);
+void ListRemove( ListPointer_t list, void* data );
 
 /*!
  * \brief Find element in the list.
@@ -117,13 +117,13 @@ void ListRemove(ListPointer_t list, void* data);
  * \param data Data pointer that will be added to the element.
  * \return ListNodePointer_t Pointer to the list node element if found, else NULL.
  */
-ListNodePointer_t ListFind(ListPointer_t list, void* data);
+ListNodePointer_t ListFind( ListPointer_t list, void* data );
 
 /*!
  * \brief Clear list.
  *
  * \param list Pointer to the list the element will be insert.
  */
-void ListClear(ListPointer_t list);
+void ListClear( ListPointer_t list );
 
 #endif /* __LINKEDLIST_H__ */

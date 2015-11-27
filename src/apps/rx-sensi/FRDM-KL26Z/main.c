@@ -56,9 +56,9 @@
 //  4: 4/8]
 #define LORA_SYMBOL_TIMEOUT                         5         // Symbols
 #define LORA_PREAMBLE_LENGTH                        8         // Same for Tx and Rx
-#define LORA_FIX_LENGTH_PAYLOAD_ON                  true
-#define LORA_FIX_LENGTH_PAYLOAD                     14
-#define LORA_CRC_ON                                 false
+#define LORA_FIX_LENGTH_PAYLOAD_ON                  false
+#define LORA_FIX_LENGTH_PAYLOAD                     0
+#define LORA_CRC_ON                                 true
 #define LORA_IQ_INVERSION_ON                        false
 
 #elif defined( USE_MODEM_FSK )
@@ -142,6 +142,8 @@ int main( void )
 
     Radio.Rx(0); // Continuous Rx
 
+    LOG_DEBUG("Starting Rx sens application...");
+
     TimerInit(&HeartBeatTimer, OnHeartBeatTimerTimerEvent);
     TimerSetValue(&HeartBeatTimer, 1000000);
 
@@ -150,7 +152,7 @@ int main( void )
             heartBeat = false;
             TimerStart(&HeartBeatTimer);
             LOG_TRACE_BARE(".");
-            if ( heartBeatCnt > 40 ) {
+            if ( heartBeatCnt > 128 ) {
                 LOG_TRACE_BARE("\r\n");
                 heartBeatCnt = 0;
             } else {
@@ -159,6 +161,7 @@ int main( void )
         }
         if ( rxReceived ) {
             rxReceived = false;
+            heartBeatCnt = 0;
             LOG_TRACE_BARE("\r\nDATA: ");
             for ( uint32_t i = 0; i < rxFrameSize; i++ ) {
                 LOG_TRACE_BARE("0x%02x ", rxFrame[i]);

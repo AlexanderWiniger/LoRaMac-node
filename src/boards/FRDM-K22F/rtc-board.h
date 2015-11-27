@@ -8,6 +8,17 @@
 #ifndef __RTC_BOARD_H__
 #define __RTC_BOARD_H__
 
+#if defined(FSL_RTOS_FREE_RTOS)
+
+/*!
+ * \brief This function block the MCU from going into Low Power mode
+ *
+ * \param [IN] Status enable or disable
+ */
+void BlockLowPowerDuringTask( bool Status );
+
+#else
+
 /*---------------------------- Definitions ------------------------------*/
 
 /*! @brief Table of base addresses for RTC instances. */
@@ -85,5 +96,7 @@ void RtcRecoverMcuStatus( void );
  * \param [IN] delay Delay value in ms
  */
 void RtcDelayMs( uint32_t delay );
+
+#endif
 
 #endif // __RTC_BOARD_H__

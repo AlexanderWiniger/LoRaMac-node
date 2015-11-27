@@ -30,17 +30,17 @@ bool SwitchBPushEvent = false;
 /*!
  * \brief Switch A IRQ callback
  */
-void SwitchAIrq(void);
+void SwitchAIrq( void );
 
 /*!
  * \brief Switch B IRQ callback
  */
-void SwitchBIrq(void);
+void SwitchBIrq( void );
 
 /*!
  * \brief Function executed on Led 1 Timeout event
  */
-void OnLed1TimerEvent(void)
+void OnLed1TimerEvent( void )
 {
     Led1TimerEvent = true;
 }
@@ -48,7 +48,7 @@ void OnLed1TimerEvent(void)
 /*!
  * \brief Function executed on Led 2 Timeout event
  */
-void OnLed2TimerEvent(void)
+void OnLed2TimerEvent( void )
 {
     Led2TimerEvent = true;
 }
@@ -56,7 +56,7 @@ void OnLed2TimerEvent(void)
 /*!
  * \brief Function executed on Led 3 Timeout event
  */
-void OnLed3TimerEvent(void)
+void OnLed3TimerEvent( void )
 {
     Led3TimerEvent = true;
 }
@@ -64,7 +64,7 @@ void OnLed3TimerEvent(void)
 /*!
  * \brief Main application entry point.
  */
-int main(void)
+int main( void )
 {
     // Target board initialisation
     BoardInitMcu();
@@ -90,10 +90,10 @@ int main(void)
     TimerStart(&Led1Timer);
 
     // Print the initial banner
-    LOG_DEBUG("\r\nHello World!\r\n");
+    LOG_DEBUG("Hello World!\r\n");
 
     while (1) {
-        if (Led1TimerEvent == true) {
+        if ( Led1TimerEvent == true ) {
             Led1TimerEvent = false;
 
             // Switch LED 1 OFF
@@ -103,7 +103,7 @@ int main(void)
             TimerStart(&Led2Timer);
         }
 
-        if (Led2TimerEvent == true) {
+        if ( Led2TimerEvent == true ) {
             Led2TimerEvent = false;
 
             // Switch LED 2 OFF
@@ -113,7 +113,7 @@ int main(void)
             TimerStart(&Led3Timer);
         }
 
-        if (Led3TimerEvent == true) {
+        if ( Led3TimerEvent == true ) {
             Led3TimerEvent = false;
 
             // Switch LED 3 OFF
@@ -123,11 +123,11 @@ int main(void)
             TimerStart(&Led1Timer);
         }
 
-        if (SwitchAPushEvent) {
+        if ( SwitchAPushEvent ) {
             accel_sensor_data_t sensorData;
             SwitchAPushEvent = false;
 
-            if (FxosReadSensorData(&sensorData) != FAIL) {
+            if ( FxosReadSensorData(&sensorData) != FAIL ) {
                 LOG_DEBUG_BARE("DATA: Accelerometer (X/Y/Z):\t%d \t%d \t%d \r\n", sensorData.accelX,
                         sensorData.accelY, sensorData.accelZ);
 //                LOG_DEBUG_BARE("DATA: Magnetometer (X/Y/Z):\t%d \t%d \t%d \r\n", sensorData.magX, sensorData.magY,
@@ -137,20 +137,20 @@ int main(void)
             }
         }
 
-        if (SwitchBPushEvent) {
+        if ( SwitchBPushEvent ) {
             SwitchBPushEvent = false;
             LOG_TRACE("Button B pushed!");
         }
     }
 }
 
-void SwitchAIrq(void)
+void SwitchAIrq( void )
 {
     DelayMs(20);    // Software debouncing
     SwitchAPushEvent = true;
 }
 
-void SwitchBIrq(void)
+void SwitchBIrq( void )
 {
     DelayMs(20);    // Software debouncing
     SwitchBPushEvent = true;

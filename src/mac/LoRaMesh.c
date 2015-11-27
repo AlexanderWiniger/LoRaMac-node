@@ -1200,10 +1200,10 @@ void LoRaMacBcnRxWindowSetup( void )
     Radio.SetChannel(ADV_BEACON_FREQUENCY);
     if ( ADV_BEACON_DATARATE == DR_7 ) {
         Radio.SetRxConfig(MODEM_FSK, 50e3, Datarates[ADV_BEACON_DATARATE] * 1e3, 0, 83.333e3, 5, 0,
-                true, ADV_BEACON_LEN, false, false, 0, false, true);
+                false, 0, true, false, 0, false, true);
     } else {
         Radio.SetRxConfig(MODEM_LORA, ADV_BEACON_BANDWIDTH, Datarates[ADV_BEACON_DATARATE], 1, 0, 8,
-                5, true, ADV_BEACON_LEN, false, false, 0, false, true);
+                5, false, 0, true, false, 0, false, true);
     }
 }
 
@@ -1230,7 +1230,7 @@ uint8_t LoRaMeshSendAdvertisingBeacon( void )
     /* Configure LoRa transceiver */
     Radio.SetChannel(AdvertisingSlot.Frequency);
     Radio.SetTxConfig(MODEM_LORA, TxPowers[ADV_BEACON_TX_POWER], 0, ADV_BEACON_BANDWIDTH,
-            Datarates[ADV_BEACON_DATARATE], 1, 8, true, false, 0, 0, false, 3e6);
+            Datarates[ADV_BEACON_DATARATE], 1, 8, false, true, 0, 0, false, 3e6);
 
     LoRaMacState |= MAC_TX_RUNNING;
     /* Starts the MAC layer status check timer */

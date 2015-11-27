@@ -6,6 +6,8 @@
  *
  */
 
+#if !defined(FSL_RTOS_FREE_RTOS)
+
 #include <math.h>
 #include "board.h"
 #include "timer-board.h"
@@ -171,3 +173,5 @@ void TimerHwEnterLowPowerStopMode( void )
     __WFI();
 #endif
 }
+
+#endif
