@@ -17,7 +17,16 @@
 
 #if defined(FSL_RTOS_FREE_RTOS)
 #include "timers.h"
+#endif
 
+/*!
+ * \brief Timer time variable definition
+ */
+#ifndef TimerTime_t
+typedef uint64_t TimerTime_t;
+#endif
+
+#if defined(FSL_RTOS_FREE_RTOS)
 /*!
  * \brief Timer object description
  */
@@ -30,27 +39,6 @@ typedef struct TimerEvent_s {
 }TimerEvent_t;
 
 /*!
- * \brief Timer time variable definition
- */
-#ifndef TimerTime_t
-typedef uint64_t TimerTime_t;
-#endif
-
-/*!
- * \brief Enables/Disables low power timers usage
- *
- * \param [IN] enable [true]RTC timer used, [false]Normal timer used
- */
-void TimerSetLowPowerEnable( bool enable );
-
-/*!
- * \brief Initializes the timer object
- *
- * \retval enable [true]RTC timer used, [false]Normal timer used
- */
-bool TimerGetLowPowerEnable( void );
-
-/*!
  * \brief Initializes the timer object
  *
  * \remark TimerSetValue function must be called before starting the timer.
@@ -60,40 +48,6 @@ bool TimerGetLowPowerEnable( void );
  * \param [IN] callback     Function callback called at the end of the timeout
  */
 void TimerInit( TimerEvent_t *obj, const char* name, uint32_t periodInMs, TimerCallbackFunction_t callback, bool autoReload);
-
-/*!
- * \brief Starts and adds the timer object to the list of timer events
- *
- * \param [IN] obj Structure containing the timer object parameters
- */
-void TimerStart( TimerEvent_t *obj );
-
-/*!
- * \brief Stops and removes the timer object from the list of timer events
- *
- * \param [IN] obj Structure containing the timer object parameters
- */
-void TimerStop( TimerEvent_t *obj );
-
-/*!
- * \brief Resets the timer object
- *
- * \param [IN] obj Structure containing the timer object parameters
- */
-void TimerReset( TimerEvent_t *obj );
-
-/*!
- * \brief Set timer new timeout value
- *
- * \param [IN] obj   Structure containing the timer object parameters
- * \param [IN] value New timer timeout value
- */
-void TimerSetValue( TimerEvent_t *obj, uint32_t value );
-
-/*!
- * \brief Manages the entry into ARM cortex deep-sleep mode
- */
-void TimerLowPowerHandler( void );
 
 #else
 /*!
@@ -106,27 +60,6 @@ typedef struct TimerEvent_s {
     void (*Callback)( void ); //! Timer IRQ callback function
     struct TimerEvent_s *Next;  //! Pointer to the next Timer object.
 } TimerEvent_t;
-
-/*!
- * \brief Timer time variable definition
- */
-#ifndef TimerTime_t
-typedef uint64_t TimerTime_t;
-#endif
-
-/*!
- * \brief Enables/Disables low power timers usage
- *
- * \param [IN] enable [true]RTC timer used, [false]Normal timer used
- */
-void TimerSetLowPowerEnable( bool enable );
-
-/*!
- * \brief Initializes the timer object
- *
- * \retval enable [true]RTC timer used, [false]Normal timer used
- */
-bool TimerGetLowPowerEnable( void );
 
 /*!
  * \brief Initializes the timer object
@@ -143,6 +76,8 @@ void TimerInit( TimerEvent_t *obj, void (*callback)( void ) );
  * Timer IRQ event handler
  */
 void TimerIrqHandler( void );
+
+#endif /* FSL_RTOS_FREE_RTOS */
 
 /*!
  * \brief Starts and adds the timer object to the list of timer events
@@ -185,5 +120,17 @@ TimerTime_t TimerGetCurrentTime( void );
  */
 void TimerLowPowerHandler( void );
 
-#endif /* FSL_RTOS_FREE_RTOS */
+/*!
+ * \brief Enables/Disables low power timers usage
+ *
+ * \param [IN] enable [true]RTC timer used, [false]Normal timer used
+ */
+void TimerSetLowPowerEnable( bool enable );
+
+/*!
+ * \brief Initializes the timer object
+ *
+ * \retval enable [true]RTC timer used, [false]Normal timer used
+ */
+bool TimerGetLowPowerEnable( void );
 #endif  // __TIMER_H__

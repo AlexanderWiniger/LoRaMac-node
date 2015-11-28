@@ -42,7 +42,7 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.unused.1450882950" name="Warn on various unused elements (-Wunused)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.unused" value="false" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.1288388735" name="Enable all common warnings (-Wall)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn" value="true" valueType="boolean"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform.661930543" isAbstract="false" osList="all" superClass="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform"/>
-							<builder buildPath="${workspace_loc:/FRDM-KL26Z_LoRaMesh}/Debug" id="ilg.gnuarmeclipse.managedbuild.cross.builder.345543399" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="ilg.gnuarmeclipse.managedbuild.cross.builder"/>
+							<builder buildPath="${workspace_loc:/FRDM-KL26Z_LoRaMesh-baremetal}/Debug" id="ilg.gnuarmeclipse.managedbuild.cross.builder.345543399" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="ilg.gnuarmeclipse.managedbuild.cross.builder"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.1591959682" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler">
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.usepreprocessor.787840148" name="Use preprocessor" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.usepreprocessor" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.defs.774006694" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.defs" valueType="definedSymbols">
@@ -53,14 +53,15 @@
 							</tool>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.437929334" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler">
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths.2070740578" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="../../../../src/system"/>
-									<listOptionValue builtIn="false" value="../../../../src/system/crypto"/>
-									<listOptionValue builtIn="false" value="../../../../src/radio"/>
-									<listOptionValue builtIn="false" value="../../../../src/radio/sx1276"/>
-									<listOptionValue builtIn="false" value="../../../../src/mac"/>
-									<listOptionValue builtIn="false" value="../../../../src/peripherals"/>
-									<listOptionValue builtIn="false" value="../../../../src/boards/FRDM-KL26Z"/>
-									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis/utilities"/>
+									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/baremetal"/>
+									<listOptionValue builtIn="false" value="../../../../../src/system"/>
+									<listOptionValue builtIn="false" value="../../../../../src/system/crypto"/>
+									<listOptionValue builtIn="false" value="../../../../../src/radio"/>
+									<listOptionValue builtIn="false" value="../../../../../src/radio/sx1276"/>
+									<listOptionValue builtIn="false" value="../../../../../src/mac"/>
+									<listOptionValue builtIn="false" value="../../../../../src/peripherals"/>
+									<listOptionValue builtIn="false" value="../../../../../src/boards/FRDM-KL26Z"/>
+									<listOptionValue builtIn="false" value="../../../../../src/boards/mcu/kinetis/utilities"/>
 									<listOptionValue builtIn="false" value="&quot;${KSDK_PATH}/platform/devices&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${KSDK_PATH}/platform/devices/MKL26Z4/startup&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${KSDK_PATH}/platform/devices/MKL26Z4/include&quot;"/>
@@ -150,8 +151,13 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize.131884577.689519504" name="Print size" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize.131884577"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.unused.1450882950.1801728629" name="Warn on various unused elements (-Wunused)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.unused.1450882950"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.1288388735.90643177" name="Enable all common warnings (-Wall)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.1288388735"/>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.373613480" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.1591959682"/>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.2021640191" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.437929334"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform" isAbstract="false" osList="all" superClass="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform"/>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.373613480" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.1591959682">
+								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input.539383837" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input"/>
+							</tool>
+							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.2021640191" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.437929334">
+								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.1365109105" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input"/>
+							</tool>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.527778578" name="Cross ARM C++ Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1167606950"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.2010449812" name="Cross ARM C Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.1960994426"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.2031315092" name="Cross ARM C++ Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.1323390362"/>
@@ -207,7 +213,7 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash.1098574933" name="Create flash image" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash" value="true" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize.705397009" name="Print size" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize" value="true" valueType="boolean"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform.1697730948" isAbstract="false" osList="all" superClass="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform"/>
-							<builder buildPath="${workspace_loc:/FRDM-KL26Z_LoRaMesh}/Release" id="ilg.gnuarmeclipse.managedbuild.cross.builder.415546153" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="ilg.gnuarmeclipse.managedbuild.cross.builder"/>
+							<builder buildPath="${workspace_loc:/FRDM-KL26Z_LoRaMesh-baremetal}/Release" id="ilg.gnuarmeclipse.managedbuild.cross.builder.415546153" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="ilg.gnuarmeclipse.managedbuild.cross.builder"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.62962856" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler">
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.usepreprocessor.1638951890" name="Use preprocessor" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.usepreprocessor" value="true" valueType="boolean"/>
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input.1857410924" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input"/>
@@ -246,7 +252,7 @@
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="FRDM-KL26Z_LoRaMesh.ilg.gnuarmeclipse.managedbuild.cross.target.elf.1121493343" name="Executable" projectType="ilg.gnuarmeclipse.managedbuild.cross.target.elf"/>
+		<project id="FRDM-KL26Z_LoRaMesh-baremetal.ilg.gnuarmeclipse.managedbuild.cross.target.elf.1121493343" name="Executable" projectType="ilg.gnuarmeclipse.managedbuild.cross.target.elf"/>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
@@ -260,10 +266,10 @@
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Release">
-			<resource resourceType="PROJECT" workspacePath="/FRDM-KL26Z_LoRaMesh"/>
+			<resource resourceType="PROJECT" workspacePath="/FRDM-KL26Z_LoRaMesh-baremetal"/>
 		</configuration>
 		<configuration configurationName="Debug">
-			<resource resourceType="PROJECT" workspacePath="/FRDM-KL26Z_LoRaMesh"/>
+			<resource resourceType="PROJECT" workspacePath="/FRDM-KL26Z_LoRaMesh-baremetal"/>
 		</configuration>
 	</storageModule>
 </cproject>

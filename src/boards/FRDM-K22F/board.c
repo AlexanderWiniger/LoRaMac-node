@@ -154,9 +154,6 @@ void BoardInitPeriph( void )
     /* Init the IRQ GPIO pins*/
     GpioInit(&Irq1Fxos8700cq, IRQ_1_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Irq2Fxos8700cq, IRQ_2_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
-
-    /* Initialize accelerometer */
-//    FxosInit (FXOS_I2C_ADDRESS);
 #endif
 
     /* Init GPS */
@@ -238,13 +235,6 @@ void BoardInitMcu( void )
         CLOCK_SYS_SetConfiguration (&g_defaultClockConfigVlpr);
 #else
         CLOCK_SYS_SetConfiguration(&g_defaultClockConfigRun);
-#endif
-
-#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
-        /*! I2C channel to be used by digital 3D accelerometer */
-//        Fxos.instance = FXOS8700CQ_I2C_INSTANCE;
-//        I2c.I2c = &Fxos;
-//        I2cInit(&I2c, I2C_SCL, I2C_SDA);
 #endif
 
         /*! SPI channel to be used by Semtech SX1276 */

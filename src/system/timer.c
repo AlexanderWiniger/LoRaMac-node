@@ -18,22 +18,15 @@
 
 #if defined(FSL_RTOS_FREE_RTOS)
 #include "fsl_os_abstraction.h"
+#endif
 
 #define LOG_LEVEL_ERROR
 #include "debug.h"
 
 static bool LowPowerModeEnable = true;
+
+#if defined(FSL_RTOS_FREE_RTOS)
 static uint32_t NrOfTimers = 0;
-
-void TimerSetLowPowerEnable( bool enable )
-{
-    LowPowerModeEnable = enable;
-}
-
-bool TimerGetLowPowerEnable( void )
-{
-    return LowPowerModeEnable;
-}
 
 void TimerInit( TimerEvent_t *obj, const char* name, uint32_t periodInMs, TimerCallbackFunction_t callback, bool autoReload )
 {
@@ -87,14 +80,22 @@ void TimerSetValue( TimerEvent_t *obj, uint32_t value )
     }
 }
 
+TimerTime_t TimerGetCurrentTime( void )
+{
+    return 0;
+}
+
+void TimerLowPowerHandler( void )
+{
+
+}
+
 /*!
  * \brief Manages the entry into ARM cortex deep-sleep mode
  */
 void TimerLowPowerHandler( void );
 
 #else
-static bool LowPowerModeEnable = true;
-
 /*!
  * This flag is used to make sure we have looped through the main several time to avoid race issues
  */
@@ -148,16 +149,6 @@ static bool TimerExists( TimerEvent_t *obj );
  * \retval value current timer value
  */
 uint32_t TimerGetValue( void );
-
-void TimerSetLowPowerEnable( bool enable )
-{
-    LowPowerModeEnable = enable;
-}
-
-bool TimerGetLowPowerEnable( void )
-{
-    return LowPowerModeEnable;
-}
 
 void TimerInit( TimerEvent_t *obj, void (*callback)( void ) )
 {
@@ -466,3 +457,13 @@ void TimerLowPowerHandler( void )
     }
 }
 #endif
+
+void TimerSetLowPowerEnable( bool enable )
+{
+    LowPowerModeEnable = enable;
+}
+
+bool TimerGetLowPowerEnable( void )
+{
+    return LowPowerModeEnable;
+}

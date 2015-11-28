@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>FRDM-KL26Z_LoRaMesh</name>
+	<name>FRDM-KL26Z_rtos</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -40,9 +40,9 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
-			<name>src/mac</name>
+			<name>src/free-rtos</name>
 			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/src/mac</locationURI>
+			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
 			<name>src/peripherals</name>
@@ -60,7 +60,7 @@
 			<locationURI>PARENT-3-PROJECT_LOC/src/system</locationURI>
 		</link>
 		<link>
-			<name>src/apps/LoRaMesh</name>
+			<name>src/apps/rtos</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
@@ -75,6 +75,26 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>src/free-rtos/config</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>src/free-rtos/include</name>
+			<type>2</type>
+			<locationURI>KSDK_LOC/rtos/FreeRTOS/include</locationURI>
+		</link>
+		<link>
+			<name>src/free-rtos/port</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>src/free-rtos/src</name>
+			<type>2</type>
+			<locationURI>KSDK_LOC/rtos/FreeRTOS/src</locationURI>
+		</link>
+		<link>
 			<name>src/peripherals/fxos.c</name>
 			<type>1</type>
 			<locationURI>PARENT-3-PROJECT_LOC/src/peripherals/fxos.c</locationURI>
@@ -85,14 +105,39 @@
 			<locationURI>PARENT-3-PROJECT_LOC/src/peripherals/fxos.h</locationURI>
 		</link>
 		<link>
-			<name>src/apps/LoRaMesh/FRDM-KL26Z</name>
+			<name>src/apps/rtos/FRDM-KL26Z</name>
 			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/src/apps/LoRaMesh/FRDM-KL26Z</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/src/apps/rtos/FRDM-KL26Z</locationURI>
 		</link>
 		<link>
 			<name>src/boards/mcu/kinetis</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/src/boards/mcu/kinetis</locationURI>
+		</link>
+		<link>
+			<name>src/free-rtos/config/FreeRTOSConfig.h</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/rtos/FreeRTOS/config/KL26Z4/gcc/FreeRTOSConfig.h</locationURI>
+		</link>
+		<link>
+			<name>src/free-rtos/port/port.c</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/rtos/FreeRTOS/port/gcc/port.c</locationURI>
+		</link>
+		<link>
+			<name>src/free-rtos/port/portTicks.h</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/rtos/FreeRTOS/port/gcc/portTicks.h</locationURI>
+		</link>
+		<link>
+			<name>src/free-rtos/port/portasm.S</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/rtos/FreeRTOS/port/gcc/portasm.S</locationURI>
+		</link>
+		<link>
+			<name>src/free-rtos/port/portmacro.h</name>
+			<type>1</type>
+			<locationURI>KSDK_LOC/rtos/FreeRTOS/port/gcc/portmacro.h</locationURI>
 		</link>
 		<link>
 			<name>src/boards/mcu/kinetis/utilities/fsl_debug_console.c</name>

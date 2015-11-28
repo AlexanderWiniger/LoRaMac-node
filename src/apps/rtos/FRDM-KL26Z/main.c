@@ -1,7 +1,7 @@
 /**
  * \file main.c
  * \author Alexander Winiger (alexander.winiger@hslu.ch)
- * \date 09.11.2015
+ * \date 28.11.2015
  * \brief FreeRTOS test implementation
  *
  */
@@ -26,9 +26,6 @@ volatile bool Led1TimerEvent = false;
 static TimerEvent_t Led2Timer;
 volatile bool Led2TimerEvent = false;
 
-static TimerEvent_t Led3Timer;
-volatile bool Led3TimerEvent = false;
-
 /*------------------------ Local Functions ------------------------------*/
 /* task declare */
 void task_led_rtos( task_param_t param );
@@ -42,11 +39,6 @@ void OnLed1TimerEvent( TimerHandle_t xTimer );
  * \brief Function executed on Led 2 Timeout event
  */
 void OnLed2TimerEvent( TimerHandle_t xTimer );
-
-/*!
- * \brief Function executed on Led 3 Timeout event
- */
-void OnLed3TimerEvent( TimerHandle_t xTimer );
 
 /* task define */
 OSA_TASK_DEFINE(task_led_rtos, TASK_LED_RTOS_STACK_SIZE);
@@ -87,7 +79,6 @@ void task_led_rtos( task_param_t param )
 {
     TimerInit(&Led1Timer, "Led1Timer", 250, OnLed1TimerEvent, false);
     TimerInit(&Led2Timer, "Led2Timer", 250, OnLed2TimerEvent, false);
-    TimerInit(&Led3Timer, "Led3Timer", 250, OnLed3TimerEvent, false);
 
     // Switch LED 1 ON
     GpioWrite(&Led1, 0);
@@ -110,16 +101,6 @@ void task_led_rtos( task_param_t param )
             // Switch LED 2 OFF
             GpioWrite(&Led2, 1);
             // Switch LED 3 ON
-            GpioWrite(&Led3, 0);
-            TimerStart(&Led3Timer);
-        }
-
-        if ( Led3TimerEvent == true ) {
-            Led3TimerEvent = false;
-
-            // Switch LED 3 OFF
-            GpioWrite(&Led3, 1);
-            // Switch LED 1 ON
             GpioWrite(&Led1, 0);
             TimerStart(&Led1Timer);
         }
@@ -156,10 +137,4 @@ void OnLed2TimerEvent( TimerHandle_t xTimer )
 {
     LOG_TRACE("%s expired.", pcTimerGetTimerName(xTimer));
     Led2TimerEvent = true;
-}
-
-void OnLed3TimerEvent( TimerHandle_t xTimer )
-{
-    LOG_TRACE("%s expired.", pcTimerGetTimerName(xTimer));
-    Led3TimerEvent = true;
 }

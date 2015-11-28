@@ -125,7 +125,11 @@ void SX1276OnDio5Irq( void );
 /*!
  * \brief Tx & Rx timeout timer callback
  */
+#if defined(FSL_RTOS_FREE_RTOS)
+void SX1276OnTimeoutIrq( TimerHandle_t xTimer );
+#else
 void SX1276OnTimeoutIrq( void );
+#endif
 
 /*
  * Private global constants
@@ -201,9 +205,15 @@ void SX1276Init( RadioEvents_t *events )
     RadioEvents = events;
 
     // Initialize driver timeout timers
+#if defined(FSL_RTOS_FREE_RTOS)
+    TimerInit(&TxTimeoutTimer, "TxTimeoutTimer", 10, SX1276OnTimeoutIrq, false);
+    TimerInit(&RxTimeoutTimer, "RxTimeoutTimer", 10, SX1276OnTimeoutIrq, false);
+    TimerInit(&RxTimeoutSyncWord, "RxTimeoutSyncWord", 10, SX1276OnTimeoutIrq, false);
+#else
     TimerInit(&TxTimeoutTimer, SX1276OnTimeoutIrq);
     TimerInit(&RxTimeoutTimer, SX1276OnTimeoutIrq);
     TimerInit(&RxTimeoutSyncWord, SX1276OnTimeoutIrq);
+#endif
 
     SX1276Reset();
 
@@ -1317,8 +1327,11 @@ void SX1276SetMaxPayloadLength( RadioModems_t modem, uint8_t max )
             break;
     }
 }
-
+#if defined(FSL_RTOS_FREE_RTOS)
+void SX1276OnTimeoutIrq( TimerHandle_t xTimer )
+#else
 void SX1276OnTimeoutIrq( void )
+#endif
 {
     switch (SX1276.Settings.State) {
         case RF_RX_RUNNING:

@@ -468,6 +468,62 @@ static void OnRadioRxError( void );
  */
 static void OnRadioRxTimeout( void );
 
+#if defined(FSL_RTOS_FREE_RTOS)
+/*!
+ * Function executed on Resend Frame timer event.
+ */
+static void OnMacStateCheckTimerEvent( TimerHandle_t xTimer );
+
+/*!
+ * Function executed on duty cycle delayed Tx  timer event
+ */
+static void OnTxDelayedTimerEvent( TimerHandle_t xTimer );
+
+/*!
+ * Function executed on channel check timer event
+ */
+static void OnChannelCheckTimerEvent( TimerHandle_t xTimer );
+
+/*!
+ * Function executed on first Rx window timer event
+ */
+static void OnRxWindow1TimerEvent( TimerHandle_t xTimer );
+
+/*!
+ * Function executed on second Rx window timer event
+ */
+static void OnRxWindow2TimerEvent( TimerHandle_t xTimer );
+
+/*!
+ * Function executed on synchronized Rx window timer event
+ */
+static void OnRxSynchWindowTimerEvent( TimerHandle_t xTimer );
+
+/*!
+ * Function executed on advertising beacon timer event
+ */
+static void OnAdvBcnTimerEvent( TimerHandle_t xTimer );
+
+/*!
+ * Function executed on advertising beacon send delay timer event
+ */
+static void OnAdvBcnSendDelayTimerEvent( TimerHandle_t xTimer );
+
+/*!
+ * Function executed on advertising beacon reception window timer event
+ */
+static void OnAdvBcnRxWindowTimerEvent( TimerHandle_t xTimer );
+
+/*!
+ * Function executed on AckTimeout timer event
+ */
+static void OnAckTimeoutTimerEvent( TimerHandle_t xTimer );
+
+/*!
+ * Function executed on ChannelCheck timer event
+ */
+static void OnChannelCheckTimerEvent( TimerHandle_t xTimer );
+#else
 /*!
  * Function executed on Resend Frame timer event.
  */
@@ -522,6 +578,7 @@ static void OnAckTimeoutTimerEvent( void );
  * Function executed on ChannelCheck timer event
  */
 static void OnChannelCheckTimerEvent( void );
+#endif
 
 /*****************************************************************************
  *                                                                           *
@@ -771,6 +828,18 @@ void LoRaMacInit( LoRaMacCallbacks_t *callbacks )
     ParentAddr = 0;
 
     /* Initialize Timers */
+#if defined(FSL_RTOS_FREE_RTOS)
+    TimerInit(&ChannelCheckTimer, "ChannelCheckTimer", 10, OnChannelCheckTimerEvent, false);
+    TimerInit(&TxDelayedTimer, "TxDelayedTimer", 10, OnTxDelayedTimerEvent, false);
+    TimerInit(&RxWindowTimer1, "RxWindowTimer1", 10, OnRxWindow1TimerEvent, false);
+    TimerInit(&RxWindowTimer2, "RxWindowTimer2", 10, OnRxWindow2TimerEvent, false);
+    TimerInit(&SynchRxWindowTimer, "SynchRxWindowTimer", 10, OnRxSynchWindowTimerEvent, false);
+    TimerInit(&AckTimeoutTimer, "AckTimeoutTimer", 10, OnAckTimeoutTimerEvent, false);
+    TimerInit(&AdvBcnTimer, "AdvBcnTimer", ADV_BEACON_INTERVAL, OnAdvBcnTimerEvent, false);
+    TimerInit(&AdvBcnSendDelayTimer, "AdvBcnSendDelayTimer", 10, OnAdvBcnSendDelayTimerEvent, false);
+    TimerInit(&AdvBcnRxWindowTimer, "AdvBcnRxWindowTimer", 10, OnAdvBcnRxWindowTimerEvent, false);
+    TimerInit(&MacStateCheckTimer, "MacStateCheckTimer", MAC_STATE_CHECK_TIMEOUT, OnMacStateCheckTimerEvent, false);
+#else
     TimerInit(&ChannelCheckTimer, OnChannelCheckTimerEvent);
     TimerInit(&TxDelayedTimer, OnTxDelayedTimerEvent);
     TimerInit(&RxWindowTimer1, OnRxWindow1TimerEvent);
@@ -785,6 +854,7 @@ void LoRaMacInit( LoRaMacCallbacks_t *callbacks )
 
     TimerInit(&MacStateCheckTimer, OnMacStateCheckTimerEvent);
     TimerSetValue(&MacStateCheckTimer, MAC_STATE_CHECK_TIMEOUT);
+#endif
 
     /* Initialize Radio driver */
     RadioEvents.CadDone = OnCadDone;
@@ -1282,18 +1352,6 @@ uint8_t LoRaMeshSendAdvertisingBeacon( void )
  * Event functions implementation                                            *
  *                                                                           *
  *****************************************************************************/
-void OnChannelCheckTimerEvent( void )
-{
-    TimerStop(&ChannelCheckTimer);
-
-    LoRaMacState &= ~MAC_CHANNEL_CHECK;
-    if ( SetNextChannel() == 0 ) {
-        if ( (LoRaMacState & MAC_TX_RUNNING) == MAC_TX_RUNNING ) {
-            LoRaMacSendFrameOnChannel(Channels[Channel]);
-        }
-    }
-}
-
 void OnRadioTxDone( void )
 {
     LOG_TRACE("Transmitted successfully.");
@@ -1302,7 +1360,7 @@ void OnRadioTxDone( void )
     if ( LoRaMacDeviceClass != CLASS_C ) {
         Radio.Sleep();
     } else {
-        OnRxWindow2TimerEvent();
+        OnRxWindow2TimerEvent(RxWindowTimer2.Handle);
     }
 
     // Update Band Time OFF
@@ -1322,9 +1380,9 @@ void OnRadioTxDone( void )
         /* Open advertising beacon reception window */
         LoRaMacBcnRxWindowSetup();
     } else if ( IsRxWindowsEnabled == true ) {
-        if ( RxWindowTimer1.ReloadValue != RxWindow1Delay )
+        if ( RxWindowTimer1.PeriodInMs != RxWindow1Delay )
             TimerSetValue(&RxWindowTimer1, RxWindow1Delay);
-        if ( RxWindowTimer2.ReloadValue != RxWindow2Delay )
+        if ( RxWindowTimer2.PeriodInMs != RxWindow2Delay )
             TimerSetValue(&RxWindowTimer2, RxWindow2Delay);
         TimerStart(&RxWindowTimer1);
         TimerStart(&RxWindowTimer2);
@@ -1452,7 +1510,7 @@ void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr )
     }
 
     if ( (LoRaMacDeviceClass == CLASS_C) && (LoRaMacEventFlags.Bits.RxSlot == 1) ) {
-        OnRxWindow2TimerEvent();
+        OnRxWindow2TimerEvent(RxWindowTimer2.Handle);
     }
 
 }
@@ -1465,7 +1523,7 @@ void OnCadDone( bool channelActivityDetected )
         LOG_TRACE("Channel clear. Send packet now (%d%d)", *(((int*) (&curTime)) + 1), curTime);
         Radio.Send(LoRaMacBuffer, LoRaMacBufferPktLen);
     } else {
-        uint32_t delay = randr(0, (AdvertisingSlot.Duration - AdvBcnSendDelayTimer.ReloadValue));
+        uint32_t delay = randr(0, (AdvertisingSlot.Duration - AdvBcnSendDelayTimer.PeriodInMs));
         curTime += (uint64_t) delay;
         LOG_TRACE("Channel NOT clear. Send packet in %d (%d%d)", delay, *(((int*) (&curTime)) + 1),
                 curTime);
@@ -1474,19 +1532,13 @@ void OnCadDone( bool channelActivityDetected )
     }
 }
 
-void OnTxDelayedTimerEvent( void )
-{
-    TimerStop(&TxDelayedTimer);
-    Radio.Send(LoRaMacBuffer, LoRaMacBufferPktLen);
-}
-
 void OnRadioTxTimeout( void )
 {
     LOG_ERROR("Tx timeout occurred.");
     if ( LoRaMacDeviceClass != CLASS_C ) {
         Radio.Sleep();
     } else {
-        OnRxWindow2TimerEvent();
+        OnRxWindow2TimerEvent(RxWindowTimer2.Handle);
     }
 
     LoRaMacEventFlags.Bits.Tx = 1;
@@ -1501,7 +1553,7 @@ void OnRadioRxTimeout( void )
         Radio.Sleep();
     } else {
         if ( LoRaMacEventFlags.Bits.RxSlot == 1 ) LoRaMacEventFlags.Bits.Tx = 1;
-        OnRxWindow2TimerEvent();
+        OnRxWindow2TimerEvent(RxWindowTimer2.Handle);
     }
 
     if ( LoRaMacEventFlags.Bits.RxSlot == 2 ) {
@@ -1516,7 +1568,7 @@ void OnRadioRxError( void )
     if ( LoRaMacDeviceClass != CLASS_C ) {
         Radio.Sleep();
     } else {
-        OnRxWindow2TimerEvent();
+        OnRxWindow2TimerEvent(RxWindowTimer2.Handle);
     }
     if ( LoRaMacEventFlags.Bits.RxSlot == 2 ) {
         LoRaMacEventFlags.Bits.Tx = 1;
@@ -1524,7 +1576,37 @@ void OnRadioRxError( void )
     }
 }
 
+#if defined(FSL_RTOS_FREE_RTOS)
+void OnChannelCheckTimerEvent( TimerHandle_t xTimer )
+#else
+void OnChannelCheckTimerEvent( void )
+#endif
+{
+    TimerStop(&ChannelCheckTimer);
+
+    LoRaMacState &= ~MAC_CHANNEL_CHECK;
+    if ( SetNextChannel() == 0 ) {
+        if ( (LoRaMacState & MAC_TX_RUNNING) == MAC_TX_RUNNING ) {
+            LoRaMacSendFrameOnChannel(Channels[Channel]);
+        }
+    }
+}
+
+#if defined(FSL_RTOS_FREE_RTOS)
+void OnTxDelayedTimerEvent( TimerHandle_t xTimer )
+#else
+void OnTxDelayedTimerEvent( void )
+#endif
+{
+    TimerStop(&TxDelayedTimer);
+    Radio.Send(LoRaMacBuffer, LoRaMacBufferPktLen);
+}
+
+#if defined(FSL_RTOS_FREE_RTOS)
+void OnRxWindow1TimerEvent( TimerHandle_t xTimer )
+#else
 void OnRxWindow1TimerEvent( void )
+#endif
 {
     uint16_t symbTimeout = 5; // DR_2, DR_1, DR_0
     int8_t datarate = 0;
@@ -1555,7 +1637,11 @@ void OnRxWindow1TimerEvent( void )
     LoRaMacRxWindowSetup(Channels[Channel].Frequency, datarate, bandwidth, symbTimeout, false);
 }
 
+#if defined(FSL_RTOS_FREE_RTOS)
+void OnRxWindow2TimerEvent( TimerHandle_t xTimer )
+#else
 void OnRxWindow2TimerEvent( void )
+#endif
 {
     uint16_t symbTimeout = 5; // DR_2, DR_1, DR_0
     uint32_t bandwidth = 0; // LoRa 125 kHz
@@ -1589,12 +1675,20 @@ void OnRxWindow2TimerEvent( void )
     }
 }
 
+#if defined(FSL_RTOS_FREE_RTOS)
+void OnRxSynchWindowTimerEvent( TimerHandle_t xTimer )
+#else
 void OnRxSynchWindowTimerEvent( void )
+#endif
 {
 
 }
 
+#if defined(FSL_RTOS_FREE_RTOS)
+void OnAdvBcnRxWindowTimerEvent( TimerHandle_t xTimer )
+#else
 void OnAdvBcnRxWindowTimerEvent( void )
+#endif
 {
     TimerStop(&AdvBcnRxWindowTimer);
 
@@ -1606,7 +1700,11 @@ void OnAdvBcnRxWindowTimerEvent( void )
     }
 }
 
+#if defined(FSL_RTOS_FREE_RTOS)
+void OnAdvBcnTimerEvent( TimerHandle_t xTimer )
+#else
 void OnAdvBcnTimerEvent( void )
+#endif
 {
     uint64_t curTime = TimerGetCurrentTime();
     LOG_TRACE("Advertising beacon timer event occurred (%d%d)", *(((int*) (&curTime)) + 1),
@@ -1615,7 +1713,7 @@ void OnAdvBcnTimerEvent( void )
     TimerStop(&AdvBcnTimer);
     LoRaMacEventFlags.Bits.Rx = 0;
 
-    if ( AdvertisingSlot.Periodicity != AdvBcnTimer.ReloadValue ) {
+    if ( AdvertisingSlot.Periodicity != AdvBcnTimer.PeriodInMs ) {
         /* Check if advertising slot periodicity */
         TimerSetValue(&AdvBcnTimer, AdvertisingSlot.Periodicity);
     }
@@ -1639,7 +1737,11 @@ void OnAdvBcnTimerEvent( void )
     TimerStart(&AdvBcnRxWindowTimer);
 }
 
+#if defined(FSL_RTOS_FREE_RTOS)
+void OnAdvBcnSendDelayTimerEvent( TimerHandle_t xTimer )
+#else
 void OnAdvBcnSendDelayTimerEvent( void )
+#endif
 {
     uint64_t currTime = TimerGetCurrentTime();
     LOG_TRACE("Advertising beacon send delay timer event occurred (%d%d)",
@@ -1652,7 +1754,11 @@ void OnAdvBcnSendDelayTimerEvent( void )
     LoRaMeshSendAdvertisingBeacon();
 }
 
+#if defined(FSL_RTOS_FREE_RTOS)
+void OnMacStateCheckTimerEvent( TimerHandle_t xTimer )
+#else
 void OnMacStateCheckTimerEvent( void )
+#endif
 {
     TimerStop(&MacStateCheckTimer);
 
@@ -1736,7 +1842,11 @@ void OnMacStateCheckTimerEvent( void )
     }
 }
 
+#if defined(FSL_RTOS_FREE_RTOS)
+void OnAckTimeoutTimerEvent( TimerHandle_t xTimer )
+#else
 void OnAckTimeoutTimerEvent( void )
+#endif
 {
     TimerStop(&AckTimeoutTimer);
 

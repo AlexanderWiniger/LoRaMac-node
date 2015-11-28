@@ -16,6 +16,9 @@
 #include "board.h"
 #include "radio.h"
 
+#define LOG_LEVEL_DEBUG
+#include "debug.h"
+
 #if defined( USE_BAND_433 )
 
 #define RF_FREQUENCY                                434000000 // Hz
@@ -93,41 +96,41 @@ static RadioEvents_t RadioEvents;
 /*!
  * \brief Function to be executed on Radio Tx Done event
  */
-void OnTxDone(void);
+void OnTxDone( void );
 
 /*!
  * \brief Function to be executed on Radio Rx Done event
  */
-void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr);
+void OnRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr );
 
 /*!
  * \brief Function executed on Radio Tx Timeout event
  */
-void OnTxTimeout(void);
+void OnTxTimeout( void );
 
 /*!
  * \brief Function executed on Radio Rx Timeout event
  */
-void OnRxTimeout(void);
+void OnRxTimeout( void );
 
 /*!
  * \brief Function executed on Radio Rx Error event
  */
-void OnRxError(void);
+void OnRxError( void );
 
 /**
  * Main application entry point.
  */
-int main(void)
+int main( void )
 {
     bool isMaster = true;
     uint8_t i;
 
     // Target board initialisation
     BoardInitMcu();
-    PRINTF("\r\n\r\nTRACE: Mcu initialized.\r\n");
+    LOG_TRACE("Mcu initialized.");
     BoardInitPeriph();
-    PRINTF("TRACE: Peripherals initialized.\r\n");
+    LOG_TRACE("Peripherals initialized.");
 
     // Radio initialization
     RadioEvents.TxDone = OnTxDone;
@@ -137,7 +140,7 @@ int main(void)
     RadioEvents.RxError = OnRxError;
 
     Radio.Init(&RadioEvents);
-    PRINTF("TRACE: Radio initialized.\r\n");
+    LOG_TRACE("Radio initialized.");
 
     Radio.SetChannel(RF_FREQUENCY);
 
@@ -171,28 +174,28 @@ int main(void)
 
     Radio.Rx( RX_TIMEOUT_VALUE);
 
-    PRINTF("\r\nPingPong Application starting...\r\n");
+    LOG_DEBUG("PingPong Application starting...\r\n");
 
     while (1) {
         switch (State) {
             case RX:
-                if (isMaster == true) {
-                    if (BufferSize > 0) {
-                        if (strncmp((const char*) Buffer, (const char*) PongMsg, 4) == 0) {
+                if ( isMaster == true ) {
+                    if ( BufferSize > 0 ) {
+                        if ( strncmp((const char*) Buffer, (const char*) PongMsg, 4) == 0 ) {
                             // Indicates that the received frame is a PONG
-                            PRINTF("DEBUG: Received %s\r\n", PongMsg);
+                            LOG_DEBUG("Received %s.", PongMsg);
                             // Send the next PING frame
                             Buffer[0] = 'P';
                             Buffer[1] = 'I';
                             Buffer[2] = 'N';
                             Buffer[3] = 'G';
                             // We fill the buffer with numbers for the payload
-                            for (i = 4; i < BufferSize; i++) {
+                            for ( i = 4; i < BufferSize; i++ ) {
                                 Buffer[i] = i - 4;
                             }
                             DelayMs(1);
                             Radio.Send(Buffer, BufferSize);
-                        } else if (strncmp((const char*) Buffer, (const char*) PingMsg, 4) == 0) {   // A master already exists then become a slave
+                        } else if ( strncmp((const char*) Buffer, (const char*) PingMsg, 4) == 0 ) { // A master already exists then become a slave
                             isMaster = false;
                             Radio.Rx( RX_TIMEOUT_VALUE);
                         } else   // valid reception but neither a PING or a PONG message
@@ -202,17 +205,17 @@ int main(void)
                         }
                     }
                 } else {
-                    if (BufferSize > 0) {
-                        if (strncmp((const char*) Buffer, (const char*) PingMsg, 4) == 0) {
+                    if ( BufferSize > 0 ) {
+                        if ( strncmp((const char*) Buffer, (const char*) PingMsg, 4) == 0 ) {
                             // Indicates that the received frame is a PING
-                            PRINTF("DEBUG: Received %s\r\n", PingMsg);
+                            LOG_DEBUG("Received %s.", PingMsg);
                             // Send the reply to the PONG string
                             Buffer[0] = 'P';
                             Buffer[1] = 'O';
                             Buffer[2] = 'N';
                             Buffer[3] = 'G';
                             // We fill the buffer with numbers for the payload
-                            for (i = 4; i < BufferSize; i++) {
+                            for ( i = 4; i < BufferSize; i++ ) {
                                 Buffer[i] = i - 4;
                             }
                             DelayMs(1);
@@ -229,21 +232,21 @@ int main(void)
             case TX:
                 // Indicates that we have sent a PING [Master]
                 // Indicates that we have sent a PONG [Slave]
-                PRINTF("DEBUG: Sent %s\r\n", Buffer);
+                LOG_DEBUG("Sent %s.", Buffer);
                 Radio.Rx( RX_TIMEOUT_VALUE);
                 State = LOWPOWER;
                 break;
             case RX_TIMEOUT:
             case RX_ERROR:
-                PRINTF("DEBUG: Rx timeout occured!\r\n");
-                if (isMaster == true) {
-                    PRINTF("DEBUG: Send next ping frame.\r\n");
+                LOG_DEBUG("Rx timeout occured!");
+                if ( isMaster == true ) {
+                    LOG_DEBUG("Send next ping frame.");
                     // Send the next PING frame
                     Buffer[0] = 'P';
                     Buffer[1] = 'I';
                     Buffer[2] = 'N';
                     Buffer[3] = 'G';
-                    for (i = 4; i < BufferSize; i++) {
+                    for ( i = 4; i < BufferSize; i++ ) {
                         Buffer[i] = i - 4;
                     }
                     DelayMs(1);
@@ -268,13 +271,13 @@ int main(void)
     }
 }
 
-void OnTxDone(void)
+void OnTxDone( void )
 {
     Radio.Sleep();
     State = TX;
 }
 
-void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr)
+void OnRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr )
 {
     Radio.Sleep();
     BufferSize = size;
@@ -284,19 +287,19 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr)
     State = RX;
 }
 
-void OnTxTimeout(void)
+void OnTxTimeout( void )
 {
     Radio.Sleep();
     State = TX_TIMEOUT;
 }
 
-void OnRxTimeout(void)
+void OnRxTimeout( void )
 {
     Radio.Sleep();
     State = RX_TIMEOUT;
 }
 
-void OnRxError(void)
+void OnRxError( void )
 {
     Radio.Sleep();
     State = RX_ERROR;
