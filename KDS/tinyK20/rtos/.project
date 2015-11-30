@@ -40,6 +40,11 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>src/free-rtos</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/src/free-rtos</locationURI>
+		</link>
+		<link>
 			<name>src/radio</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/src/radio</locationURI>

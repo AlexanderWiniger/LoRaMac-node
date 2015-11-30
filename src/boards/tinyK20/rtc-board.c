@@ -5,6 +5,17 @@
  * \brief MCU RTC timer and low power modes management
  *
  */
+
+#if defined(USE_FREE_RTOS)
+
+#include "board.h"
+#include "rtc-board.h"
+
+void BlockLowPowerDuringTask( bool status )
+{
+    (void) status;
+}
+#else
 #include <math.h>
 #include <time.h>
 #include "board.h"
@@ -46,12 +57,12 @@ static const uint16_t MONTH_DAYS[] = { 0U, 0U, 31U, 59U, 90U, 120U, 151U, 181U, 
 /*!
  * \brief Start the Rtc Alarm (time base 1s)
  */
-static void RtcStartWakeUpAlarm(uint32_t timeoutValue);
+static void RtcStartWakeUpAlarm( uint32_t timeoutValue );
 
 /*!
  * \brief Clear the RTC flags and Stop all IRQs
  */
-static void RtcClearStatus(void);
+static void RtcClearStatus( void );
 
 /*------------------------ Local Variables -------------------------------*/
 /*!
@@ -76,13 +87,13 @@ static bool LowPowerDisableDuringTask = false;
  */
 static TimerTime_t RtcTimerContext = 0;
 
-void RtcInit(void)
+void RtcInit( void )
 {
-    if (RtcInitalized == false) {
+    if ( RtcInitalized == false ) {
         /* Enable clock gating */
         SIM_BASE_PTR->SCGC6 |= SIM_SCGC6_RTC_MASK;
 
-        if (((RTC_BASE_PTR->SR) & RTC_SR_TIF_MASK) == 1) {
+        if ( ((RTC_BASE_PTR->SR) & RTC_SR_TIF_MASK) == 1 ) {
             /* Resets the RTC registers except for the SWR bit */
             RTC_BASE_PTR->CR |= RTC_CR_SWR_MASK;
             RTC_BASE_PTR->CR &= ~(RTC_CR_SWR_MASK);
@@ -109,41 +120,41 @@ void RtcInit(void)
     }
 }
 
-void RtcStopTimer(void)
+void RtcStopTimer( void )
 {
     RtcClearStatus();
 }
 
-uint32_t RtcGetMinimumTimeout(void)
+uint32_t RtcGetMinimumTimeout( void )
 {
     return 1;
 }
 
-void RtcSetTimeout(uint32_t timeout)
+void RtcSetTimeout( uint32_t timeout )
 {
     uint32_t timeoutValue = 0;
 
     timeoutValue = timeout;
 
-    if (timeoutValue < 1) {
+    if ( timeoutValue < 1 ) {
         timeoutValue = 1;
     }
 
-    if (timeoutValue < 55000) {
+    if ( timeoutValue < 55000 ) {
         // we don't go in Low Power mode for delay below 50ms (needed for LEDs)
         RtcTimerEventAllowsLowPower = false;
     } else {
         RtcTimerEventAllowsLowPower = true;
     }
 
-    if ((LowPowerDisableDuringTask == false) && (RtcTimerEventAllowsLowPower == true)) {
+    if ( (LowPowerDisableDuringTask == false) && (RtcTimerEventAllowsLowPower == true) ) {
         timeoutValue = timeoutValue - MCU_WAKE_UP_TIME;
     }
 
     RtcStartWakeUpAlarm(timeoutValue);
 }
 
-uint32_t RtcGetTimerElapsedTime(void)
+uint32_t RtcGetTimerElapsedTime( void )
 {
     TimerTime_t timeInSeconds = 0;
 
@@ -152,12 +163,12 @@ uint32_t RtcGetTimerElapsedTime(void)
     return ((uint32_t)(timeInSeconds - RtcTimerContext));
 }
 
-TimerTime_t RtcGetTimerValue(void)
+TimerTime_t RtcGetTimerValue( void )
 {
     return RTC_BASE_PTR->TSR;
 }
 
-static void RtcClearStatus(void)
+static void RtcClearStatus( void )
 {
     /* Clear status flag */
     RTC_BASE_PTR->SR |= (RTC_SR_TIF_MASK | RTC_SR_TOF_MASK | RTC_SR_TAF_MASK | RTC_SR_TCE_MASK);
@@ -168,7 +179,7 @@ static void RtcClearStatus(void)
             1UL << (((uint32_t) (int32_t) INT_RTC_Seconds) & 0x1FUL));
 }
 
-static void RtcStartWakeUpAlarm(uint32_t timeoutValue)
+static void RtcStartWakeUpAlarm( uint32_t timeoutValue )
 {
     uint32_t srcClock = CPU_XTAL32k_CLK_HZ;
     uint32_t alrmSeconds = 0;
@@ -181,7 +192,7 @@ static void RtcStartWakeUpAlarm(uint32_t timeoutValue)
     /* Calculate alarm time */
     alrmSeconds = currSeconds + timeoutValue;
 
-    if (srcClock != 32768U) {
+    if ( srcClock != 32768U ) {
         /* As the seconds register will not increment every second, we need to adjust the value
          * programmed to the alarm register */
         tmp = (uint64_t) alrmSeconds * (uint64_t) srcClock;
@@ -189,7 +200,7 @@ static void RtcStartWakeUpAlarm(uint32_t timeoutValue)
     }
 
     /* Make sure the alarm is for a future time */
-    if (alrmSeconds < currSeconds) {
+    if ( alrmSeconds < currSeconds ) {
         return;
     }
 
@@ -200,9 +211,9 @@ static void RtcStartWakeUpAlarm(uint32_t timeoutValue)
     RTC_BASE_PTR->IER |= RTC_IER_TAIE_MASK;
 }
 
-void RtcEnterLowPowerStopMode(void)
+void RtcEnterLowPowerStopMode( void )
 {
-    if ((LowPowerDisableDuringTask == false) && (RtcTimerEventAllowsLowPower == true)) {
+    if ( (LowPowerDisableDuringTask == false) && (RtcTimerEventAllowsLowPower == true) ) {
         // Disable IRQ while the MCU is being deinitialized to prevent race issues
 
 //      \todo Implement RtcEnterLowPowerStopMode
@@ -211,10 +222,10 @@ void RtcEnterLowPowerStopMode(void)
     }
 }
 
-void RtcRecoverMcuStatus(void)
+void RtcRecoverMcuStatus( void )
 {
-    if (TimerGetLowPowerEnable() == true) {
-        if ((LowPowerDisableDuringTask == false) && (RtcTimerEventAllowsLowPower == true)) {
+    if ( TimerGetLowPowerEnable() == true ) {
+        if ( (LowPowerDisableDuringTask == false) && (RtcTimerEventAllowsLowPower == true) ) {
             // Disable IRQ while the MCU is not running on HSE
 
 //          \todo Implement RtcRecoverMcuStatus
@@ -227,7 +238,7 @@ void RtcRecoverMcuStatus(void)
 /*!
  * \brief RTC IRQ Handler on the RTC Alarm
  */
-void RTC_IRQHandler(void)
+void RTC_IRQHandler( void )
 {
 
 }
@@ -235,20 +246,20 @@ void RTC_IRQHandler(void)
 /*!
  * \brief RTC IRQ Handler on the RTC Seconds interrupt
  */
-void RTC_Seconds_IRQHandler(void)
+void RTC_Seconds_IRQHandler( void )
 {
 
 }
 
-void BlockLowPowerDuringTask(bool status)
+void BlockLowPowerDuringTask( bool status )
 {
-    if (status == true) {
+    if ( status == true ) {
         RtcRecoverMcuStatus();
     }
     LowPowerDisableDuringTask = status;
 }
 
-void RtcDelayMs(uint32_t delay)
+void RtcDelayMs( uint32_t delay )
 {
     TimerTime_t delayValue = 0;
     TimerTime_t timeout = 0;
@@ -261,3 +272,4 @@ void RtcDelayMs(uint32_t delay)
         _NOP();
     }
 }
+#endif /* FSL_RTOS_FREE_RTOS */

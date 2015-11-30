@@ -18,7 +18,6 @@
 void BlockLowPowerDuringTask( bool Status );
 
 #else
-
 /*---------------------------- Definitions ------------------------------*/
 
 /*! @brief Table of base addresses for RTC instances. */

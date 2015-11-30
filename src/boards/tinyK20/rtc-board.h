@@ -8,6 +8,14 @@
 #ifndef __RTC_BOARD_H__
 #define __RTC_BOARD_H__
 
+#if !defined(USE_FREE_RTOS)
+/*!
+ * \brief This function block the MCU from going into Low Power mode
+ *
+ * \param [IN] Status enable or disable
+ */
+void BlockLowPowerDuringTask( bool Status );
+#else
 /*---------------------------- Definitions ------------------------------*/
 /*!
  * \brief Timer time variable definition
@@ -82,4 +90,5 @@ void RtcRecoverMcuStatus(void);
  */
 void RtcDelayMs(uint32_t delay);
 
+#endif /* USE_FREE_RTOS */
 #endif // __RTC_BOARD_H__

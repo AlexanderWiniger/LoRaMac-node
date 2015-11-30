@@ -118,14 +118,14 @@ const clock_manager_user_config_t g_defaultClockConfigRun =
 /*!
  * Initializes the unused GPIO to a known status
  */
-static void BoardUnusedIoInit(void);
+static void BoardUnusedIoInit( void );
 
 /*!
  * Flag to indicate if the MCU is Initialized
  */
 static bool McuInitialized = false;
 
-void BoardInitPeriph(void)
+void BoardInitPeriph( void )
 {
     /* Init the GPIO pins */
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
@@ -141,9 +141,8 @@ void BoardInitPeriph(void)
     GpioInit(&Irq1Fxos8700cq, IRQ_1_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioInit(&Irq2Fxos8700cq, IRQ_2_FXOS8700CQ, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
-    // Init accelerometer
-    FxosInit (FXOS_I2C_ADDRESS);
-
+    /* Init GPS */
+//    GpsInit();
     // Switch LED 1, 2 OFF
     GpioWrite(&Led1, 1);
     GpioWrite(&Led2, 1);
@@ -152,9 +151,9 @@ void BoardInitPeriph(void)
 #endif
 }
 
-void BoardInitMcu(void)
+void BoardInitMcu( void )
 {
-    if (McuInitialized == false) {
+    if ( McuInitialized == false ) {
         /* Disable watchdog */
         COP_HAL_Disable (SIM_BASE_PTR);
 
@@ -195,13 +194,6 @@ void BoardInitMcu(void)
         CLOCK_SYS_SetConfiguration(&g_defaultClockConfigRun);
 #endif
 
-        /* OS initialization */
-        OSA_Init();
-        /*! I2C channel to be used by digital 3D accelerometer */
-        Fxos.instance = FXOS8700CQ_I2C_INSTANCE;
-        I2c.I2c = &Fxos;
-        I2cInit(&I2c, I2C_SCL, I2C_SDA);
-
         /*! SPI channel to be used by Semtech SX1276 */
 #if defined(SX1276_BOARD_FREEDOM) || defined(SX1276_BOARD_EMBED)
         SX1276.Spi.instance = RADIO_SPI_INSTANCE;
@@ -226,19 +218,20 @@ void BoardInitMcu(void)
 #endif /* USE_USB_CDC */
         BoardUnusedIoInit();
 
-        if (TimerGetLowPowerEnable() == true) {
+#if !defined(FSL_RTOS_FREE_RTOS)
+        if ( TimerGetLowPowerEnable() == true ) {
             RtcInit();
         } else {
             TimerHwInit();
         }
+#endif
 
         McuInitialized = true;
     }
 }
 
-void BoardDeInitMcu(void)
+void BoardDeInitMcu( void )
 {
-    I2cDeInit(&I2c);
 #if defined(SX1276_BOARD_FREEDOM) || defined(SX1276_BOARD_EMBED)
     SpiDeInit(&SX1276.Spi);
     SX1276IoDeInit();
@@ -247,18 +240,18 @@ void BoardDeInitMcu(void)
     McuInitialized = false;
 }
 
-uint8_t BoardGetBatteryLevel(void)
+uint8_t BoardGetBatteryLevel( void )
 {
     /* Device is connected to an external power source*/
     return 0;
 }
 
-uint32_t BoardGetRandomSeed(void)
+uint32_t BoardGetRandomSeed( void )
 {
     return (ID1 ^ ID2 ^ ID3);
 }
 
-void BoardGetUniqueId(uint8_t *id)
+void BoardGetUniqueId( uint8_t *id )
 {
     id[0] = (ID1 + ID3) >> 24;
     id[1] = (ID1 + ID3) >> 16;
@@ -270,7 +263,7 @@ void BoardGetUniqueId(uint8_t *id)
     id[7] = ID2;
 }
 
-static void BoardUnusedIoInit(void)
+static void BoardUnusedIoInit( void )
 {
     // \todo Initialize unused gpio to known state
 }

@@ -14,6 +14,11 @@
 #define LOG_LEVEL_TRACE
 #include "debug.h"
 
+/*------------------------- Local Defines --------------------------------*/
+/* task priority */
+#define TASK_MESH_RTOS_PRIO           7U
+/* task stack size */
+#define TASK_MESH_RTOS_STACK_SIZE     0x200U
 /*!
  * When set to 1 the application uses the Over-the-Air activation procedure
  * When set to 0 the application uses the Personalization activation procedure
@@ -200,193 +205,57 @@ static bool ScheduleNextTx = false;
 
 static LoRaMacCallbacks_t LoRaMacCallbacks;
 
+/*------------------------ Local Functions ------------------------------*/
 /*!
- * LoRaMac altitude data structure.
+ * task declare
  */
-typedef struct Altitude_s {
-    uint16_t GPS;
-    uint16_t Barometric;
-} Altitude_t;
+void task_mesh_rtos( task_param_t param );
 
-/*!
- * LoRaMac track data structure.
+/*
+ * task define
  */
-typedef struct VectorTrack_s {
-    uint16_t GroundSpeed;
-    uint16_t Track;
-} VectorTrack_t;
-
-/*!
- * LoRaMac pilot data structure.
- */
-typedef struct PilotData_s {
-    uint32_t Time;
-    Position_t Position;
-    Altitude_t Altitude;
-    VectorTrack_t VectorTrack;
-    uint16_t WindSpeed;
-} PilotData_t;
+OSA_TASK_DEFINE(task_mesh_rtos, TASK_MESH_RTOS_STACK_SIZE);
 
 /*!
  * Prepares the frame buffer to be sent
  */
-static void PrepareTxFrame( uint8_t port )
-{
-    switch (port) {
-        case 2:
-        {
-            AppData[0] = 0x0F; /* SDUHDR */
-            AppData[1] = 0x56; /* Time byte 3 */
-            AppData[2] = 0x46; /* Time byte 2 */
-            AppData[3] = 0x21; /* Time byte 1 */
-            AppData[4] = 0xD9; /* Time byte 0 */
-            AppData[5] = 0x2B; /* Latitude byte 3 */
-            AppData[6] = 0x61; /* Latitude byte 2 */
-            AppData[7] = 0x75; /* Latitude byte 1 */
-            AppData[8] = 0xFA; /* Latitude byte 0 */
-            AppData[9] = 0x74; /* Longitude byte 3 */
-            AppData[10] = 0x24; /* Longitude byte 2 */
-            AppData[11] = 0xD3; /* Longitude byte 1 */
-            AppData[12] = 0xC9; /* Longitude byte 0 */
-            AppData[13] = 0x03; /* Altitude (GPS) byte 1 */
-            AppData[14] = 0xB9; /* Altitude (GPS) byte 0 */
-            AppData[15] = 0x03; /* Altitude (barometric) byte 1 */
-            AppData[16] = 0xD3; /* Altitude (barometric) byte 0 */
-            AppData[17] = 0x00; /* GroundSpeed byte 1 */
-            AppData[18] = 0x2A; /* GroundSpeed byte 0 */
-            AppData[19] = 0x01; /* VectorTrack byte 1 */
-            AppData[20] = 0x41; /* VectorTrack byte 0 */
-            AppData[21] = 0x00; /* WindSpeed byte 1 */
-            AppData[22] = 0xA7; /* WindSpeed byte 0 */
-        }
-            break;
-        default:
-            break;
-    }
-}
+static void PrepareTxFrame( uint8_t port );
 
-static void ProcessRxFrame( LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info )
-{
-    switch (info->RxPort) // Check Rx port number
-    {
-        case 2:
-            if ( info->RxBufferSize == LORAWAN_APP_DATA_SIZE ) {
-                LOG_DEBUG("%-20s: %u.%u", "Timestamp",
-                        (uint32_t)(
-                                (info->RxBuffer[1] << 24) | (info->RxBuffer[2] << 16)
-                                        | (info->RxBuffer[3] << 8) | (info->RxBuffer[4])));
-                LOG_DEBUG("TRACE: %-20s: %u", "Latitude", info->RxBuffer[5],
-                        (uint32_t)(
-                                (info->RxBuffer[6] << 16) | (info->RxBuffer[7] << 8)
-                                        | (info->RxBuffer[8])));
-                LOG_DEBUG("TRACE: %-20s: %u", "Longitude", info->RxBuffer[9],
-                        (uint32_t)(
-                                (info->RxBuffer[10] << 16) | (info->RxBuffer[11] << 8)
-                                        | (info->RxBuffer[12])));
-                LOG_DEBUG_IF(
-                        (((info->RxBuffer[0] & SDUHDR_OPTION_LIST_MASK)
-                                | SDUHDR_OPTION_LIST_ALT_GPS_MASK) > 0), "TRACE: %-20s: %u",
-                        "Altitude (GPS)",
-                        (uint16_t)((info->RxBuffer[13] << 8) | info->RxBuffer[14]));
-                LOG_DEBUG_IF(
-                        (((info->RxBuffer[0] & SDUHDR_OPTION_LIST_MASK)
-                                | SDUHDR_OPTION_LIST_ALT_BAR_MASK) > 0), "TRACE: %-20s: %u",
-                        "Altitude (bar.)",
-                        (uint16_t)((info->RxBuffer[15] << 8) | info->RxBuffer[16]));
-                LOG_DEBUG_IF(
-                        (((info->RxBuffer[0] & SDUHDR_OPTION_LIST_MASK)
-                                | SDUHDR_OPTION_LIST_VEC_TRACK_MASK) > 0), "%-20s: %u",
-                        "Ground Speed", (uint16_t)((info->RxBuffer[17] << 8) | info->RxBuffer[18]));
-                LOG_DEBUG_IF(
-                        (((info->RxBuffer[0] & SDUHDR_OPTION_LIST_MASK)
-                                | SDUHDR_OPTION_LIST_VEC_TRACK_MASK) > 0), "%-20s: %u", "Track",
-                        (uint16_t)((info->RxBuffer[19] << 8) | info->RxBuffer[20]));
-                LOG_DEBUG_IF(
-                        (((info->RxBuffer[0] & SDUHDR_OPTION_LIST_MASK)
-                                | SDUHDR_OPTION_LIST_WIND_SPEED_MASK) > 0), "%-20s: %u",
-                        "Wind Speed", (uint16_t)((info->RxBuffer[21] << 8) | info->RxBuffer[22]));
+/*!
+ *
+ */
+static void ProcessRxFrame( LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info );
 
-            }
-            break;
-        default:
-            break;
-    }
-}
-
-static bool SendFrame( void )
-{
-    uint8_t sendFrameStatus = 0;
-
-    if ( IsTxConfirmed == false ) {
-        sendFrameStatus = LoRaMacSendFrame(AppPort, AppData, AppDataSize);
-    } else {
-        sendFrameStatus = LoRaMacSendConfirmedFrame(AppPort, AppData, AppDataSize, 8);
-    }
-
-    switch (sendFrameStatus) {
-        case 5: // NO_FREE_CHANNEL
-            // Try again later
-            return true;
-        default:
-            return false;
-    }
-}
+/*!
+ *
+ */
+static bool SendFrame( void );
 
 #if( OVER_THE_AIR_ACTIVATION != 0 )
 
 /*!
  * \brief Function executed on JoinReq Timeout event
  */
-static void OnJoinReqTimerEvent( void )
-{
-    TimerStop( &JoinReqTimer );
-    TxNextPacket = true;
-}
+static void OnJoinReqTimerEvent( void );
 
 #endif
 
 /*!
  * \brief Function to be executed on MAC layer event
  */
-static void OnMacEvent( LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info )
-{
-    if ( flags->Bits.JoinAccept == 1 ) {
-#if( OVER_THE_AIR_ACTIVATION != 0 )
-        TimerStop( &JoinReqTimer );
-#endif
-        IsNetworkJoined = true;
-    } else {
-        if ( flags->Bits.Tx == 1 ) {
-        }
-
-        if ( flags->Bits.Rx == 1 ) {
-            if ( flags->Bits.RxData == true ) {
-                ProcessRxFrame(flags, info);
-            }
-        }
-    }
-    // Schedule a new transmission
-    ScheduleNextTx = true;
-}
+static void OnMacEvent( LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info );
 
 /*!
  * \brief Function executed on TxNextPacket Timeout event
  */
-static void OnTxNextPacketTimerEvent( TimerHandle_t xTimer )
-{
-    TimerStop(&TxNextPacketTimer);
-    TxNextPacket = true;
-}
-#include <inttypes.h>
+static void OnTxNextPacketTimerEvent( TimerHandle_t xTimer );
+
 /**
  * Main application entry point.
  */
 int main( void )
 {
-#if( OVER_THE_AIR_ACTIVATION != 0 )
-    uint8_t sendFrameStatus = 0;
-#endif
-    bool trySendingFrameAgain = false;
+    static osa_status_t result = kStatus_OSA_Error;
 
     BoardInitMcu();
     LOG_DEBUG("Mcu initialized.");
@@ -394,6 +263,29 @@ int main( void )
     LOG_DEBUG("OS initialized.");
     BoardInitPeriph();
     LOG_DEBUG("Peripherals initialized.");
+
+    result = OSA_TaskCreate(task_mesh_rtos, (uint8_t *) "led_rtos", TASK_MESH_RTOS_STACK_SIZE,
+            task_mesh_rtos_stack, TASK_MESH_RTOS_PRIO, (task_param_t) 0, false,
+            &task_mesh_rtos_task_handler);
+    if ( result != kStatus_OSA_Success ) {
+        LOG_ERROR("Failed to create led_rtos task");
+    }
+
+    LOG_DEBUG("Starting LoRa Mesh application...");
+
+    OSA_Start();
+
+    for ( ;; ) {
+
+    }
+}
+
+void task_mesh_rtos( task_param_t param )
+{
+#if( OVER_THE_AIR_ACTIVATION != 0 )
+    uint8_t sendFrameStatus = 0;
+#endif
+    bool trySendingFrameAgain = false;
 
     LoRaMacCallbacks.MacEvent = OnMacEvent;
     LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
@@ -428,8 +320,6 @@ int main( void )
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
     LoRaMacSetPublicNetwork( LORAWAN_PUBLIC_NETWORK);
 //    LoRaMacSetDeviceClass (CLASS_C);
-
-    LOG_DEBUG("Starting LoRa Mesh application...");
 
     while (1) {
         while (IsNetworkJoined == false) {
@@ -486,4 +376,141 @@ int main( void )
 
         TimerLowPowerHandler();
     }
+}
+
+void PrepareTxFrame( uint8_t port )
+{
+    switch (port) {
+        case 2:
+        {
+            AppData[0] = 0x0F; /* SDUHDR */
+            AppData[1] = 0x56; /* Time byte 3 */
+            AppData[2] = 0x46; /* Time byte 2 */
+            AppData[3] = 0x21; /* Time byte 1 */
+            AppData[4] = 0xD9; /* Time byte 0 */
+            AppData[5] = 0x2B; /* Latitude byte 3 */
+            AppData[6] = 0x61; /* Latitude byte 2 */
+            AppData[7] = 0x75; /* Latitude byte 1 */
+            AppData[8] = 0xFA; /* Latitude byte 0 */
+            AppData[9] = 0x74; /* Longitude byte 3 */
+            AppData[10] = 0x24; /* Longitude byte 2 */
+            AppData[11] = 0xD3; /* Longitude byte 1 */
+            AppData[12] = 0xC9; /* Longitude byte 0 */
+            AppData[13] = 0x03; /* Altitude (GPS) byte 1 */
+            AppData[14] = 0xB9; /* Altitude (GPS) byte 0 */
+            AppData[15] = 0x03; /* Altitude (barometric) byte 1 */
+            AppData[16] = 0xD3; /* Altitude (barometric) byte 0 */
+            AppData[17] = 0x00; /* GroundSpeed byte 1 */
+            AppData[18] = 0x2A; /* GroundSpeed byte 0 */
+            AppData[19] = 0x01; /* VectorTrack byte 1 */
+            AppData[20] = 0x41; /* VectorTrack byte 0 */
+            AppData[21] = 0x00; /* WindSpeed byte 1 */
+            AppData[22] = 0xA7; /* WindSpeed byte 0 */
+        }
+            break;
+        default:
+            break;
+    }
+}
+
+void ProcessRxFrame( LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info )
+{
+    switch (info->RxPort) // Check Rx port number
+    {
+        case 2:
+            if ( info->RxBufferSize == LORAWAN_APP_DATA_SIZE ) {
+                LOG_DEBUG("%-20s: %u.%u", "Timestamp",
+                        (uint32_t)(
+                                (info->RxBuffer[1] << 24) | (info->RxBuffer[2] << 16)
+                                        | (info->RxBuffer[3] << 8) | (info->RxBuffer[4])));
+                LOG_DEBUG("TRACE: %-20s: %u", "Latitude", info->RxBuffer[5],
+                        (uint32_t)(
+                                (info->RxBuffer[6] << 16) | (info->RxBuffer[7] << 8)
+                                        | (info->RxBuffer[8])));
+                LOG_DEBUG("TRACE: %-20s: %u", "Longitude", info->RxBuffer[9],
+                        (uint32_t)(
+                                (info->RxBuffer[10] << 16) | (info->RxBuffer[11] << 8)
+                                        | (info->RxBuffer[12])));
+                LOG_DEBUG_IF(
+                        (((info->RxBuffer[0] & SDUHDR_OPTION_LIST_MASK)
+                                | SDUHDR_OPTION_LIST_ALT_GPS_MASK) > 0), "TRACE: %-20s: %u",
+                        "Altitude (GPS)",
+                        (uint16_t)((info->RxBuffer[13] << 8) | info->RxBuffer[14]));
+                LOG_DEBUG_IF(
+                        (((info->RxBuffer[0] & SDUHDR_OPTION_LIST_MASK)
+                                | SDUHDR_OPTION_LIST_ALT_BAR_MASK) > 0), "TRACE: %-20s: %u",
+                        "Altitude (bar.)",
+                        (uint16_t)((info->RxBuffer[15] << 8) | info->RxBuffer[16]));
+                LOG_DEBUG_IF(
+                        (((info->RxBuffer[0] & SDUHDR_OPTION_LIST_MASK)
+                                | SDUHDR_OPTION_LIST_VEC_TRACK_MASK) > 0), "%-20s: %u",
+                        "Ground Speed", (uint16_t)((info->RxBuffer[17] << 8) | info->RxBuffer[18]));
+                LOG_DEBUG_IF(
+                        (((info->RxBuffer[0] & SDUHDR_OPTION_LIST_MASK)
+                                | SDUHDR_OPTION_LIST_VEC_TRACK_MASK) > 0), "%-20s: %u", "Track",
+                        (uint16_t)((info->RxBuffer[19] << 8) | info->RxBuffer[20]));
+                LOG_DEBUG_IF(
+                        (((info->RxBuffer[0] & SDUHDR_OPTION_LIST_MASK)
+                                | SDUHDR_OPTION_LIST_WIND_SPEED_MASK) > 0), "%-20s: %u",
+                        "Wind Speed", (uint16_t)((info->RxBuffer[21] << 8) | info->RxBuffer[22]));
+
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+bool SendFrame( void )
+{
+    uint8_t sendFrameStatus = 0;
+
+    if ( IsTxConfirmed == false ) {
+        sendFrameStatus = LoRaMacSendFrame(AppPort, AppData, AppDataSize);
+    } else {
+        sendFrameStatus = LoRaMacSendConfirmedFrame(AppPort, AppData, AppDataSize, 8);
+    }
+
+    switch (sendFrameStatus) {
+        case 5: // NO_FREE_CHANNEL
+            // Try again later
+            return true;
+        default:
+            return false;
+    }
+}
+
+#if( OVER_THE_AIR_ACTIVATION != 0 )
+void OnJoinReqTimerEvent( void )
+{
+    TimerStop( &JoinReqTimer );
+    TxNextPacket = true;
+}
+#endif
+
+void OnMacEvent( LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info )
+{
+    if ( flags->Bits.JoinAccept == 1 ) {
+#if( OVER_THE_AIR_ACTIVATION != 0 )
+        TimerStop( &JoinReqTimer );
+#endif
+        IsNetworkJoined = true;
+    } else {
+        if ( flags->Bits.Tx == 1 ) {
+        }
+
+        if ( flags->Bits.Rx == 1 ) {
+            if ( flags->Bits.RxData == true ) {
+                ProcessRxFrame(flags, info);
+            }
+        }
+    }
+    // Schedule a new transmission
+    ScheduleNextTx = true;
+}
+
+void OnTxNextPacketTimerEvent( TimerHandle_t xTimer )
+{
+    TimerStop(&TxNextPacketTimer);
+    TxNextPacket = true;
 }

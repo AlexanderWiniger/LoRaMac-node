@@ -14,11 +14,10 @@
 /*------------------------- Local Defines --------------------------------*/
 /* task priority */
 #define TASK_LED_RTOS_PRIO           7U
-#define TASK_LED_CLOCK_PRIO          8U
+#define TASK_FXOS_RTOS_PRIO          8U
 /* task stack size */
-#define TASK_LED_RTOS_STACK_SIZE     0x1000U
-#define TASK_LED_CLOCK_STACK_SIZE    0x200U
-
+#define TASK_LED_RTOS_STACK_SIZE     0x200U
+#define TASK_FXOS_RTOS_STACK_SIZE    0x200U
 /*------------------------ Local Variables -------------------------------*/
 static TimerEvent_t Led1Timer;
 volatile bool Led1TimerEvent = false;
@@ -29,6 +28,7 @@ volatile bool Led2TimerEvent = false;
 /*------------------------ Local Functions ------------------------------*/
 /* task declare */
 void task_led_rtos( task_param_t param );
+void task_fxos_rtos( task_param_t param );
 
 /*!
  * \brief Function executed on Led 1 Timeout event
@@ -42,6 +42,7 @@ void OnLed2TimerEvent( TimerHandle_t xTimer );
 
 /* task define */
 OSA_TASK_DEFINE(task_led_rtos, TASK_LED_RTOS_STACK_SIZE);
+OSA_TASK_DEFINE(task_fxos_rtos, TASK_FXOS_RTOS_STACK_SIZE);
 
 static osa_status_t s_result = kStatus_OSA_Error;
 
@@ -56,11 +57,18 @@ int main( void )
     LOG_DEBUG("Peripherals initialized.");
 
     // These tasks will not start in BM.
-    s_result = OSA_TaskCreate(task_led_rtos, (uint8_t *) "led_rtos",
-    TASK_LED_RTOS_STACK_SIZE, task_led_rtos_stack,
-    TASK_LED_RTOS_PRIO, (task_param_t) 0, false, &task_led_rtos_task_handler);
+    s_result = OSA_TaskCreate(task_led_rtos, (uint8_t *) "led_rtos", TASK_LED_RTOS_STACK_SIZE,
+            task_led_rtos_stack, TASK_LED_RTOS_PRIO, (task_param_t) 0, false,
+            &task_led_rtos_task_handler);
     if ( s_result != kStatus_OSA_Success ) {
         LOG_ERROR("Failed to create led_rtos task");
+    }
+
+    s_result = OSA_TaskCreate(task_fxos_rtos, (uint8_t *) "fxos_rtos", TASK_FXOS_RTOS_STACK_SIZE,
+            task_fxos_rtos_stack, TASK_FXOS_RTOS_PRIO, (task_param_t) 0, false,
+            &task_fxos_rtos_task_handler);
+    if ( s_result != kStatus_OSA_Success ) {
+        LOG_ERROR("Failed to create fxos_rtos task");
     }
 
     // Print the initial banner
@@ -104,6 +112,8 @@ void task_led_rtos( task_param_t param )
             GpioWrite(&Led1, 0);
             TimerStart(&Led1Timer);
         }
+
+        OSA_TimeDelay(50);
     }
 }
 
@@ -119,8 +129,8 @@ void task_fxos_rtos( task_param_t param )
 
     while (1) {
         accel_sensor_data_t sensorData;
-        if ( FxosReadSensorData(&sensorData) == FAIL ) {
-            LOG_DEBUG_BARE("DATA: Accelerometer (X/Y/Z) \t%d \t%d \t%d", sensorData.accelX,
+        if ( FxosReadSensorData(&sensorData) != FAIL ) {
+            LOG_DEBUG_BARE("DATA: Accelerometer (X/Y/Z) \t%d \t%d \t%d\r\n", sensorData.accelX,
                     sensorData.accelY, sensorData.accelZ);
         }
         OSA_TimeDelay(5000);

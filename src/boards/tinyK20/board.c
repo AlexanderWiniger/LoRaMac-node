@@ -69,11 +69,13 @@ void BoardInitMcu( void )
 #endif
         BoardUnusedIoInit();
 
+#if !defined(USE_FREE_RTOS)
         if ( TimerGetLowPowerEnable() == true ) {
             RtcInit();
         } else {
             TimerHwInit();
         }
+#endif /* USE_FREE_RTOS */
 
         McuInitialized = true;
     }

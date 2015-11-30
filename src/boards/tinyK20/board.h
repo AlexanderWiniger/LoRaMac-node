@@ -33,6 +33,12 @@
 #include "gps-board.h"
 #include "uart-board.h"
 
+#if defined( USE_FREE_RTOS )
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#endif
+
 #if defined( USE_USB_CDC )
 #include "usb-cdc-board.h"
 #endif
@@ -155,38 +161,38 @@ extern Uart_t UartUsb;
 /*!
  * \brief Initializes the target board peripherals.
  */
-void BoardInitMcu(void);
+void BoardInitMcu( void );
 
 /*!
  * \brief Initializes the boards peripherals.
  */
-void BoardInitPeriph(void);
+void BoardInitPeriph( void );
 
 /*!
  * \brief De-initializes the target board peripherals to decrease power
  *        consumption.
  */
-void BoardDeInitMcu(void);
+void BoardDeInitMcu( void );
 
 /*!
  * \brief Measure the Battery level
  *
  * \retval value  battery level ( 0: very low, 254: fully charged )
  */
-uint8_t BoardGetBatteryLevel(void);
+uint8_t BoardGetBatteryLevel( void );
 
 /*!
  * Returns a pseudo random seed generated using the MCU Unique ID
  *
  * \retval seed Generated pseudo random seed
  */
-uint32_t BoardGetRandomSeed(void);
+uint32_t BoardGetRandomSeed( void );
 
 /*!
  * \brief Gets the board 64 bits unique ID
  *
  * \param [IN] id Pointer to an array that will contain the Unique ID
  */
-void BoardGetUniqueId(uint8_t *id);
+void BoardGetUniqueId( uint8_t *id );
 
 #endif // __BOARD_H__

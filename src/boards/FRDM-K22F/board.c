@@ -158,6 +158,7 @@ void BoardInitPeriph( void )
 
     /* Init GPS */
 //    GpsInit();
+
     /* Initialize RNGA */
     rnga_user_config_t
     rngaConfig = {

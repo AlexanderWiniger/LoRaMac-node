@@ -52,18 +52,21 @@
 							</tool>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.249228675" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler">
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths.1310971422" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="../../../../../src/system"/>
-									<listOptionValue builtIn="false" value="../../../../../src/system/crypto"/>
-									<listOptionValue builtIn="false" value="../../../../../src/radio"/>
-									<listOptionValue builtIn="false" value="../../../../../src/radio/sx1276"/>
-									<listOptionValue builtIn="false" value="../../../../../src/mac"/>
-									<listOptionValue builtIn="false" value="../../../../../src/peripherals"/>
-									<listOptionValue builtIn="false" value="../../../../../src/boards/tinyK20"/>
-									<listOptionValue builtIn="false" value="../../../../../src/boards/mcu/kinetis/utilities"/>
-									<listOptionValue builtIn="false" value="../../../../../src/boards/mcu/kinetis/k20d"/>
-									<listOptionValue builtIn="false" value="../../../../../src/boards/mcu/kinetis/k20d/startup"/>
-									<listOptionValue builtIn="false" value="../../../../../src/boards/mcu/kinetis/k20d/segger"/>
-									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/baremetal"/>
+									<listOptionValue builtIn="false" value="../../../../src/system"/>
+									<listOptionValue builtIn="false" value="../../../../src/system/crypto"/>
+									<listOptionValue builtIn="false" value="../../../../src/radio"/>
+									<listOptionValue builtIn="false" value="../../../../src/free-rtos/config"/>
+									<listOptionValue builtIn="false" value="../../../../src/free-rtos/include"/>
+									<listOptionValue builtIn="false" value="../../../../src/free-rtos/port"/>
+									<listOptionValue builtIn="false" value="../../../../src/radio/sx1276"/>
+									<listOptionValue builtIn="false" value="../../../../src/mac"/>
+									<listOptionValue builtIn="false" value="../../../../src/peripherals"/>
+									<listOptionValue builtIn="false" value="../../../../src/boards/tinyK20"/>
+									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis/utilities"/>
+									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis/k20d"/>
+									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis/k20d/startup"/>
+									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis/k20d/segger"/>
+									<listOptionValue builtIn="false" value="../../../../src/apps/LoRaMesh/baremetal"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs.81202299" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="USE_BAND_868"/>
@@ -71,8 +74,8 @@
 									<listOptionValue builtIn="false" value="USE_MODEM_LORA"/>
 									<listOptionValue builtIn="false" value="USE_DEBUGGER"/>
 									<listOptionValue builtIn="false" value="USE_SEGGER_RTT"/>
+									<listOptionValue builtIn="false" value="USE_FREE_RTOS"/>
 									<listOptionValue builtIn="false" value="SX1276_BOARD_EMBED"/>
-									<listOptionValue builtIn="false" value="FSL_RTOS_FREE_RTOS"/>
 									<listOptionValue builtIn="false" value="DEBUG"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std.1612097839" name="Language standard" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std.gnu99" valueType="enumerated"/>
@@ -91,7 +94,7 @@
 									<listOptionValue builtIn="false" value="gcc"/>
 									<listOptionValue builtIn="false" value="nosys"/>
 								</option>
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.other.473807321" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.other" value="-Xlinker -z  -Xlinker muldefs   --specs=nano.specs          -Wall  -fno-common  -ffunction-sections  -fdata-sections  -ffreestanding  -fno-builtin  -Os  -mapcs  -Xlinker -static  -Xlinker --defsym=__stack_size__=0x400  -Xlinker --defsym=__heap_size__=0x200 " valueType="string"/>
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.other.473807321" name="Other linker flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.other" value="-Xlinker -z  -Xlinker muldefs   --specs=nano.specs          -Wall  -fno-common  -ffunction-sections  -fdata-sections  -ffreestanding  -fno-builtin  -Os  -mapcs  -Xlinker -static  -Xlinker --defsym=__stack_size__=0x400  -Xlinker --defsym=__heap_size__=0x200 " valueType="string"/>
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.input.1801248170" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

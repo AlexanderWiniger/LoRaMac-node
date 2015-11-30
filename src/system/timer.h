@@ -15,7 +15,8 @@
 #ifndef __TIMER_H__
 #define __TIMER_H__
 
-#if defined(FSL_RTOS_FREE_RTOS)
+#if defined(FSL_RTOS_FREE_RTOS) || defined(USE_FREE_RTOS)
+#include "FreeRTOS.h"
 #include "timers.h"
 #endif
 
@@ -26,7 +27,7 @@
 typedef uint64_t TimerTime_t;
 #endif
 
-#if defined(FSL_RTOS_FREE_RTOS)
+#if defined(FSL_RTOS_FREE_RTOS) || defined(USE_FREE_RTOS)
 /*!
  * \brief Timer object description
  */

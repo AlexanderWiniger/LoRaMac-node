@@ -6,6 +6,7 @@
  *
  */
 
+#if !defined(USE_FREE_RTOS)
 #include <math.h>
 #include "board.h"
 #include "timer-board.h"
@@ -32,9 +33,9 @@ volatile TimerTime_t TimeoutCntValue = 0;
 /*!
  * Increment the Hardware Timer tick counter
  */
-void TimerIncrementTickCounter(void);
+void TimerIncrementTickCounter( void );
 
-void TimerHwInit(void)
+void TimerHwInit( void )
 {
     /*!
      * Initialize SysTick
@@ -45,7 +46,7 @@ void TimerHwInit(void)
 
     uint32_t divider = (((uint64_t) CPU_CORE_CLK_HZ * HWTIMER_PERIOD)) / 1000000U;
 
-    if ((divider - 1U) & ~SysTick_RVR_RELOAD_MASK) {
+    if ( (divider - 1U) & ~SysTick_RVR_RELOAD_MASK ) {
         /* Divider exceeds possible range */
         while (1)
             ;
@@ -57,7 +58,7 @@ void TimerHwInit(void)
     SysTick_BASE_PTR->CSR |= (SysTick_CSR_ENABLE_MASK | SysTick_CSR_TICKINT_MASK);
 }
 
-void TimerHwDeInit(void)
+void TimerHwDeInit( void )
 {
     /* Disable SysTick / Disable interrupt */
     SysTick_BASE_PTR->CSR &= ~(SysTick_CSR_ENABLE_MASK | SysTick_CSR_TICKINT_MASK);
@@ -65,29 +66,29 @@ void TimerHwDeInit(void)
     SysTick_BASE_PTR->CVR = 0u;
 }
 
-uint32_t TimerHwGetMinimumTimeout(void)
+uint32_t TimerHwGetMinimumTimeout( void )
 {
     return (ceil(2 * HWTIMER_PERIOD));
 }
 
-void TimerHwStart(uint32_t val)
+void TimerHwStart( uint32_t val )
 {
     TimerTickCounterContext = TimerHwGetTimerValue();
 
-    if (val <= HWTIMER_PERIOD + 1) {
+    if ( val <= HWTIMER_PERIOD + 1 ) {
         TimeoutCntValue = TimerTickCounterContext + 1;
     } else {
         TimeoutCntValue = TimerTickCounterContext + ((val - 1) / HWTIMER_PERIOD);
     }
 }
 
-void TimerHwStop(void)
+void TimerHwStop( void )
 {
     /* Disable SysTick */
     SysTick_BASE_PTR->CSR = 0u;
 }
 
-static __attribute__((naked, no_instrument_function)) void Wait10Cycles(void)
+static __attribute__((naked, no_instrument_function)) void Wait10Cycles( void )
 {
     /* This function will wait 10 CPU cycles (including call overhead). */
     /* NOTE: Cortex-M0 and M4 have 1 cycle for a NOP */
@@ -101,7 +102,7 @@ static __attribute__((naked, no_instrument_function)) void Wait10Cycles(void)
     );
 }
 
-static __attribute__((naked, no_instrument_function)) void Wait100Cycles(void)
+static __attribute__((naked, no_instrument_function)) void Wait100Cycles( void )
 {
     /* This function will spend 100 CPU cycles (including call overhead). */
     __asm (
@@ -121,7 +122,7 @@ static __attribute__((naked, no_instrument_function)) void Wait100Cycles(void)
     );
 }
 
-static void WaitCycles(uint16_t cycles)
+static void WaitCycles( uint16_t cycles )
 {
     while (cycles > 100) {
         Wait100Cycles();
@@ -133,7 +134,7 @@ static void WaitCycles(uint16_t cycles)
     }
 }
 
-static void WaitLongCycles(uint32_t cycles)
+static void WaitLongCycles( uint32_t cycles )
 {
     while (cycles > 60000) {
         WaitCycles(60000);
@@ -142,7 +143,7 @@ static void WaitLongCycles(uint32_t cycles)
     WaitCycles((uint16_t) cycles);
 }
 
-void TimerHwDelayMs(uint32_t ms)
+void TimerHwDelayMs( uint32_t ms )
 {
     uint32_t msCycles; /* cycles for 1 ms */
 
@@ -154,12 +155,12 @@ void TimerHwDelayMs(uint32_t ms)
     }
 }
 
-TimerTime_t TimerHwGetElapsedTime(void)
+TimerTime_t TimerHwGetElapsedTime( void )
 {
     return (((TimerHwGetTimerValue() - TimerTickCounterContext) + 1) * HWTIMER_PERIOD);
 }
 
-TimerTime_t TimerHwGetTimerValue(void)
+TimerTime_t TimerHwGetTimerValue( void )
 {
     TimerTime_t val = 0;
 
@@ -172,13 +173,13 @@ TimerTime_t TimerHwGetTimerValue(void)
     return (val);
 }
 
-TimerTime_t TimerHwGetTime(void)
+TimerTime_t TimerHwGetTime( void )
 {
 
     return TimerHwGetTimerValue() * HWTIMER_PERIOD;
 }
 
-void TimerIncrementTickCounter(void)
+void TimerIncrementTickCounter( void )
 {
     __disable_irq();
 
@@ -190,20 +191,21 @@ void TimerIncrementTickCounter(void)
 /*!
  * @brief Interrupt service routine.
  */
-void SysTick_Handler(void)
+void SysTick_Handler( void )
 {
     PTC_BASE_PTR->PTOR = (1U << 2);
 
     TimerIncrementTickCounter();
 
-    if (TimerTickCounter == TimeoutCntValue) {
+    if ( TimerTickCounter == TimeoutCntValue ) {
         TimerIrqHandler();
     }
 }
 
-void TimerHwEnterLowPowerStopMode(void)
+void TimerHwEnterLowPowerStopMode( void )
 {
 #ifndef USE_DEBUGGER
     __WFI();
 #endif
 }
+#endif /* USE_FREE_RTOS */

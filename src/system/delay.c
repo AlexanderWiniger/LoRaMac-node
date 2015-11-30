@@ -21,13 +21,15 @@ void Delay( float s )
 
 void DelayMs( uint32_t ms )
 {
-#if !defined(FSL_RTOS_FREE_RTOS)
+#if defined(FSL_RTOS_FREE_RTOS)
+    OSA_TimeDelay(ms);
+#elif defined(USE_FREE_RTOS)
+    vTaskDelay((((uint32_t)(ms)+500uL/(uint32_t)configTICK_RATE_HZ) *(uint32_t)configTICK_RATE_HZ/1000uL));
+#else
     if ( TimerGetLowPowerEnable() == true ) {
         RtcDelayMs(ms);
     } else {
         TimerHwDelayMs(ms);
     }
-#else
-    OSA_TimeDelay(ms);
 #endif
 }

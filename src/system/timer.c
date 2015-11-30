@@ -16,16 +16,12 @@
 #include "rtc-board.h"
 #include "timer-board.h"
 
-#if defined(FSL_RTOS_FREE_RTOS)
-#include "fsl_os_abstraction.h"
-#endif
-
 #define LOG_LEVEL_ERROR
 #include "debug.h"
 
 static bool LowPowerModeEnable = true;
 
-#if defined(FSL_RTOS_FREE_RTOS)
+#if defined(FSL_RTOS_FREE_RTOS) || defined(USE_FREE_RTOS)
 static uint32_t NrOfTimers = 0;
 
 void TimerInit( TimerEvent_t *obj, const char* name, uint32_t periodInMs, TimerCallbackFunction_t callback, bool autoReload )
