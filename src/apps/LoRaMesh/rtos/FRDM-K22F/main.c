@@ -92,8 +92,7 @@
 /*!
  * Defines the application data transmission duty cycle
  */
-#define APP_TX_DUTYCYCLE                            4000000  // 5 [s] value in us
-#define APP_TX_DUTYCYCLE_RND                        1000000  // 1 [s] value in us
+#define APP_TX_DUTYCYCLE                            4000  // 5 [s] value in us
 
 /*!
  *  Pilot data header option list.
@@ -181,13 +180,6 @@ static uint8_t AppData[LORAWAN_APP_DATA_MAX_SIZE];
  */
 static uint8_t IsTxConfirmed = LORAWAN_CONFIRMED_MSG_ON;
 
-/*!
- * Defines the application data transmission duty cycle
- */
-static uint32_t TxDutyCycleTime;
-
-static TimerEvent_t TxNextPacketTimer;
-
 #if( OVER_THE_AIR_ACTIVATION != 0 )
 
 /*!
@@ -196,12 +188,6 @@ static TimerEvent_t TxNextPacketTimer;
 static TimerEvent_t JoinReqTimer;
 
 #endif
-
-/*!
- * Indicates if a new packet can be sent
- */
-static bool TxNextPacket = true;
-static bool ScheduleNextTx = false;
 
 static LoRaMacCallbacks_t LoRaMacCallbacks;
 
@@ -245,11 +231,6 @@ static void OnJoinReqTimerEvent( void );
  */
 static void OnMacEvent( LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info );
 
-/*!
- * \brief Function executed on TxNextPacket Timeout event
- */
-static void OnTxNextPacketTimerEvent( TimerHandle_t xTimer );
-
 /**
  * Main application entry point.
  */
@@ -285,7 +266,8 @@ void task_mesh_rtos( task_param_t param )
 #if( OVER_THE_AIR_ACTIVATION != 0 )
     uint8_t sendFrameStatus = 0;
 #endif
-    bool trySendingFrameAgain = false;
+
+    LOG_TRACE("Starting mesh app task...");
 
     LoRaMacCallbacks.MacEvent = OnMacEvent;
     LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
@@ -312,69 +294,18 @@ void task_mesh_rtos( task_param_t param )
     TimerSetValue( &JoinReqTimer, OVER_THE_AIR_ACTIVATION_DUTYCYCLE );
 #endif
 
-    TxNextPacket = true;
-    TimerInit(&TxNextPacketTimer, "TxNextPacketTimer", APP_TX_DUTYCYCLE, OnTxNextPacketTimerEvent,
-            false);
-
     LoRaMacSetAdrOn( LORAWAN_ADR_ON);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
     LoRaMacSetPublicNetwork( LORAWAN_PUBLIC_NETWORK);
 //    LoRaMacSetDeviceClass (CLASS_C);
 
     while (1) {
-        while (IsNetworkJoined == false) {
-#if( OVER_THE_AIR_ACTIVATION != 0 )
-            if( TxNextPacket == true )
-            {
-                TxNextPacket = false;
-
-                sendFrameStatus = LoRaMacJoinReq( DevEui, AppEui, AppKey );
-                switch( sendFrameStatus )
-                {
-                    case 1: // BUSY
-                    break;
-                    case 0:// OK
-                    case 2:// NO_NETWORK_JOINED
-                    case 3:// LENGTH_PORT_ERROR
-                    case 4:// MAC_CMD_ERROR
-                    case 6:// DEVICE_OFF
-                    default:
-                    // Relaunch timer for next trial
-                    TimerStart( &JoinReqTimer );
-                    break;
-                }
-            }
-            TimerLowPowerHandler( );
-#endif
-        }
-
-        if ( ScheduleNextTx ) {
-            ScheduleNextTx = false;
-
-            // Schedule next packet transmission
-            TxDutyCycleTime = APP_TX_DUTYCYCLE + randr(-APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND);
-            TimerSetValue(&TxNextPacketTimer, TxDutyCycleTime);
-            TimerStart(&TxNextPacketTimer);
-        }
-
-        if ( trySendingFrameAgain == true ) {
-            LOG_TRACE("Re-sending frame...");
-            trySendingFrameAgain = SendFrame();
-            LOG_TRACE_IF(trySendingFrameAgain, "No free channel. Try again later.");
-        }
-
-        if ( TxNextPacket ) {
-            LOG_TRACE("Trying to send frame...");
-            TxNextPacket = false;
-
-            PrepareTxFrame(AppPort);
-
-            trySendingFrameAgain = SendFrame();
-
-            LOG_TRACE_IF(trySendingFrameAgain, "No free channel. Try again later.");
-        }
+        LOG_TRACE("Trying to send frame...");
+        PrepareTxFrame(AppPort);
+        SendFrame();
 
         TimerLowPowerHandler();
+        OSA_TimeDelay(APP_TX_DUTYCYCLE);
     }
 }
 
@@ -505,12 +436,4 @@ void OnMacEvent( LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info )
             }
         }
     }
-    // Schedule a new transmission
-    ScheduleNextTx = true;
-}
-
-void OnTxNextPacketTimerEvent( TimerHandle_t xTimer )
-{
-    TimerStop(&TxNextPacketTimer);
-    TxNextPacket = true;
 }

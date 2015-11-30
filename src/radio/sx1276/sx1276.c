@@ -194,6 +194,12 @@ TimerEvent_t TxTimeoutTimer;
 TimerEvent_t RxTimeoutTimer;
 TimerEvent_t RxTimeoutSyncWord;
 
+#if defined(FSL_RTOS_FREE_RTOS)
+mutex_t radioLock;
+#elif defined(USE_FREE_RTOS)
+SemaphoreHandle_t radioLock;
+#endif
+
 /*
  * Radio driver functions implementation
  */
@@ -203,6 +209,17 @@ void SX1276Init( RadioEvents_t *events )
     uint8_t i;
 
     RadioEvents = events;
+#if defined(FSL_RTOS_FREE_RTOS)
+    osa_status_t status = OSA_MutexCreate(&radioLock);
+    if( status == kStatus_OSA_Error ) {
+        LOG_ERROR("Couldn't create semaphore.");
+    }
+#elif defined(USE_FREE_RTOS)
+    radioLock = xSemaphoreCreateMutex();
+    if( radioLock == NULL ) {
+        LOG_ERROR("Couldn't create semaphore.");
+    }
+#endif
 
     // Initialize driver timeout timers
 #if defined(FSL_RTOS_FREE_RTOS) || defined(USE_FREE_RTOS)
@@ -1272,8 +1289,11 @@ uint8_t SX1276Read( uint8_t addr )
 void SX1276WriteBuffer( uint8_t addr, uint8_t *buffer, uint8_t size )
 {
     uint8_t i;
-
-//NSS = 0;
+#if defined(FSL_RTOS_FREE_RTOS)
+    OSA_MutexLock(&radioLock, OSA_WAIT_FOREVER);
+#elif defined(USE_FREE_RTOS)
+#endif
+    //NSS = 0;
     GpioWrite(&SX1276.Spi.Nss, 0);
 
     SpiInOut(&SX1276.Spi, addr | 0x80);
@@ -1281,15 +1301,22 @@ void SX1276WriteBuffer( uint8_t addr, uint8_t *buffer, uint8_t size )
         SpiInOut(&SX1276.Spi, buffer[i]);
     }
 
-//NSS = 1;
+    //NSS = 1;
     GpioWrite(&SX1276.Spi.Nss, 1);
+#if defined(FSL_RTOS_FREE_RTOS)
+    OSA_MutexUnlock (&radioLock);
+#elif defined(USE_FREE_RTOS)
+#endif
 }
 
 void SX1276ReadBuffer( uint8_t addr, uint8_t *buffer, uint8_t size )
 {
     uint8_t i;
-
-//NSS = 0;
+#if defined(FSL_RTOS_FREE_RTOS)
+    OSA_MutexLock(&radioLock, OSA_WAIT_FOREVER);
+#elif defined(USE_FREE_RTOS)
+#endif
+    //NSS = 0;
     GpioWrite(&SX1276.Spi.Nss, 0);
 
     SpiInOut(&SX1276.Spi, addr & 0x7F);
@@ -1298,8 +1325,12 @@ void SX1276ReadBuffer( uint8_t addr, uint8_t *buffer, uint8_t size )
         buffer[i] = SpiInOut(&SX1276.Spi, 0);
     }
 
-//NSS = 1;
+    //NSS = 1;
     GpioWrite(&SX1276.Spi.Nss, 1);
+#if defined(FSL_RTOS_FREE_RTOS)
+    OSA_MutexUnlock (&radioLock);
+#elif defined(USE_FREE_RTOS)
+#endif
 }
 
 void SX1276WriteFifo( uint8_t *buffer, uint8_t size )

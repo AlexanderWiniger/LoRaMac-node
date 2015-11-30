@@ -82,7 +82,17 @@
 /*!
  * Advertising beacon reception window in us
  */
-#define ADV_BEACON_LEN                              14
+#define ADV_BEACON_LEN                              14//0
+
+/*!
+ * Advertising beacon CRC on
+ */
+#define ADV_BEACON_CRC_ON                           false//true
+
+/*!
+ * Advertising beacon explicit header mode off
+ */
+#define ADV_BEACON_EXPLICIT_HDR_OFF                 true//false
 
 /*!
  * ADR acknowledgement counter limit
@@ -375,6 +385,65 @@ typedef struct sLoRaMacCallbacks {
      */
     uint8_t (*GetBatteryLevel)( void );
 } LoRaMacCallbacks_t;
+
+/*!
+ * Rx config structure
+ */
+typedef struct RadioRxConfig_s {
+    RadioModems_t modem;
+    uint32_t bandwidth;
+    uint32_t datarate;
+    uint8_t coderate;
+    uint32_t bandwidthAfc;
+    uint16_t preambleLen;
+    uint16_t symbTimeout;
+    bool fixLen;
+    uint8_t payloadLen;
+    bool crcOn;
+    bool FreqHopOn;
+    uint8_t HopPeriod;
+    bool iqInverted;
+    bool rxContinuous;
+} RadioRxConfig_t;
+
+/*!
+ * Tx config structure
+ */
+typedef struct RadioTxConfig_s {
+    RadioModems_t modem;
+    int8_t power;
+    uint32_t fdev;
+    uint32_t bandwidth;
+    uint32_t datarate;
+    uint8_t coderate;
+    uint16_t preambleLen;
+    bool fixLen;
+    bool crcOn;
+    bool FreqHopOn;
+    uint8_t HopPeriod;
+    bool iqInverted;
+    uint32_t timeout;
+} RadioTxConfig_t;
+
+/*!
+ * Tx message structure
+ */
+typedef struct RadioTxMsg_s {
+    uint8_t *buffer;
+    uint32_t bufferSize;
+    ChannelParams_t channel;
+    RadioTxConfig_t config;
+} RadioTxMsg_t;
+
+/*!
+ * Rx message structure
+ */
+typedef struct RadioRxMsg_s {
+    uint8_t* buffer;
+    uint32_t bufferSize;
+    ChannelParams_t channel;
+    RadioRxConfig_t config;
+} RadioRxMsg_t;
 
 /*****************************************************************************
  *                                                                           *
