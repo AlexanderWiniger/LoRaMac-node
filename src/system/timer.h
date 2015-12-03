@@ -28,12 +28,11 @@ typedef uint64_t TimerTime_t;
 #endif
 
 #if defined(FSL_RTOS_FREE_RTOS) || defined(USE_FREE_RTOS)
-/*!
- * \brief Timer object description
- */
+
+/*! \brief Timer object description */
 typedef struct TimerEvent_s {
     TimerHandle_t Handle;
-    uint32_t PeriodInMs; //! Timer period value
+    uint32_t PeriodInMs;   //! Timer period value
     bool AutoReload;//! Is auto reload enabled
     bool IsRunning;//! Is Timer running
     TimerCallbackFunction_t Callback;//! Timer callback function
@@ -48,7 +47,7 @@ typedef struct TimerEvent_s {
  * \param [IN] obj          Structure containing the timer object parameters
  * \param [IN] callback     Function callback called at the end of the timeout
  */
-void TimerInit( TimerEvent_t *obj, const char* name, uint32_t periodInMs, TimerCallbackFunction_t callback, bool autoReload);
+void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t periodInMs, TimerCallbackFunction_t callback, bool autoReload);
 
 #else
 /*!
@@ -58,8 +57,8 @@ typedef struct TimerEvent_s {
     uint32_t Timestamp;         //! Current timer value
     uint32_t ReloadValue;       //! Timer delay value
     bool IsRunning;             //! Is the timer currently running
-    void (*Callback)( void ); //! Timer IRQ callback function
-    struct TimerEvent_s *Next;  //! Pointer to the next Timer object.
+    void (*Callback)( void );   //! Timer IRQ callback function
+    struct TimerEvent_s *Next;   //! Pointer to the next Timer object.
 } TimerEvent_t;
 
 /*!

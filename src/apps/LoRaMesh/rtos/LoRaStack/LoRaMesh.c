@@ -15,28 +15,13 @@
 #define LOG_LEVEL_TRACE
 #include "debug.h"
 
-/*****************************************************************************
- *                                                                           *
- * Local definitions                                                         *
- *                                                                           *
- *****************************************************************************/
+/*******************************************************************************
+ * PRIVATE CONSTANT DEFINITIONS
+ ******************************************************************************/
 /*!
  * Maximum PHY layer payload size
  */
 #define LORAMAC_PHY_MAXPAYLOAD                      255
-
-/*!
- * LoRaMac internal states
- */
-enum LoRaMacState_e {
-    MAC_IDLE = 0x00000000,
-    MAC_TX_RUNNING = 0x00000001,
-    MAC_RX = 0x00000002,
-    MAC_ACK_REQ = 0x00000004,
-    MAC_ACK_RETRY = 0x00000008,
-    MAC_CHANNEL_CHECK = 0x00000010,
-};
-
 /*!
  *  task priorities
  */
@@ -50,11 +35,24 @@ enum LoRaMacState_e {
 #define RECEIVE_TASK_STACK_SIZE       0x200U
 #define MAC_STATE_TASK_STACK_SIZE     0x200U
 
-/*****************************************************************************
- *                                                                           *
- * Local variables                                                           *
- *                                                                           *
- *****************************************************************************/
+/*******************************************************************************
+ * PRIVATE TYPE DEFINITIONS
+ ******************************************************************************/
+/*!
+ * LoRaMac internal states
+ */
+enum LoRaMacState_e {
+    MAC_IDLE = 0x00000000,
+    MAC_TX_RUNNING = 0x00000001,
+    MAC_RX = 0x00000002,
+    MAC_ACK_REQ = 0x00000004,
+    MAC_ACK_RETRY = 0x00000008,
+    MAC_CHANNEL_CHECK = 0x00000010,
+};
+
+/*******************************************************************************
+ * PRIVATE VARIABLES (STATIC)
+ ******************************************************************************/
 /************* Initial Devie/Application Specific Variables ******************/
 /*!
  * Device IEEE EUI
@@ -301,24 +299,9 @@ static TimerEvent_t RxWindowTimer1;
 static TimerEvent_t RxWindowTimer2;
 
 /*!
- * LoRaMesh synchronized reception windows timer
+ * LoRaMesh time synchronized event timers
  */
-static TimerEvent_t SynchRxWindowTimer;
-
-/*!
- * LoRaMesh advertising beacon timer
- */
-static TimerEvent_t AdvBcnTimer;
-
-/*!
- * LoRaMesh advertising beacon send delay timer
- */
-static TimerEvent_t AdvBcnSendDelayTimer;
-
-/*!
- * LoRaMesh advertising beacon send delay timer
- */
-static TimerEvent_t AdvBcnRxWindowTimer;
+static TimerTime_t SynchronizedEventTimer[configTIMER_QUEUE_LENGTH];
 
 /*!
  * Acknowledge timeout timer. Used for packet retransmissions.
@@ -436,13 +419,6 @@ msg_queue_handler_t rxMsgQueue;
 /*! Message queue declaration */
 MSG_QUEUE_DECLARE(rxMsg, 16, sizeof(RadioRxMsg_t));
 MSG_QUEUE_DECLARE(txMsg, 16, sizeof(RadioTxMsg_t));
-/*! Task declaration */
-void task_send( task_param_t param );
-OSA_TASK_DEFINE(task_send, SEND_TASK_STACK_SIZE);
-void task_receive( task_param_t param );
-OSA_TASK_DEFINE(task_receive, RECEIVE_TASK_STACK_SIZE);
-void task_mac_state( task_param_t param );
-OSA_TASK_DEFINE(task_mac_state, MAC_STATE_STACK_SIZE);
 
 /************************* Radio Driver Variables ****************************/
 /*!
@@ -450,11 +426,10 @@ OSA_TASK_DEFINE(task_mac_state, MAC_STATE_STACK_SIZE);
  */
 static RadioEvents_t RadioEvents;
 
-/*****************************************************************************
- *                                                                           *
- * Event functions declaration                                               *
- *                                                                           *
- *****************************************************************************/
+/*******************************************************************************
+ * PRIVATE FUNCTION PROTOTYPES (STATIC)
+ ******************************************************************************/
+/*********************** Radio/Timer Event Functions **************************/
 /*!
  * Function to be executed on Radio Tx Done event
  */
@@ -530,15 +505,91 @@ static void OnAckTimeoutTimerEvent( TimerHandle_t xTimer );
  */
 static void OnChannelCheckTimerEvent( TimerHandle_t xTimer );
 
-/*****************************************************************************
- *                                                                           *
- * Utility functions declaration                                             *
- *                                                                           *
- *****************************************************************************/
+/***************************** Utility Functions ******************************/
+/*!
+ * LoRaMAC layer generic send frame
+ *
+ * \param [IN] macHdr      MAC header field
+ * \param [IN] fOpts       MAC commands buffer
+ * \param [IN] fPort       MAC payload port
+ * \param [IN] fBuffer     MAC data buffer to be sent
+ * \param [IN] fBufferSize MAC data buffer size
+ * \retval status          [0: OK, 1: Busy, 2: No network joined,
+ *                          3: Length or port error, 4: Unknown MAC command
+ *                          5: Unable to find a free channel
+ *                          6: Device switched off]
+ */
+uint8_t Send( LoRaMacHeader_t *macHdr, uint8_t *fOpts, uint8_t fPort, void *fBuffer,
+        uint16_t fBufferSize );
+
+/*!
+ * LoRaMAC layer frame buffer initialization.
+ *
+ * \param [IN] channel     Channel parameters
+ * \param [IN] macHdr      MAC header field
+ * \param [IN] fCtrl       MAC frame control field
+ * \param [IN] fOpts       MAC commands buffer
+ * \param [IN] fPort       MAC payload port
+ * \param [IN] fBuffer     MAC data buffer to be sent
+ * \param [IN] fBufferSize MAC data buffer size
+ * \retval status          [0: OK, 1: N/A, 2: No network joined,
+ *                          3: Length or port error, 4: Unknown MAC command]
+ */
+uint8_t PrepareFrame( ChannelParams_t channel, LoRaMacHeader_t *macHdr, LoRaMacFrameCtrl_t *fCtrl,
+        uint8_t *fOpts, uint8_t fPort, void *fBuffer, uint16_t fBufferSize );
+
+/*!
+ * LoRaMAC layer prepared frame buffer transmission with channel specification
+ *
+ * \remark LoRaMacPrepareFrame must be called at least once before calling this
+ *         function.
+ *
+ * \param [IN] channel     Channel parameters
+ * \retval status          [0: OK, 1: Busy]
+ */
+uint8_t SendFrameOnChannel( ChannelParams_t channel );
+
+/*!
+ * LoRaMAC layer generic send frame with channel specification
+ *
+ * \param [IN] channel     Channel parameters
+ * \param [IN] macHdr      MAC header field
+ * \param [IN] fCtrl       MAC frame control field
+ * \param [IN] fOpts       MAC commands buffer
+ * \param [IN] fPort       MAC payload port
+ * \param [IN] fBuffer     MAC data buffer to be sent
+ * \param [IN] fBufferSize MAC data buffer size
+ * \retval status          [0: OK, 1: Busy, 2: No network joined,
+ *                          3: Length or port error, 4: Unknown MAC command]
+ */
+uint8_t SendOnChannel( ChannelParams_t channel, LoRaMacHeader_t *macHdr, LoRaMacFrameCtrl_t *fCtrl,
+        uint8_t *fOpts, uint8_t fPort, void *fBuffer, uint16_t fBufferSize );
+
+/*!
+ * Initializes and opens the reception window
+ *
+ *
+ * \param [IN] datarate window channel datarate
+ * \param [IN] bandwidth window channel bandwidth
+ * \param [IN] timeout window channel timeout
+ */
+void RxWindowSetup( uint32_t freq, int8_t datarate, uint32_t bandwidth, uint16_t timeout,
+        bool rxContinuous );
+
+/*!
+ * \brief Initializes and open the advertising beacon reception window.
+ */
+void AdvertisingRxWindowSetup( void );
+
+/*!
+ * LoRaMesh transmit advertising
+ */
+uint8_t SendAdvertising( void );
+
 /*!
  * LoRaMesh process received advertising beacon
  */
-static void ProcessAdvertisingBeacon( uint8_t *payload, uint16_t size );
+static void ProcessAdvertisingPacket( uint8_t *payload, uint16_t size );
 
 /*!
  * LoRaMesh process received data frame
@@ -711,12 +762,10 @@ static MulticastGroupInfo_t* MulticastGroupFind( uint32_t grpAddr );
  */
 static void MulticastGroupPrint( MulticastGroupInfo_t* multicastGrp );
 
-/*****************************************************************************
- *                                                                           *
- * API functions implementation                                              *
- *                                                                           *
- *****************************************************************************/
-void LoRaMacInit( LoRaMacCallbacks_t *callbacks )
+/*******************************************************************************
+ * API FUNCTIONS (PUBLIC)
+ ******************************************************************************/
+void LoRaMac_Init( LoRaMacCallbacks_t *callbacks )
 {
     LoRaMacCallbacks = callbacks;
 
@@ -773,7 +822,7 @@ void LoRaMacInit( LoRaMacCallbacks_t *callbacks )
     LoRaMacState = MAC_IDLE;
 
     /* Default channels mask */
-    ChannelsMask[0] = LC(1); //+ LC( 2 ) + LC( 3 );
+    ChannelsMask[0] = LC(1);   //+ LC( 2 ) + LC( 3 );
 
     /* Initialize default channel settings */
     ChannelsTxPower = LORAMAC_DEFAULT_TX_POWER;
@@ -797,9 +846,9 @@ void LoRaMacInit( LoRaMacCallbacks_t *callbacks )
     JoinAcceptDelay2 = JOIN_ACCEPT_DELAY2;
 
     /* Initialize Mesh variables */
-    AdvertisingSlot.Frequency = ADV_BEACON_FREQUENCY;
-    AdvertisingSlot.Periodicity = ADV_BEACON_INTERVAL;
-    AdvertisingSlot.Duration = ADV_BEACON_DURATION;
+    AdvertisingSlot.Frequency = ADV_CHANNEL_FREQUENCY;
+    AdvertisingSlot.Periodicity = ADV_INTERVAL;
+    AdvertisingSlot.Duration = ADV_SLOT_DURATION;
     CoordinatorAddr = 0;
     ParentAddr = 0;
 
@@ -809,7 +858,7 @@ void LoRaMacInit( LoRaMacCallbacks_t *callbacks )
     TimerInit(&RxWindowTimer2, "RxWindowTimer2", 10, OnRxWindow2TimerEvent, false);
     TimerInit(&SynchRxWindowTimer, "SynchRxWindowTimer", 10, OnRxSynchWindowTimerEvent, false);
     TimerInit(&AckTimeoutTimer, "AckTimeoutTimer", 10, OnAckTimeoutTimerEvent, false);
-    TimerInit(&AdvBcnTimer, "AdvBcnTimer", ADV_BEACON_INTERVAL, OnAdvBcnTimerEvent, false);
+    TimerInit(&AdvBcnTimer, "AdvBcnTimer", ADV_INTERVAL, OnAdvBcnTimerEvent, false);
     TimerInit(&AdvBcnSendDelayTimer, "AdvBcnSendDelayTimer", 10, OnAdvBcnSendDelayTimerEvent,
             false);
     TimerInit(&AdvBcnRxWindowTimer, "AdvBcnRxWindowTimer", 10, OnAdvBcnRxWindowTimerEvent, false);
@@ -830,16 +879,101 @@ void LoRaMacInit( LoRaMacCallbacks_t *callbacks )
     Channel = LORA_MAX_NB_CHANNELS;
 
     PublicNetwork = true;
-    LoRaMacSetPublicNetwork(PublicNetwork);
+    LoRaMac_SetPublicNetwork(PublicNetwork);
     Radio.Sleep();
 }
 
-void LoRaMacSetAdrOn( bool enable )
+void LoRaMac_Process( void )
+{
+    /* State machine implementation */
+
+    LOG_TRACE("Starting mac state task...");
+
+    if ( LoRaMacEventFlags.Bits.Tx == 1 ) {
+        if ( NodeAckRequested == false ) {
+            if ( LoRaMacEventFlags.Bits.JoinAccept == true ) {
+                // Join messages aren't repeated automatically
+                ChannelsNbRepCounter = ChannelsNbRep;
+                UpLinkCounter = 0;
+            }
+            if ( ChannelsNbRepCounter >= ChannelsNbRep ) {
+                ChannelsNbRepCounter = 0;
+
+                LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_OK;
+
+                AdrAckCounter++;
+                if ( IsUpLinkCounterFixed == false ) {
+                    UpLinkCounter++;
+                }
+
+                LoRaMacState &= ~MAC_TX_RUNNING;
+            } else {
+                LoRaMacEventFlags.Bits.Tx = 0;
+                // Sends the same frame again
+                if ( SetNextChannel() == 0 ) {
+                    SendFrameOnChannel(Channels[Channel]);
+                }
+            }
+        }
+
+        if ( LoRaMacEventFlags.Bits.Rx == 1 ) {
+            if ( (LoRaMacEventInfo.TxAckReceived == true)
+                    || (AckTimeoutRetriesCounter > AckTimeoutRetries) ) {
+                AckTimeoutRetry = false;
+                if ( IsUpLinkCounterFixed == false ) {
+                    UpLinkCounter++;
+                }
+                LoRaMacEventInfo.TxNbRetries = AckTimeoutRetriesCounter;
+
+                LoRaMacState &= ~MAC_TX_RUNNING;
+            }
+        }
+
+        if ( (AckTimeoutRetry == true) && ((LoRaMacState & MAC_CHANNEL_CHECK) == 0) ) {
+            AckTimeoutRetry = false;
+            if ( (AckTimeoutRetriesCounter < AckTimeoutRetries)
+                    && (AckTimeoutRetriesCounter <= MAX_ACK_RETRIES) ) {
+                AckTimeoutRetriesCounter++;
+
+                if ( (AckTimeoutRetriesCounter % 2) == 1 ) {
+                    ChannelsDatarate = MAX(ChannelsDatarate - 1, LORAMAC_MIN_DATARATE);
+                }
+                LoRaMacEventFlags.Bits.Tx = 0;
+                // Sends the same frame again
+                if ( SetNextChannel() == 0 ) {
+                    SendFrameOnChannel(Channels[Channel]);
+                }
+            } else {
+                // Re-enable default channels LC1, LC2, LC3
+                ChannelsMask[0] = ChannelsMask[0] | (LC(1) + LC(2) + LC(3));
+                LoRaMacState &= ~MAC_TX_RUNNING;
+
+                LoRaMacEventInfo.TxAckReceived = false;
+                LoRaMacEventInfo.TxNbRetries = AckTimeoutRetriesCounter;
+                if ( IsUpLinkCounterFixed == false ) {
+                    UpLinkCounter++;
+                }
+                LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_OK;
+            }
+        }
+    }
+
+    // Handle reception for Class B and Class C
+    if ( (LoRaMacState & MAC_RX) == MAC_RX ) {
+        LoRaMacState &= ~MAC_RX;
+    }
+
+    if ( LoRaMacState == MAC_IDLE ) {
+        Notify(&LoRaMacEventFlags, &LoRaMacEventInfo);
+    }
+}
+
+void LoRaMac_SetAdrOn( bool enable )
 {
     AdrCtrlOn = enable;
 }
 
-void LoRaMacInitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint8_t *appSKey )
+void LoRaMac_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint8_t *appSKey )
 {
     LoRaMacNetID = netID;
     LoRaMacDevAddr = devAddr;
@@ -847,12 +981,12 @@ void LoRaMacInitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint
     LoRaMacMemCpy(appSKey, LoRaMacAppSKey, 16);
 
     /* Start advertising */
-    TimerStart(&AdvBcnTimer);
+    TimerStart (&AdvBcnTimer);
 
     IsLoRaMacNetworkJoined = true;
 }
 
-uint8_t LoRaMacJoinReq( uint8_t *devEui, uint8_t *appEui, uint8_t *appKey )
+uint8_t LoRaMac_JoinReq( uint8_t *devEui, uint8_t *appEui, uint8_t *appKey )
 {
     LoRaMacHeader_t macHdr;
 
@@ -865,25 +999,25 @@ uint8_t LoRaMacJoinReq( uint8_t *devEui, uint8_t *appEui, uint8_t *appKey )
 
     IsLoRaMacNetworkJoined = false;
 
-    return LoRaMacSend(&macHdr, NULL, 0, NULL, 0);
+    return Send(&macHdr, NULL, 0, NULL, 0);
 }
 
-uint8_t LoRaMacLinkCheckReq( void )
+uint8_t LoRaMac_LinkCheckReq( void )
 {
     return AddMacCommand(MOTE_MAC_LINK_CHECK_REQ, 0, 0);
 }
 
-uint8_t LoRaMacSendFrame( uint8_t fPort, void *fBuffer, uint16_t fBufferSize )
+uint8_t LoRaMac_SendFrame( uint8_t fPort, void *fBuffer, uint16_t fBufferSize )
 {
     LoRaMacHeader_t macHdr;
 
     macHdr.Value = 0;
 
     macHdr.Bits.MType = FRAME_TYPE_DATA_UNCONFIRMED_UP;
-    return LoRaMacSend(&macHdr, NULL, fPort, fBuffer, fBufferSize);
+    return Send(&macHdr, NULL, fPort, fBuffer, fBufferSize);
 }
 
-uint8_t LoRaMacSendConfirmedFrame( uint8_t fPort, void *fBuffer, uint16_t fBufferSize,
+uint8_t LoRaMac_SendConfirmedFrame( uint8_t fPort, void *fBuffer, uint16_t fBufferSize,
         uint8_t retries )
 {
     LoRaMacHeader_t macHdr;
@@ -897,10 +1031,10 @@ uint8_t LoRaMacSendConfirmedFrame( uint8_t fPort, void *fBuffer, uint16_t fBuffe
     macHdr.Value = 0;
 
     macHdr.Bits.MType = FRAME_TYPE_DATA_CONFIRMED_UP;
-    return LoRaMacSend(&macHdr, NULL, fPort, fBuffer, fBufferSize);
+    return Send(&macHdr, NULL, fPort, fBuffer, fBufferSize);
 }
 
-void PrintChildNodes( bool reverseOrder )
+void LoRaMac_PrintChildNodes( bool reverseOrder )
 {
     ListNodePointer_t tempNode;
     uint8_t i;
@@ -919,7 +1053,7 @@ void PrintChildNodes( bool reverseOrder )
     }
 }
 
-void PrintMulticastGroups( bool reverseOrder )
+void LoRaMac_PrintMulticastGroups( bool reverseOrder )
 {
     ListNodePointer_t tempGrp;
     uint8_t i;
@@ -938,169 +1072,207 @@ void PrintMulticastGroups( bool reverseOrder )
     }
 }
 
-/*****************************************************************************
- *                                                                           *
- * Task functions implementation                                             *
- *                                                                           *
- *****************************************************************************/
-void task_mac_state( task_param_t param )
+/*******************************************************************************
+ * PUBLIC SETUP FUNCTIONS
+ ******************************************************************************/
+void LoRaMac_SetDeviceClass( DeviceClass_t deviceClass )
 {
-    LOG_TRACE("Starting mac state task...");
+    LoRaMacDeviceClass = deviceClass;
+}
 
-    while (1) {
-        if ( LoRaMacEventFlags.Bits.Tx == 1 ) {
-            if ( NodeAckRequested == false ) {
-                if ( LoRaMacEventFlags.Bits.JoinAccept == true ) {
-                    // Join messages aren't repeated automatically
-                    ChannelsNbRepCounter = ChannelsNbRep;
-                    UpLinkCounter = 0;
-                }
-                if ( ChannelsNbRepCounter >= ChannelsNbRep ) {
-                    ChannelsNbRepCounter = 0;
-
-                    LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_OK;
-
-                    AdrAckCounter++;
-                    if ( IsUpLinkCounterFixed == false ) {
-                        UpLinkCounter++;
-                    }
-
-                    LoRaMacState &= ~MAC_TX_RUNNING;
-                } else {
-                    LoRaMacEventFlags.Bits.Tx = 0;
-                    // Sends the same frame again
-                    if ( SetNextChannel() == 0 ) {
-                        LoRaMacSendFrameOnChannel(Channels[Channel]);
-                    }
-                }
-            }
-
-            if ( LoRaMacEventFlags.Bits.Rx == 1 ) {
-                if ( (LoRaMacEventInfo.TxAckReceived == true)
-                        || (AckTimeoutRetriesCounter > AckTimeoutRetries) ) {
-                    AckTimeoutRetry = false;
-                    if ( IsUpLinkCounterFixed == false ) {
-                        UpLinkCounter++;
-                    }
-                    LoRaMacEventInfo.TxNbRetries = AckTimeoutRetriesCounter;
-
-                    LoRaMacState &= ~MAC_TX_RUNNING;
-                }
-            }
-
-            if ( (AckTimeoutRetry == true) && ((LoRaMacState & MAC_CHANNEL_CHECK) == 0) ) {
-                AckTimeoutRetry = false;
-                if ( (AckTimeoutRetriesCounter < AckTimeoutRetries)
-                        && (AckTimeoutRetriesCounter <= MAX_ACK_RETRIES) ) {
-                    AckTimeoutRetriesCounter++;
-
-                    if ( (AckTimeoutRetriesCounter % 2) == 1 ) {
-                        ChannelsDatarate = MAX(ChannelsDatarate - 1, LORAMAC_MIN_DATARATE);
-                    }
-                    LoRaMacEventFlags.Bits.Tx = 0;
-                    // Sends the same frame again
-                    if ( SetNextChannel() == 0 ) {
-                        LoRaMacSendFrameOnChannel(Channels[Channel]);
-                    }
-                } else {
-                    // Re-enable default channels LC1, LC2, LC3
-                    ChannelsMask[0] = ChannelsMask[0] | (LC(1) + LC(2) + LC(3));
-                    LoRaMacState &= ~MAC_TX_RUNNING;
-
-                    LoRaMacEventInfo.TxAckReceived = false;
-                    LoRaMacEventInfo.TxNbRetries = AckTimeoutRetriesCounter;
-                    if ( IsUpLinkCounterFixed == false ) {
-                        UpLinkCounter++;
-                    }
-                    LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_OK;
-                }
-            }
-        }
-
-        // Handle reception for Class B and Class C
-        if ( (LoRaMacState & MAC_RX) == MAC_RX ) {
-            LoRaMacState &= ~MAC_RX;
-        }
-
-        if ( LoRaMacState == MAC_IDLE ) {
-            Notify(&LoRaMacEventFlags, &LoRaMacEventInfo);
-        }
-        OSA_TimeDelay(1000); // Check state every second
+void LoRaMac_SetPublicNetwork( bool enable )
+{
+    PublicNetwork = enable;
+    Radio.SetModem(MODEM_LORA);
+    if ( PublicNetwork == true ) {
+        // Change LoRa modem SyncWord
+        Radio.Write(REG_LR_SYNCWORD, LORA_MAC_PUBLIC_SYNCWORD);
+    } else {
+        // Change LoRa modem SyncWord
+        Radio.Write(REG_LR_SYNCWORD, LORA_MAC_PRIVATE_SYNCWORD);
     }
 }
 
-void task_send( task_param_t param )
+void LoRaMac_SetChannel( uint8_t id, ChannelParams_t params )
 {
-    osa_status_t status;
-    RadioTxMsg_t txMessage;
-
-    LOG_TRACE("Starting send task...");
-
-    while (1) {
-        status = OSA_MsgQGet(txMsgQueue, &txMessage, OSA_WAIT_FOREVER);
-        if ( status != kStatus_OSA_Success ) {
-            LOG_ERROR("Couldn't retrieve message from tx queue.");
+    params.Band = 0;
+    Channels[id] = params;
+// Activate the newly created channel
+    if ( id < 16 ) {
+        ChannelsMask[0] |= 1 << id;
+    } else if ( id < 32 ) {
+        ChannelsMask[1] |= 1 << (id - 16);
+    } else if ( id < 48 ) {
+        ChannelsMask[2] |= 1 << (id - 32);
+    } else if ( id < 64 ) {
+        ChannelsMask[3] |= 1 << (id - 48);
+    } else if ( id < 72 ) {
+        ChannelsMask[4] |= 1 << (id - 64);
+    } else {
+        // Don't activate the channel
+    }
+#if defined( USE_BAND_868 )
+    if( ( Channels[id].Frequency >= 865000000 ) && ( Channels[id].Frequency <= 868000000 ) )
+    {
+        if( Channels[id].Band != BAND_G1_0 )
+        {
+            Channels[id].Band = BAND_G1_0;
         }
-
-        while (LoRaMacState != MAC_IDLE) {
-            OSA_TimeDelay(50);
+    }
+    else if( ( Channels[id].Frequency > 868000000 ) && ( Channels[id].Frequency <= 868600000 ) )
+    {
+        if( Channels[id].Band != BAND_G1_1 )
+        {
+            Channels[id].Band = BAND_G1_1;
         }
-
-        /*! Send message */
-        Radio.SetChannel(txMessage.channel.Frequency);
-        Radio.SetMaxPayloadLength(MODEM_LORA, txMessage.bufferSize);
-        Radio.SetTxConfig(txMessage.config.modem, txMessage.config.power, txMessage.config.fdev,
-                txMessage.config.bandwidth, txMessage.config.datarate, txMessage.config.coderate,
-                txMessage.config.preambleLen, txMessage.config.fixLen, txMessage.config.crcOn,
-                txMessage.config.FreqHopOn, txMessage.config.HopPeriod, txMessage.config.iqInverted,
-                txMessage.config.timeout);
-        TxTimeOnAir = Radio.TimeOnAir(txMessage.config.modem, txMessage.bufferSize);
-
-        if ( MaxDCycle == 255 ) {
-            return;
+    }
+    else if( ( Channels[id].Frequency >= 868700000 ) && ( Channels[id].Frequency <= 869200000 ) )
+    {
+        if( Channels[id].Band != BAND_G1_2 )
+        {
+            Channels[id].Band = BAND_G1_2;
         }
-        if ( MaxDCycle == 0 ) {
-            AggregatedTimeOff = 0;
+    }
+    else if( ( Channels[id].Frequency >= 869400000 ) && ( Channels[id].Frequency <= 869650000 ) )
+    {
+        if( Channels[id].Band != BAND_G1_3 )
+        {
+            Channels[id].Band = BAND_G1_3;
         }
-
-        LoRaMacState |= MAC_TX_RUNNING;
-
-        if ( MAX(Bands[txMessage.channel.Band].TimeOff, AggregatedTimeOff)
-                > (TimerGetCurrentTime()) ) {
-            // Schedule transmission
-            LOG_TRACE("Send in %d ticks on channel %d (DR: %u).",
-                    MAX(Bands[txMessage.channel.Band].TimeOff, AggregatedTimeOff),
-                    txMessage.channel.Frequency, txMessage.config.datarate);
-            OSA_TimeDelay(MAX(Bands[txMessage.channel.Band].TimeOff, AggregatedTimeOff));
+    }
+    else if( ( Channels[id].Frequency >= 869700000 ) && ( Channels[id].Frequency <= 870000000 ) )
+    {
+        if( Channels[id].Band != BAND_G1_4 )
+        {
+            Channels[id].Band = BAND_G1_4;
         }
-        // Send now
-        LOG_TRACE("Sending now on channel %d (DR: %u).", txMessage.channel.Frequency,
-                txMessage.config.datarate);
-        Radio.Send(LoRaMacBuffer, LoRaMacBufferPktLen);
+    }
+    else
+    {
+        Channels[id].Frequency = 0;
+        Channels[id].DrRange.Value = 0;
+    }
+#else
+#error "Please define a frequency band in the compiler options."
+#endif
+// Check if it is a valid channel
+    if ( Channels[id].Frequency == 0 ) {
+        LoRaMac_ChannelRemove(id);
     }
 }
 
-void task_receive( task_param_t param )
+void LoRaMac_ChannelRemove( uint8_t id )
 {
-    osa_status_t status;
-    RadioRxMsg_t rxMessage;
+    if ( (LoRaMacState & MAC_TX_RUNNING) == MAC_TX_RUNNING ) {
+        return;
+    }
+    if ( id < 3 ) {
+        return;
+    }
 
-    LOG_TRACE("Starting receive task...");
+    uint8_t index = 0;
+    index = id / 16;
 
-    while (1) {
-        status = OSA_MsgQGet(rxMsgQueue, &rxMessage, OSA_WAIT_FOREVER);
-        if ( status == kStatus_OSA_Success ) {
-            /*! Receive message */
-        }
+    if ( (index > 4) || (id >= LORA_MAX_NB_CHANNELS) ) {
+        return;
+    }
+
+// Deactivate channel
+    ChannelsMask[index] &= ~(1 << (id % 16));
+
+    return;
+}
+
+void LoRaMac_SetRx2Channel( Rx2ChannelParams_t param )
+{
+    Rx2Channel = param;
+}
+
+void LoRaMac_SetChannelsTxPower( int8_t txPower )
+{
+    if ( (txPower >= LORAMAC_MAX_TX_POWER) && (txPower <= LORAMAC_MIN_TX_POWER) ) {
+        ChannelsTxPower = txPower;
     }
 }
 
-/*****************************************************************************
- *                                                                           *
- * Test functions implementation                                             *
- *                                                                           *
- *****************************************************************************/
-uint8_t LoRaMacSend( LoRaMacHeader_t *macHdr, uint8_t *fOpts, uint8_t fPort, void *fBuffer,
+void LoRaMac_SetChannelsDatarate( int8_t datarate )
+{
+    ChannelsDefaultDatarate = ChannelsDatarate = datarate;
+}
+
+void LoRaMac_SetChannelsMask( uint16_t *mask )
+{
+    if ( (mask[0] & 0x0007) != 0x0007 ) {
+    } else {
+        LoRaMacMemCpy((uint8_t*) mask, (uint8_t*) ChannelsMask, 2);
+    }
+}
+
+void LoRaMac_SetChannelsNbRep( uint8_t nbRep )
+{
+    if ( nbRep < 1 ) {
+        nbRep = 1;
+    }
+    if ( nbRep > 15 ) {
+        nbRep = 15;
+    }
+    ChannelsNbRep = nbRep;
+}
+
+void LoRaMac_SetMaxRxWindow( uint32_t delay )
+{
+    MaxRxWindow = delay;
+}
+
+void LoRaMac_SetReceiveDelay1( uint32_t delay )
+{
+    ReceiveDelay1 = delay;
+}
+
+void LoRaMac_SetReceiveDelay2( uint32_t delay )
+{
+    ReceiveDelay2 = delay;
+}
+
+void LoRaMac_SetJoinAcceptDelay1( uint32_t delay )
+{
+    JoinAcceptDelay1 = delay;
+}
+
+void LoRaMac_SetJoinAcceptDelay2( uint32_t delay )
+{
+    JoinAcceptDelay2 = delay;
+}
+
+uint32_t LoRaMac_GetUpLinkCounter( void )
+{
+    return UpLinkCounter;
+}
+
+uint32_t LoRaMac_GetDownLinkCounter( void )
+{
+    return DownLinkCounter;
+}
+
+void LoRaMac_AddChildNode( uint32_t nodeAddr )
+{
+    ChildNodeInfo_t* childNode = CreateChildNode(nodeAddr, (uint8_t*) &LoRaMacNwkSKey,
+            (uint8_t*) &LoRaMacAppSKey, 868100000, 1000000);
+
+    ChildNodeAdd(childNode);
+}
+
+void LoRaMac_AddMulticastGroup( uint32_t grpAddr )
+{
+    MulticastGroupInfo_t* multicastGrp = CreateMulticastGroup(grpAddr, (uint8_t*) &LoRaMacNwkSKey,
+            (uint8_t*) &LoRaMacAppSKey, 868100000, 2000000);
+    MulticastGroupAdd(multicastGrp);
+}
+
+/*******************************************************************************
+ * PRIVATE FUNCTIONS (STATIC)
+ ******************************************************************************/
+uint8_t Send( LoRaMacHeader_t *macHdr, uint8_t *fOpts, uint8_t fPort, void *fBuffer,
         uint16_t fBufferSize )
 {
     LoRaMacFrameCtrl_t fCtrl;
@@ -1114,15 +1286,33 @@ uint8_t LoRaMacSend( LoRaMacHeader_t *macHdr, uint8_t *fOpts, uint8_t fPort, voi
     fCtrl.Bits.Adr = AdrCtrlOn;
 
     if ( SetNextChannel() == 0 ) {
-        return LoRaMacSendOnChannel(Channels[Channel], macHdr, &fCtrl, fOpts, fPort, fBuffer,
-                fBufferSize);
+        return SendOnChannel(Channels[Channel], macHdr, &fCtrl, fOpts, fPort, fBuffer, fBufferSize);
     }
     return 5;
 }
 
-uint8_t LoRaMacPrepareFrame( ChannelParams_t channel, LoRaMacHeader_t *macHdr,
-        LoRaMacFrameCtrl_t *fCtrl, uint8_t *fOpts, uint8_t fPort, void *fBuffer,
-        uint16_t fBufferSize )
+uint8_t SendOnChannel( ChannelParams_t channel, LoRaMacHeader_t *macHdr, LoRaMacFrameCtrl_t *fCtrl,
+        uint8_t *fOpts, uint8_t fPort, void *fBuffer, uint16_t fBufferSize )
+{
+    uint8_t status = 0;
+
+    if ( (LoRaMacState & MAC_TX_RUNNING) == MAC_TX_RUNNING ) {
+        return 1;   // MAC is busy transmitting a previous frame
+    }
+
+    status = PrepareFrame(channel, macHdr, fCtrl, fOpts, fPort, fBuffer, fBufferSize);
+    if ( status != 0 ) {
+        return status;
+    }
+
+    LoRaMacEventInfo.TxNbRetries = 0;
+    LoRaMacEventInfo.TxAckReceived = false;
+
+    return SendFrameOnChannel(channel);
+}
+
+uint8_t PrepareFrame( ChannelParams_t channel, LoRaMacHeader_t *macHdr, LoRaMacFrameCtrl_t *fCtrl,
+        uint8_t *fOpts, uint8_t fPort, void *fBuffer, uint16_t fBufferSize )
 {
     uint16_t i;
     uint8_t pktHeaderLen = 0;
@@ -1142,7 +1332,7 @@ uint8_t LoRaMacPrepareFrame( ChannelParams_t channel, LoRaMacHeader_t *macHdr,
 
     LoRaMacBuffer[pktHeaderLen++] = macHdr->Value;
 
-    switch (macHdr->Bits.MType) {
+    switch ( macHdr->Bits.MType ) {
         case FRAME_TYPE_JOIN_REQ:
             RxWindow1Delay = JoinAcceptDelay1 - RADIO_WAKEUP_TIME;
             RxWindow2Delay = JoinAcceptDelay2 - RADIO_WAKEUP_TIME;
@@ -1172,7 +1362,7 @@ uint8_t LoRaMacPrepareFrame( ChannelParams_t channel, LoRaMacHeader_t *macHdr,
             //Intentional falltrough
         case FRAME_TYPE_DATA_UNCONFIRMED_UP:
             if ( IsLoRaMacNetworkJoined == false ) {
-                return 2; // No network has been joined yet
+                return 2;   // No network has been joined yet
             }
 
             RxWindow1Delay = ReceiveDelay1 - RADIO_WAKEUP_TIME;
@@ -1275,9 +1465,10 @@ uint8_t LoRaMacPrepareFrame( ChannelParams_t channel, LoRaMacHeader_t *macHdr,
 
     return 0;
 }
-static RadioTxMsg_t s_txMessage;
-uint8_t LoRaMacSendFrameOnChannel( ChannelParams_t channel )
+
+uint8_t SendFrameOnChannel( ChannelParams_t channel )
 {
+    RadioTxMsg_t txMessage;
     osa_status_t status;
 
     LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
@@ -1285,32 +1476,32 @@ uint8_t LoRaMacSendFrameOnChannel( ChannelParams_t channel )
 
     ChannelsTxPower = LimitTxPower(ChannelsTxPower);
 
-    s_txMessage.buffer = (uint8_t *) &LoRaMacBuffer;
-    s_txMessage.bufferSize = LoRaMacBufferPktLen;
-    s_txMessage.channel = channel;
-    s_txMessage.config.power = TxPowers[ChannelsTxPower];
-    s_txMessage.config.bandwidth = ((ChannelsDatarate == DR_6) ? 1 : 0);
-    s_txMessage.config.fixLen = false;
-    s_txMessage.config.crcOn = true;
-    s_txMessage.config.FreqHopOn = 0;
-    s_txMessage.config.HopPeriod = 0;
-    s_txMessage.config.iqInverted = false;
-    s_txMessage.config.timeout = 3e6;
+    txMessage.buffer = (uint8_t *) &LoRaMacBuffer;
+    txMessage.bufferSize = LoRaMacBufferPktLen;
+    txMessage.channel = channel;
+    txMessage.config.power = TxPowers[ChannelsTxPower];
+    txMessage.config.bandwidth = ((ChannelsDatarate == DR_6) ? 1 : 0);
+    txMessage.config.fixLen = false;
+    txMessage.config.crcOn = true;
+    txMessage.config.FreqHopOn = 0;
+    txMessage.config.HopPeriod = 0;
+    txMessage.config.iqInverted = false;
+    txMessage.config.timeout = 3e6;
 
-    if ( ChannelsDatarate == DR_7 ) { // High Speed FSK channel
-        s_txMessage.config.modem = MODEM_FSK;
-        s_txMessage.config.fdev = 25e3;
-        s_txMessage.config.datarate = Datarates[ChannelsDatarate] * 1e3;
-        s_txMessage.config.coderate = 0;
-        s_txMessage.config.preambleLen = 5;
-    } else { // Normal LoRa channel
-        s_txMessage.config.modem = MODEM_LORA;
-        s_txMessage.config.fdev = 0;
-        s_txMessage.config.datarate = Datarates[ChannelsDatarate];
-        s_txMessage.config.coderate = 1;
-        s_txMessage.config.preambleLen = 8;
+    if ( ChannelsDatarate == DR_7 ) {   // High Speed FSK channel
+        txMessage.config.modem = MODEM_FSK;
+        txMessage.config.fdev = 25e3;
+        txMessage.config.datarate = Datarates[ChannelsDatarate] * 1e3;
+        txMessage.config.coderate = 0;
+        txMessage.config.preambleLen = 5;
+    } else {   // Normal LoRa channel
+        txMessage.config.modem = MODEM_LORA;
+        txMessage.config.fdev = 0;
+        txMessage.config.datarate = Datarates[ChannelsDatarate];
+        txMessage.config.coderate = 1;
+        txMessage.config.preambleLen = 8;
     }
-    status = OSA_MsgQPut(txMsgQueue, &s_txMessage);
+    status = OSA_MsgQPut(txMsgQueue, &txMessage);
     if ( status != kStatus_OSA_Success ) {
         LOG_ERROR("Failed to add tx message to queue.");
         return 1;
@@ -1318,28 +1509,7 @@ uint8_t LoRaMacSendFrameOnChannel( ChannelParams_t channel )
     return 0;
 }
 
-uint8_t LoRaMacSendOnChannel( ChannelParams_t channel, LoRaMacHeader_t *macHdr,
-        LoRaMacFrameCtrl_t *fCtrl, uint8_t *fOpts, uint8_t fPort, void *fBuffer,
-        uint16_t fBufferSize )
-{
-    uint8_t status = 0;
-
-    if ( (LoRaMacState & MAC_TX_RUNNING) == MAC_TX_RUNNING ) {
-        return 1; // MAC is busy transmitting a previous frame
-    }
-
-    status = LoRaMacPrepareFrame(channel, macHdr, fCtrl, fOpts, fPort, fBuffer, fBufferSize);
-    if ( status != 0 ) {
-        return status;
-    }
-
-    LoRaMacEventInfo.TxNbRetries = 0;
-    LoRaMacEventInfo.TxAckReceived = false;
-
-    return LoRaMacSendFrameOnChannel(channel);
-}
-
-void LoRaMacRxWindowSetup( uint32_t freq, int8_t datarate, uint32_t bandwidth, uint16_t timeout,
+void RxWindowSetup( uint32_t freq, int8_t datarate, uint32_t bandwidth, uint16_t timeout,
         bool rxContinuous )
 {
     if ( Radio.GetStatus() == RF_IDLE ) {
@@ -1354,39 +1524,24 @@ void LoRaMacRxWindowSetup( uint32_t freq, int8_t datarate, uint32_t bandwidth, u
         if ( rxContinuous == false ) {
             Radio.Rx(MaxRxWindow);
         } else {
-            Radio.Rx(0); // Continuous mode
+            Radio.Rx(0);   // Continuous mode
         }
     }
 }
 
-void LoRaMacBcnRxWindowSetup( void )
+void AdvertisingRxWindowSetup( void )
 {
-    Radio.SetChannel(ADV_BEACON_FREQUENCY);
-    if ( ADV_BEACON_DATARATE == DR_7 ) {
-        Radio.SetRxConfig(MODEM_FSK, 50e3, Datarates[ADV_BEACON_DATARATE] * 1e3, 0, 83.333e3, 5, 0,
-                false, 0, true, false, 0, false, true);
+    Radio.SetChannel(ADV_CHANNEL_FREQUENCY);
+    if ( ADV_DATARATE == DR_7 ) {
+        Radio.SetRxConfig(MODEM_FSK, 50e3, Datarates[ADV_DATARATE] * 1e3, 0, 83.333e3, 5, 0, false,
+                0, true, false, 0, false, true);
     } else {
-        Radio.SetRxConfig(MODEM_LORA, ADV_BEACON_BANDWIDTH, Datarates[ADV_BEACON_DATARATE], 1, 0, 8,
-                5, ADV_BEACON_EXPLICIT_HDR_OFF, ADV_BEACON_LEN, ADV_BEACON_CRC_ON, false, 0, false,
-                true);
+        Radio.SetRxConfig(MODEM_LORA, ADV_BANDWIDTH, Datarates[ADV_DATARATE], 1, 0, 8, 5,
+                ADV_EXPLICIT_HDR_OFF, ADV_PACKET_LEN, ADV_CRC_ON, false, 0, false, true);
     }
 }
 
-void LoRaMeshAddChildNode( uint32_t nodeAddr )
-{
-    ChildNodeInfo_t* childNode = CreateChildNode(nodeAddr, (uint8_t*) &LoRaMacNwkSKey,
-            (uint8_t*) &LoRaMacAppSKey, 868100000, 1000000);
-    ChildNodeAdd(childNode);
-}
-
-void LoRaMeshAddMulticastGroup( uint32_t grpAddr )
-{
-    MulticastGroupInfo_t* multicastGrp = CreateMulticastGroup(grpAddr, (uint8_t*) &LoRaMacNwkSKey,
-            (uint8_t*) &LoRaMacAppSKey, 868100000, 2000000);
-    MulticastGroupAdd(multicastGrp);
-}
-
-uint8_t LoRaMeshSendAdvertisingBeacon( void )
+uint8_t SendAdvertising( void )
 {
     RadioTxMsg_t txMessage;
     osa_status_t status;
@@ -1398,14 +1553,14 @@ uint8_t LoRaMeshSendAdvertisingBeacon( void )
     txMessage.bufferSize = LoRaMacBufferPktLen;
     txMessage.channel.Frequency = AdvertisingSlot.Frequency;
     txMessage.config.modem = MODEM_LORA;
-    txMessage.config.power = TxPowers[ADV_BEACON_TX_POWER];
+    txMessage.config.power = TxPowers[ADV_TX_POWER];
     txMessage.config.fdev = 0;
-    txMessage.config.bandwidth = ADV_BEACON_BANDWIDTH;
+    txMessage.config.bandwidth = ADV_BANDWIDTH;
     txMessage.config.datarate = Datarates[ChannelsDatarate];
     txMessage.config.coderate = 1;
     txMessage.config.preambleLen = 8;
-    txMessage.config.fixLen = ADV_BEACON_EXPLICIT_HDR_OFF;
-    txMessage.config.crcOn = ADV_BEACON_CRC_ON;
+    txMessage.config.fixLen = ADV_EXPLICIT_HDR_OFF;
+    txMessage.config.crcOn = ADV_CRC_ON;
     txMessage.config.FreqHopOn = 0;
     txMessage.config.HopPeriod = 0;
     txMessage.config.iqInverted = false;
@@ -1432,10 +1587,10 @@ uint8_t LoRaMeshSendAdvertisingBeacon( void )
     LoRaMacBuffer[9] = (uint8_t)((timestamp >> 8) & 0xFF);
     LoRaMacBuffer[10] = (uint8_t)((timestamp >> 16) & 0xFF);
     LoRaMacBuffer[11] = (uint8_t)((timestamp >> 24) & 0xFF);
-    LoRaMacBuffer[12] = (uint8_t)((AdvertisingSlot.Periodicity / 1000000) & 0xFF); // Periodicity is transmitted in seconds
-    LoRaMacBuffer[13] = (uint8_t)((AdvertisingSlot.Duration / 1000) & 0xFF); // Periodicity is transmitted in milliseconds
+    LoRaMacBuffer[12] = (uint8_t)((AdvertisingSlot.Periodicity / 1000000) & 0xFF);   // Periodicity is transmitted in seconds
+    LoRaMacBuffer[13] = (uint8_t)((AdvertisingSlot.Duration / 1000) & 0xFF);   // Periodicity is transmitted in milliseconds
 
-    LoRaMacBufferPktLen = ADV_BEACON_LEN;
+    LoRaMacBufferPktLen = ADV_PACKET_LEN;
 
     status = OSA_MsgQPut(txMsgQueue, &txMessage);
     if ( status != kStatus_OSA_Success ) {
@@ -1449,11 +1604,7 @@ uint8_t LoRaMeshSendAdvertisingBeacon( void )
     return 0;
 }
 
-/*****************************************************************************
- *                                                                           *
- * Event functions implementation                                            *
- *                                                                           *
- *****************************************************************************/
+/*************************** Radio Event Functions ***************************/
 void OnRadioTxDone( void )
 {
     LOG_TRACE("Transmitted successfully.");
@@ -1480,7 +1631,7 @@ void OnRadioTxDone( void )
     if ( LoRaMacEventFlags.Bits.Advertising == 1 ) {
         LoRaMacEventFlags.Bits.Advertising = 0;
         /* Open advertising beacon reception window */
-        LoRaMacBcnRxWindowSetup();
+        AdvertisingRxWindowSetup();
     } else if ( IsRxWindowsEnabled == true ) {
         if ( RxWindowTimer1.PeriodInMs != RxWindow1Delay )
             TimerSetValue(&RxWindowTimer1, RxWindow1Delay);
@@ -1512,13 +1663,13 @@ void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr )
     /* Check if incoming packet is an advertising beacon */
     if ( (LoRaMacDeviceClass == CLASS_D) && (LoRaMacEventFlags.Bits.RxSlot == 0) ) {
         LOG_TRACE("Received advertising beacon.");
-        ProcessAdvertisingBeacon(payload, size);
+        ProcessAdvertisingPacket(payload, size);
         return;
     }
 
     macHdr.Value = (uint8_t) * payload;
 
-    switch (macHdr.Bits.MType) {
+    switch ( macHdr.Bits.MType ) {
         case FRAME_TYPE_JOIN_REQ:
             LOG_TRACE("Received join request.");
             break;
@@ -1574,7 +1725,7 @@ void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr )
                         param.Frequency = ((uint32_t) LoRaMacRxPayload[13 + j]
                                 | ((uint32_t) LoRaMacRxPayload[14 + j] << 8)
                                 | ((uint32_t) LoRaMacRxPayload[15 + j] << 16)) * 100;
-                        LoRaMacSetChannel(i, param);
+                        LoRaMac_SetChannel(i, param);
                     }
                 }
 
@@ -1676,6 +1827,7 @@ void OnRadioRxError( void )
     }
 }
 
+/*************************** Timer Event Functions ***************************/
 void OnChannelCheckTimerEvent( TimerHandle_t xTimer )
 {
     TimerStop(&ChannelCheckTimer);
@@ -1683,16 +1835,16 @@ void OnChannelCheckTimerEvent( TimerHandle_t xTimer )
     LoRaMacState &= ~MAC_CHANNEL_CHECK;
     if ( SetNextChannel() == 0 ) {
         if ( (LoRaMacState & MAC_TX_RUNNING) == MAC_TX_RUNNING ) {
-            LoRaMacSendFrameOnChannel(Channels[Channel]);
+            SendFrameOnChannel(Channels[Channel]);
         }
     }
 }
 
 void OnRxWindow1TimerEvent( TimerHandle_t xTimer )
 {
-    uint16_t symbTimeout = 5; // DR_2, DR_1, DR_0
+    uint16_t symbTimeout = 5;   // DR_2, DR_1, DR_0
     int8_t datarate = 0;
-    uint32_t bandwidth = 0; // LoRa 125 kHz
+    uint32_t bandwidth = 0;   // LoRa 125 kHz
 
     TimerStop(&RxWindowTimer1);
     LoRaMacEventFlags.Bits.RxSlot = 1;
@@ -1708,21 +1860,21 @@ void OnRxWindow1TimerEvent( TimerHandle_t xTimer )
     }
 
 // For higher datarates, we increase the number of symbols generating a Rx Timeout
-    if ( datarate >= DR_3 ) { // DR_6, DR_5, DR_4, DR_3
+    if ( datarate >= DR_3 ) {   // DR_6, DR_5, DR_4, DR_3
         symbTimeout = 8;
     }
-    if ( datarate == DR_6 ) { // LoRa 250 kHz
+    if ( datarate == DR_6 ) {   // LoRa 250 kHz
         bandwidth = 1;
     }
     LOG_TRACE("Open Rx window 1 (Channel : %u / DR: %u).", Channels[Channel].Frequency,
             Datarates[datarate]);
-    LoRaMacRxWindowSetup(Channels[Channel].Frequency, datarate, bandwidth, symbTimeout, false);
+    RxWindowSetup(Channels[Channel].Frequency, datarate, bandwidth, symbTimeout, false);
 }
 
 void OnRxWindow2TimerEvent( TimerHandle_t xTimer )
 {
-    uint16_t symbTimeout = 5; // DR_2, DR_1, DR_0
-    uint32_t bandwidth = 0; // LoRa 125 kHz
+    uint16_t symbTimeout = 5;   // DR_2, DR_1, DR_0
+    uint32_t bandwidth = 0;   // LoRa 125 kHz
 
     TimerStop(&RxWindowTimer2);
     LoRaMacEventFlags.Bits.RxSlot = 2;
@@ -1733,23 +1885,21 @@ void OnRxWindow2TimerEvent( TimerHandle_t xTimer )
     }
 
 // For higher datarates, we increase the number of symbols generating a Rx Timeout
-    if ( Rx2Channel.Datarate >= DR_3 ) { // DR_6, DR_5, DR_4, DR_3
+    if ( Rx2Channel.Datarate >= DR_3 ) {   // DR_6, DR_5, DR_4, DR_3
         symbTimeout = 8;
     }
-    if ( Rx2Channel.Datarate == DR_6 ) { // LoRa 250 kHz
+    if ( Rx2Channel.Datarate == DR_6 ) {   // LoRa 250 kHz
         bandwidth = 1;
     }
 
     if ( LoRaMacDeviceClass != CLASS_C ) {
         LOG_TRACE("Open single Rx window 2 (Channel : %u / DR: %u).", Rx2Channel.Frequency,
                 Datarates[Rx2Channel.Datarate]);
-        LoRaMacRxWindowSetup(Rx2Channel.Frequency, Rx2Channel.Datarate, bandwidth, symbTimeout,
-                false);
+        RxWindowSetup(Rx2Channel.Frequency, Rx2Channel.Datarate, bandwidth, symbTimeout, false);
     } else {
         LOG_TRACE("Open continuous Rx window 2 (Channel : %u / DR: %u).", Rx2Channel.Frequency,
                 Datarates[Rx2Channel.Datarate]);
-        LoRaMacRxWindowSetup(Rx2Channel.Frequency, Rx2Channel.Datarate, bandwidth, symbTimeout,
-                true);
+        RxWindowSetup(Rx2Channel.Frequency, Rx2Channel.Datarate, bandwidth, symbTimeout, true);
     }
 }
 
@@ -1760,7 +1910,7 @@ void OnRxSynchWindowTimerEvent( TimerHandle_t xTimer )
 
 void OnAdvBcnRxWindowTimerEvent( TimerHandle_t xTimer )
 {
-    TimerStop(&AdvBcnRxWindowTimer);
+    TimerStop (&AdvBcnRxWindowTimer);
 
     if ( LoRaMacEventFlags.Bits.RxSlot == 0 ) {
         uint64_t curTime = TimerGetCurrentTime();
@@ -1776,7 +1926,7 @@ void OnAdvBcnTimerEvent( TimerHandle_t xTimer )
     LOG_TRACE("Advertising beacon timer event occurred (%d%d)", *(((int*) (&curTime)) + 1),
             curTime);
 
-    TimerStop(&AdvBcnTimer);
+    TimerStop (&AdvBcnTimer);
     LoRaMacEventFlags.Bits.Rx = 0;
 
     if ( AdvertisingSlot.Periodicity != AdvBcnTimer.PeriodInMs ) {
@@ -1789,10 +1939,10 @@ void OnAdvBcnTimerEvent( TimerHandle_t xTimer )
     /* Randomize sending of advertising beacon */
     TimerSetValue(&AdvBcnSendDelayTimer, randr(0, AdvertisingSlot.Duration));
     /* Start advertising beacon send delay timer */
-    TimerStart(&AdvBcnSendDelayTimer);
+    TimerStart (&AdvBcnSendDelayTimer);
 
     /* Open advertising beacon reception window */
-    LoRaMacBcnRxWindowSetup();
+    AdvertisingRxWindowSetup();
 
     if ( IsLoRaMacNetworkJoined ) {
         TimerSetValue(&AdvBcnRxWindowTimer, AdvertisingSlot.Duration);
@@ -1800,7 +1950,7 @@ void OnAdvBcnTimerEvent( TimerHandle_t xTimer )
         TimerSetValue(&AdvBcnRxWindowTimer, AdvertisingSlot.Duration * 3);
     }
     /* Start advertising beacon send delay timer */
-    TimerStart(&AdvBcnRxWindowTimer);
+    TimerStart (&AdvBcnRxWindowTimer);
 }
 
 void OnAdvBcnSendDelayTimerEvent( TimerHandle_t xTimer )
@@ -1809,11 +1959,11 @@ void OnAdvBcnSendDelayTimerEvent( TimerHandle_t xTimer )
     LOG_TRACE("Advertising beacon send delay timer event occurred (%d%d)",
             *(((int*) (&currTime)) + 1), currTime);
 
-    TimerStop(&AdvBcnSendDelayTimer);
+    TimerStop (&AdvBcnSendDelayTimer);
     Radio.Standby();
 
     /* Send advertising beacon */
-    LoRaMeshSendAdvertisingBeacon();
+    SendAdvertising();
 }
 
 void OnAckTimeoutTimerEvent( TimerHandle_t xTimer )
@@ -1824,12 +1974,8 @@ void OnAckTimeoutTimerEvent( TimerHandle_t xTimer )
     LoRaMacState &= ~MAC_ACK_REQ;
 }
 
-/*****************************************************************************
- *                                                                           *
- * Utility functions implementation                                          *
- *                                                                           *
- *****************************************************************************/
-void ProcessAdvertisingBeacon( uint8_t *payload, uint16_t size )
+/***************************** Utility Functions *****************************/
+void ProcessAdvertisingPacket( uint8_t *payload, uint16_t size )
 {
     uint32_t nwkId, cAddr, advTime, advPeriodicity, advDuration;
 
@@ -1881,7 +2027,7 @@ void ProcessAdvertisingBeacon( uint8_t *payload, uint16_t size )
         uint32_t nextBcnDelay;
         AdvertisingSlot.Periodicity = advPeriodicity;
         nextBcnDelay = advTime - GpsGetCurrentUnixTime();
-        TimerStop(&AdvBcnTimer);
+        TimerStop (&AdvBcnTimer);
         TimerSetValue(&AdvBcnTimer, nextBcnDelay);
         TimerStart(&AdvBcnTimer);
     }
@@ -2089,7 +2235,7 @@ uint8_t AddMacCommand( uint8_t cmd, uint8_t p1, uint8_t p2 )
     }
 
     MacCommandsBuffer[MacCommandsBufferIndex++] = cmd;
-    switch (cmd) {
+    switch ( cmd ) {
         case MOTE_MAC_LINK_CHECK_REQ:
             // No payload for this command
             break;
@@ -2130,9 +2276,9 @@ uint8_t AddMacCommand( uint8_t cmd, uint8_t p1, uint8_t p2 )
 
 void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t commandsSize )
 {
-    while (macIndex < commandsSize) {
+    while ( macIndex < commandsSize ) {
         // Decode Frame MAC commands
-        switch (payload[macIndex++]) {
+        switch ( payload[macIndex++] ) {
             case SRV_MAC_LINK_CHECK_ANS:
                 LoRaMacEventFlags.Bits.LinkCheck = 1;
                 LoRaMacEventInfo.DemodMargin = payload[macIndex++];
@@ -2157,11 +2303,11 @@ void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t commandsSiz
                 datarate = (datarate >> 4) & 0x0F;
 
                 if ( (AdrCtrlOn == false)
-                        && ((ChannelsDatarate != datarate) || (ChannelsTxPower != txPower)) ) { // ADR disabled don't handle ADR requests if server tries to change datarate or txpower
-                                                                                                // Answer the server with fail status
-                                                                                                // Power ACK     = 0
-                                                                                                // Data rate ACK = 0
-                                                                                                // Channel mask  = 0
+                        && ((ChannelsDatarate != datarate) || (ChannelsTxPower != txPower)) ) {   // ADR disabled don't handle ADR requests if server tries to change datarate or txpower
+                                                                                                  // Answer the server with fail status
+                                                                                                  // Power ACK     = 0
+                                                                                                  // Data rate ACK = 0
+                                                                                                  // Channel mask  = 0
                     AddMacCommand(MOTE_MAC_LINK_ADR_ANS, 0, 0);
                     macIndex += 3;                   // Skip over the remaining bytes of the request
                     break;
@@ -2176,10 +2322,10 @@ void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t commandsSiz
                     nbRep = 1;
                 }
                 if ( (chMaskCntl == 0) && (chMask == 0) ) {
-                    status &= 0xFE; // Channel mask KO
+                    status &= 0xFE;   // Channel mask KO
                 } else if ( (chMaskCntl >= 1) && (chMaskCntl <= 5) ) {
                     // RFU
-                    status &= 0xFE; // Channel mask KO
+                    status &= 0xFE;   // Channel mask KO
                 } else {
                     for ( uint8_t i = 0; i < LORA_MAX_NB_CHANNELS; i++ ) {
                         if ( chMaskCntl == 6 ) {
@@ -2187,8 +2333,8 @@ void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t commandsSiz
                                 chMask |= 1 << i;
                             }
                         } else {
-                            if ( ((chMask & (1 << i)) != 0) && (Channels[i].Frequency == 0) ) { // Trying to enable an undefined channel
-                                status &= 0xFE; // Channel mask KO
+                            if ( ((chMask & (1 << i)) != 0) && (Channels[i].Frequency == 0) ) {   // Trying to enable an undefined channel
+                                status &= 0xFE;   // Channel mask KO
                             }
                         }
                     }
@@ -2196,7 +2342,7 @@ void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t commandsSiz
                 }
                 if ( ((datarate < LORAMAC_MIN_DATARATE) || (datarate > LORAMAC_MAX_DATARATE))
                         == true ) {
-                    status &= 0xFD; // Datarate KO
+                    status &= 0xFD;   // Datarate KO
                 }
 
                 //
@@ -2204,7 +2350,7 @@ void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t commandsSiz
                 //
                 if ( ((LORAMAC_MAX_TX_POWER <= txPower) && (txPower <= LORAMAC_MIN_TX_POWER))
                         == false ) {
-                    status &= 0xFB; // TxPower KO
+                    status &= 0xFB;   // TxPower KO
                 }
                 if ( (status & 0x07) == 0x07 ) {
                     ChannelsDatarate = datarate;
@@ -2241,17 +2387,17 @@ void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t commandsSiz
                 freq *= 100;
 
                 if ( Radio.CheckRfFrequency(freq) == false ) {
-                    status &= 0xFE; // Channel frequency KO
+                    status &= 0xFE;   // Channel frequency KO
                 }
 
                 if ( ((datarate < LORAMAC_MIN_DATARATE) || (datarate > LORAMAC_MAX_DATARATE))
                         == true ) {
-                    status &= 0xFD; // Datarate KO
+                    status &= 0xFD;   // Datarate KO
                 }
 
                 if ( ((drOffset < LORAMAC_MIN_RX1_DR_OFFSET)
                         || (drOffset > LORAMAC_MAX_RX1_DR_OFFSET)) == true ) {
-                    status &= 0xFB; // Rx1DrOffset range KO
+                    status &= 0xFB;   // Rx1DrOffset range KO
                 }
 
                 if ( (status & 0x07) == 0x07 ) {
@@ -2285,11 +2431,11 @@ void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t commandsSiz
                 chParam.DrRange.Value = payload[macIndex++];
 
                 if ( (channelIndex < 3) || (channelIndex > LORA_MAX_NB_CHANNELS) ) {
-                    status &= 0xFE; // Channel frequency KO
+                    status &= 0xFE;   // Channel frequency KO
                 }
 
                 if ( Radio.CheckRfFrequency(chParam.Frequency) == false ) {
-                    status &= 0xFE; // Channel frequency KO
+                    status &= 0xFE;   // Channel frequency KO
                 }
 
                 if ( (chParam.DrRange.Fields.Min > chParam.DrRange.Fields.Max)
@@ -2297,10 +2443,10 @@ void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t commandsSiz
                                 && (chParam.DrRange.Fields.Min <= LORAMAC_MAX_DATARATE)) == false)
                         || (((LORAMAC_MIN_DATARATE <= chParam.DrRange.Fields.Max)
                                 && (chParam.DrRange.Fields.Max <= LORAMAC_MAX_DATARATE)) == false) ) {
-                    status &= 0xFD; // Datarate range KO
+                    status &= 0xFD;   // Datarate range KO
                 }
                 if ( (status & 0x03) == 0x03 ) {
-                    LoRaMacSetChannel(channelIndex, chParam);
+                    LoRaMac_SetChannel(channelIndex, chParam);
                 }
                 AddMacCommand(MOTE_MAC_NEW_CHANNEL_ANS, status, 0);
             }
@@ -2344,12 +2490,12 @@ uint8_t SetNextChannel( void )
 
     memset1(enabledChannels, 0, LORA_MAX_NB_CHANNELS);
 
-// Update Aggregated duty cycle
+    // Update Aggregated duty cycle
     if ( AggregatedTimeOff < (curTime - AggregatedLastTxDoneTime) ) {
         AggregatedTimeOff = 0;
     }
 
-// Update bands Time OFF
+    // Update bands Time OFF
     TimerTime_t minTime = (TimerTime_t)(-1);
     for ( i = 0; i < LORA_MAX_NB_BANDS; i++ ) {
         if ( DutyCycleOn == true ) {
@@ -2365,21 +2511,21 @@ uint8_t SetNextChannel( void )
         }
     }
 
-// Search how many channels are enabled
+    // Search how many channels are enabled
     for ( i = 0, k = 0; i < LORA_MAX_NB_CHANNELS; i += 16, k++ ) {
         for ( j = 0; j < 16; j++ ) {
             if ( (ChannelsMask[k] & (1 << j)) != 0 ) {
-                if ( Channels[i + j].Frequency == 0 ) { // Check if the channel is enabled
+                if ( Channels[i + j].Frequency == 0 ) {   // Check if the channel is enabled
                     continue;
                 }
                 if ( ((Channels[i + j].DrRange.Fields.Min <= ChannelsDatarate)
-                        && (ChannelsDatarate <= Channels[i + j].DrRange.Fields.Max)) == false ) { // Check if the current channel selection supports the given datarate
+                        && (ChannelsDatarate <= Channels[i + j].DrRange.Fields.Max)) == false ) {   // Check if the current channel selection supports the given datarate
                     continue;
                 }
-                if ( Bands[Channels[i + j].Band].TimeOff > 0 ) { // Check if the band is available for transmission
+                if ( Bands[Channels[i + j].Band].TimeOff > 0 ) {   // Check if the band is available for transmission
                     continue;
                 }
-                if ( AggregatedTimeOff > 0 ) { // Check if there is time available for transmission
+                if ( AggregatedTimeOff > 0 ) {   // Check if there is time available for transmission
                     continue;
                 }
                 enabledChannels[nbEnabledChannels++] = i + j;
@@ -2392,8 +2538,8 @@ uint8_t SetNextChannel( void )
         TimerStop(&ChannelCheckTimer);
         return 0;
     }
-// No free channel found.
-// Check again
+    // No free channel found.
+    // Check again
     if ( (LoRaMacState & MAC_CHANNEL_CHECK) == 0 ) {
         TimerSetValue(&ChannelCheckTimer, minTime);
         TimerStart(&ChannelCheckTimer);
@@ -2482,7 +2628,7 @@ ChildNodeInfo_t* ChildNodeFind( uint32_t devAddr )
     if ( ChildNodes != NULL ) {
         listNode = ChildNodes->head;
 
-        while (listNode != NULL) {
+        while ( listNode != NULL ) {
             tempNode = (ChildNodeInfo_t*) listNode->data;
             if ( tempNode->Address == devAddr ) return tempNode;
             listNode = listNode->next;
@@ -2552,7 +2698,7 @@ MulticastGroupInfo_t* MulticastGroupFind( uint32_t grpAddr )
     if ( ChildNodes != NULL ) {
         listNode = MulticastGroups->head;
 
-        while (listNode != NULL) {
+        while ( listNode != NULL ) {
             tempGrp = (MulticastGroupInfo_t*) listNode->data;
             if ( tempGrp->Address == grpAddr ) return tempGrp;
             listNode = listNode->next;
@@ -2579,207 +2725,25 @@ void MulticastGroupPrint( MulticastGroupInfo_t* multicastGrp )
     PRINTF("%-15s: %u\r\n", "Duration", multicastGrp->DownLinkSlot.Duration);
 }
 
-/*****************************************************************************
- *                                                                           *
- * Setup functions implementation                                            *
- *                                                                           *
- *****************************************************************************/
-void LoRaMacSetDeviceClass( DeviceClass_t deviceClass )
-{
-    LoRaMacDeviceClass = deviceClass;
-}
-
-void LoRaMacSetPublicNetwork( bool enable )
-{
-    PublicNetwork = enable;
-    Radio.SetModem(MODEM_LORA);
-    if ( PublicNetwork == true ) {
-        // Change LoRa modem SyncWord
-        Radio.Write(REG_LR_SYNCWORD, LORA_MAC_PUBLIC_SYNCWORD);
-    } else {
-        // Change LoRa modem SyncWord
-        Radio.Write(REG_LR_SYNCWORD, LORA_MAC_PRIVATE_SYNCWORD);
-    }
-}
-
-void LoRaMacSetChannel( uint8_t id, ChannelParams_t params )
-{
-    params.Band = 0;
-    Channels[id] = params;
-// Activate the newly created channel
-    if ( id < 16 ) {
-        ChannelsMask[0] |= 1 << id;
-    } else if ( id < 32 ) {
-        ChannelsMask[1] |= 1 << (id - 16);
-    } else if ( id < 48 ) {
-        ChannelsMask[2] |= 1 << (id - 32);
-    } else if ( id < 64 ) {
-        ChannelsMask[3] |= 1 << (id - 48);
-    } else if ( id < 72 ) {
-        ChannelsMask[4] |= 1 << (id - 64);
-    } else {
-        // Don't activate the channel
-    }
-#if defined( USE_BAND_868 )
-    if( ( Channels[id].Frequency >= 865000000 ) && ( Channels[id].Frequency <= 868000000 ) )
-    {
-        if( Channels[id].Band != BAND_G1_0 )
-        {
-            Channels[id].Band = BAND_G1_0;
-        }
-    }
-    else if( ( Channels[id].Frequency > 868000000 ) && ( Channels[id].Frequency <= 868600000 ) )
-    {
-        if( Channels[id].Band != BAND_G1_1 )
-        {
-            Channels[id].Band = BAND_G1_1;
-        }
-    }
-    else if( ( Channels[id].Frequency >= 868700000 ) && ( Channels[id].Frequency <= 869200000 ) )
-    {
-        if( Channels[id].Band != BAND_G1_2 )
-        {
-            Channels[id].Band = BAND_G1_2;
-        }
-    }
-    else if( ( Channels[id].Frequency >= 869400000 ) && ( Channels[id].Frequency <= 869650000 ) )
-    {
-        if( Channels[id].Band != BAND_G1_3 )
-        {
-            Channels[id].Band = BAND_G1_3;
-        }
-    }
-    else if( ( Channels[id].Frequency >= 869700000 ) && ( Channels[id].Frequency <= 870000000 ) )
-    {
-        if( Channels[id].Band != BAND_G1_4 )
-        {
-            Channels[id].Band = BAND_G1_4;
-        }
-    }
-    else
-    {
-        Channels[id].Frequency = 0;
-        Channels[id].DrRange.Value = 0;
-    }
-#else
-#error "Please define a frequency band in the compiler options."
-#endif
-// Check if it is a valid channel
-    if ( Channels[id].Frequency == 0 ) {
-        LoRaMacChannelRemove(id);
-    }
-}
-
-void LoRaMacChannelRemove( uint8_t id )
-{
-    if ( (LoRaMacState & MAC_TX_RUNNING) == MAC_TX_RUNNING ) {
-        return;
-    }
-    if ( id < 3 ) {
-        return;
-    }
-
-    uint8_t index = 0;
-    index = id / 16;
-
-    if ( (index > 4) || (id >= LORA_MAX_NB_CHANNELS) ) {
-        return;
-    }
-
-// Deactivate channel
-    ChannelsMask[index] &= ~(1 << (id % 16));
-
-    return;
-}
-
-void LoRaMacSetRx2Channel( Rx2ChannelParams_t param )
-{
-    Rx2Channel = param;
-}
-
-void LoRaMacSetChannelsTxPower( int8_t txPower )
-{
-    if ( (txPower >= LORAMAC_MAX_TX_POWER) && (txPower <= LORAMAC_MIN_TX_POWER) ) {
-        ChannelsTxPower = txPower;
-    }
-}
-
-void LoRaMacSetChannelsDatarate( int8_t datarate )
-{
-    ChannelsDefaultDatarate = ChannelsDatarate = datarate;
-}
-
-void LoRaMacSetChannelsMask( uint16_t *mask )
-{
-    if ( (mask[0] & 0x0007) != 0x0007 ) {
-    } else {
-        LoRaMacMemCpy((uint8_t*) mask, (uint8_t*) ChannelsMask, 2);
-    }
-}
-
-void LoRaMacSetChannelsNbRep( uint8_t nbRep )
-{
-    if ( nbRep < 1 ) {
-        nbRep = 1;
-    }
-    if ( nbRep > 15 ) {
-        nbRep = 15;
-    }
-    ChannelsNbRep = nbRep;
-}
-
-void LoRaMacSetMaxRxWindow( uint32_t delay )
-{
-    MaxRxWindow = delay;
-}
-
-void LoRaMacSetReceiveDelay1( uint32_t delay )
-{
-    ReceiveDelay1 = delay;
-}
-
-void LoRaMacSetReceiveDelay2( uint32_t delay )
-{
-    ReceiveDelay2 = delay;
-}
-
-void LoRaMacSetJoinAcceptDelay1( uint32_t delay )
-{
-    JoinAcceptDelay1 = delay;
-}
-
-void LoRaMacSetJoinAcceptDelay2( uint32_t delay )
-{
-    JoinAcceptDelay2 = delay;
-}
-
-uint32_t LoRaMacGetUpLinkCounter( void )
-{
-    return UpLinkCounter;
-}
-
-uint32_t LoRaMacGetDownLinkCounter( void )
-{
-    return DownLinkCounter;
-}
-
-/*****************************************************************************
- *                                                                           *
- * Override test functions implementation                                    *
- *                                                                           *
- *****************************************************************************/
-void LoRaMacTestSetDutyCycleOn( bool enable )
+/*******************************************************************************
+ * PUBLIC TEST FUNCTIONS (ONLY FOR DEBUG PURPOSES)
+ ******************************************************************************/
+void LoRaMac_TestSetDutyCycleOn( bool enable )
 {
     DutyCycleOn = enable;
 }
 
-void LoRaMacTestRxWindowsOn( bool enable )
+void LoRaMac_TestRxWindowsOn( bool enable )
 {
     IsRxWindowsEnabled = enable;
 }
 
-void LoRaMacTestSetMic( uint16_t upLinkCounter )
+void LoRaMac_TestSetMic( uint16_t upLinkCounter )
 {
     UpLinkCounter = upLinkCounter;
     IsUpLinkCounterFixed = true;
 }
+
+/*******************************************************************************
+ * END OF CODE
+ ******************************************************************************/
