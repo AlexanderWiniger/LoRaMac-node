@@ -11,7 +11,7 @@
  * INCLUDE FILES
  ******************************************************************************/
 #include "board.h"
-#include "LoRaNet-config.h"
+#include "LoRaMesh-config.h"
 #include "LoRaPhy.h"
 
 #define LOG_LEVEL_TRACE
@@ -340,10 +340,10 @@ static void RxWindowSetup( uint32_t freq, int8_t dr, uint32_t bw, uint16_t timeo
             fixLen = false;
         }
 
-        if ( dr == DR_7 ) {
+        if ( dr == 50 ) {
             modem = MODEM_FSK;
             bandwidth = 50e3;
-            datarate = Datarates[datarate] * 1e3;
+            datarate = dr * 1e3;
             coderate = 0;
             bandwidthAfc = 83.333e3;
             preambleLen = 5;
@@ -351,7 +351,7 @@ static void RxWindowSetup( uint32_t freq, int8_t dr, uint32_t bw, uint16_t timeo
         } else {
             modem = MODEM_LORA;
             bandwidth = bw;
-            datarate = Datarates[dr];
+            datarate = dr;
             coderate = 1;
             bandwidthAfc = 0;
             preambleLen = 8;

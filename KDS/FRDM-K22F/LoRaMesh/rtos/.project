@@ -147,7 +147,7 @@
 		<link>
 			<name>src/apps/LoRaMesh/rtos/LoRaStack</name>
 			<type>2</type>
-			<location>C:/workspace/kds/LoRaMac-node/src/apps/LoRaMesh/rtos/LoRaStack</location>
+			<locationURI>PARENT-4-PROJECT_LOC/src/apps/LoRaMesh/rtos/LoRaStack</locationURI>
 		</link>
 		<link>
 			<name>src/boards/mcu/kinetis/utilities/fsl_debug_console.c</name>

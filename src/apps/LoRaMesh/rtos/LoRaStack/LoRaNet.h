@@ -17,10 +17,22 @@
 /*******************************************************************************
  * CONSTANT DEFINITIONS
  ******************************************************************************/
+#define LORANET_HEADER_SIZE_MAX             (22)
+#define LORANET_HEADER_SIZE_MIN             (7)
+#define LORANET_PAYLOAD_SIZE                (LORAMAC_PAYLOAD_SIZE-LORANET_HEADER_SIZE_MIN)
+#define LORANET_BUFFER_SIZE                 (LORAMAC_BUFFER_SIZE)
 
+/* PHY buffer access macros */
+#define LORANET_BUF_IDX_TYPE                 (RNWK_BUF_IDX_PAYLOAD+0) /* <type> index */
+#define LORANET_BUF_IDX_SIZE                 (RNWK_BUF_IDX_PAYLOAD+1) /* <size> index */
+#define LORANET_BUF_IDX_PAYLOAD              (RNWK_BUF_IDX_PAYLOAD+2) /* <app payload> index */
 /*******************************************************************************
  * MACRO DEFINITIONS
  ******************************************************************************/
+#define LORANET_BUF_DEVADDR(phy)                ((phy)[RAPP_BUF_IDX_TYPE])
+#define LORANET_BUF_FCTRL(phy)                ((phy)[RAPP_BUF_IDX_SIZE])
+
+#define LORANET_BUF_PAYLOAD_START(phy)       (RNWK_BUF_PAYLOAD_START(phy)+RAPP_HEADER_SIZE)
 
 /*******************************************************************************
  * TYPE DEFINITIONS
@@ -35,7 +47,7 @@ typedef union {
         uint8_t AdrAckReq :1;
         uint8_t Adr :1;
     } Bits;
-} LoRaNetFrameCtrl_t;
+} LoRaFrameCtrl_t;
 
 /*! LoRa network layer events structure */
 typedef struct LoRaNetCallbacks_s {
@@ -124,33 +136,19 @@ uint8_t LoRaNet_LinkCheckReq( void );
 /*!
  * LoRaMAC layer send frame
  *
- * \param [IN] fPort       MAC payload port (must be > 0)
  * \param [IN] fBuffer     MAC data buffer to be sent
  * \param [IN] fBufferSize MAC data buffer size
+ * \param [IN] fPort       MAC payload port (must be > 0)
+ * \param [IN] confirmed   Confirmed message
+ * \param [IN] nofRetries  Number of retries to receive the acknowledgement
  *
  * \retval status          [0: OK, 1: Busy, 2: No network joined,
  *                          3: Length or port error, 4: Unknown MAC command
  *                          5: Unable to find a free channel
  *                          6: Device switched off]
  */
-uint8_t LoRaNet_SendFrame( uint8_t fPort, void *fBuffer, uint16_t fBufferSize );
-
-/*!
- * LoRaMAC layer send frame
- *
- * \param [IN] fPort       MAC payload port (must be > 0)
- * \param [IN] fBuffer     MAC data buffer to be sent
- * \param [IN] fBufferSize MAC data buffer size
- * \param [IN] fBufferSize MAC data buffer size
- * \param [IN] nbRetries   Number of retries to receive the acknowledgement
- *
- * \retval status          [0: OK, 1: Busy, 2: No network joined,
- *                          3: Length or port error, 4: Unknown MAC command
- *                          5: Unable to find a free channel
- *                          6: Device switched off]
- */
-uint8_t LoRaNet_SendConfirmedFrame( uint8_t fPort, void *fBuffer, uint16_t fBufferSize,
-        uint8_t nbRetries );
+uint8_t LoRaMacSendFrame( void *fPayload, uint16_t fPayloadSize, uint8_t fPort, bool confirmed,
+        uint8_t nofRetries );
 
 /*!
  * \brief Print out child nodes.

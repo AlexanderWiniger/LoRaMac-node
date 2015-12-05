@@ -39,27 +39,32 @@
 #define LORA_ERR_FAILED                     0x11U /*!< Requested functionality or process failed. */
 #define LORA_ERR_QFULL                      0x12U /*!< Queue is full. */
 
+/*!  */
+#define LORAPHY_HEADER_SIZE                 (0)
+#define LORAPHY_PAYLOAD_SIZE                (LORANET_CONFIG_TRANSCEIVER_PAYLOAD_SIZE)
+#define LORAPHY_BUFFER_SIZE                 (LORAPHY_HEADER_SIZE+LORAPHY_PAYLOAD_SIZE)
+
 /*! Class A&B receive delay in us  */
-#define RECEIVE_DELAY1                      1000000
-#define RECEIVE_DELAY2                      2000000
+#define RECEIVE_DELAY1                      (LORAMESH_CONFIG_RECEIVE_DELAY1)
+#define RECEIVE_DELAY2                      (LORAMESH_CONFIG_RECEIVE_DELAY2)
 
 /*! Join accept receive delay in us */
-#define JOIN_ACCEPT_DELAY1                  5000000
-#define JOIN_ACCEPT_DELAY2                  6000000
+#define JOIN_ACCEPT_DELAY1                  (LORAMESH_CONFIG_JOIN_ACCEPT_DELAY1)
+#define JOIN_ACCEPT_DELAY2                  (LORAMESH_CONFIG_JOIN_ACCEPT_DELAY2)
 
 /*! Class A&B maximum receive window delay in us */
-#define MAX_RX_WINDOW                       3000000
+#define MAX_RX_WINDOW                       (LORAMESH_CONFIG_MAX_RX_WINDOW)
 
 /* Advertising constants */
-#define ADV_CHANNEL_FREQUENCY               868300000       /*! Advertising beacon channel in Hz */
-#define ADV_BANDWIDTH                       0               /*! Advertising bandwidth */
-#define ADV_DATARATE                        DR_5            /*! Advertising data rate */
-#define ADV_TX_POWER                        1               /*! Advertising tx power */
-#define ADV_INTERVAL                        30000000        /*! Advertising interval in us */
-#define ADV_SLOT_DURATION                   3000000         /*! Advertising reception window in us */
-#define ADV_EXPLICIT_HDR_OFF                true//false     /*! Advertising explicit header mode off */
-#define ADV_PACKET_LEN                      14//0           /*! Advertising reception window in us */
-#define ADV_CRC_ON                          false//true     /*! Advertising CRC on */
+#define ADV_CHANNEL_FREQUENCY               (LORAMESH_CONFIG_ADV_CHANNEL_FREQUENCY)
+#define ADV_BANDWIDTH                       (LORAMESH_CONFIG_ADV_BANDWIDTH)
+#define ADV_DATARATE                        (LORAMESH_CONFIG_ADV_DATARATE)
+#define ADV_TX_POWER                        (LORAMESH_CONFIG_ADV_TX_POWER)
+#define ADV_INTERVAL                        (LORAMESH_CONFIG_ADV_INTERVAL)
+#define ADV_SLOT_DURATION                   (LORAMESH_CONFIG_ADV_SLOT_DURATION)
+#define ADV_EXPLICIT_HDR_OFF                (LORAMESH_CONFIG_ADV_EXPLICIT_HDR_OFF)
+#define ADV_PACKET_LEN                      (LORAMESH_CONFIG_ADV_PACKET_LEN)
+#define ADV_CRC_ON                          (LORAMESH_CONFIG_ADV_CRC_ON)
 
 /*******************************************************************************
  * MACRO DEFINITIONS

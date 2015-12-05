@@ -17,7 +17,9 @@
 /*******************************************************************************
  * CONSTANT DEFINITIONS
  ******************************************************************************/
-
+#define LORAMAC_HEADER_SIZE                 (1)
+#define LORAMAC_PAYLOAD_SIZE                (LORAPHY_PAYLOAD_SIZE-LORAMAC_HEADER_SIZE)
+#define LORAMAC_BUFFER_SIZE                 (LORAPHY_BUFFER_SIZE)
 /*******************************************************************************
  * MACRO DEFINITIONS
  ******************************************************************************/
@@ -48,8 +50,8 @@ typedef struct {
 
 typedef struct {
     uint32_t Frequency;   // Hz
-    DrRange_t DrRange;   // Max datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
-                         // Min datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+    DrRange_t DrRange; // Max datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+                       // Min datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
     uint8_t Band;        // Band index
 } ChannelParams_t;
 
@@ -68,7 +70,7 @@ typedef enum {
     MSG_TYPE_DATA_CONFIRMED_DOWN = 0x05,
     MSG_TYPE_RFU = 0x06,
     MSG_TYPE_PROPRIETARY = 0x07,
-} LoRaNetFrameType_t;
+} LoRaMessageType_t;
 
 /*! LoRaMAC header field definition */
 typedef union {

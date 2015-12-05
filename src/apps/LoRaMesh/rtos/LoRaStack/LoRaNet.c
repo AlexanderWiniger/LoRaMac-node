@@ -47,6 +47,8 @@ static bool IsNetworkJoined = false;
 /*******************************************************************************
  * PRIVATE FUNCTION PROTOTYPES (STATIC)
  ******************************************************************************/
+uint8_t PutPayload( void *fBuffer, uint16_t fBufferSize, uint8_t fPort, LoRaMessageType_t type,
+        uint8_t nofRetries );
 
 /*******************************************************************************
  * API FUNCTIONS (PUBLIC)
@@ -70,6 +72,27 @@ void LoRaNet_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uin
 
     IsNetworkJoined = true;
 }
+
+uint8_t LoRaMacSendFrame( void *fPayload, uint16_t fPayloadSize, uint8_t fPort, bool confirmed,
+        uint8_t nofRetries )
+{
+    uint8_t buf[LORANET_BUFFER_SIZE];
+
+    int i;
+
+    if ( fBufferSize > LORANET_PAYLOAD_SIZE ) {
+        return ERR_OVERFLOW; /* block too large for payload */
+    }
+
+    i = 0;
+    while (i < appPayloadSize) {
+        RAPP_BUF_PAYLOAD_START(buf)[i] = *fPayload;
+        fPayload++;
+        i++;
+    }
+    return PutPayload(buf, sizeof(buf), fPayloadSize, fPort, confirmed, nofRetries);
+}
+
 /*******************************************************************************
  * PUBLIC SETUP FUNCTIONS
  ******************************************************************************/
@@ -77,6 +100,11 @@ void LoRaNet_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uin
 /*******************************************************************************
  * PRIVATE FUNCTIONS (STATIC)
  ******************************************************************************/
+uint8_t PutPayload( void *buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
+        LoRaMessageType_t type )
+{
+
+}
 
 /*******************************************************************************
  * END OF CODE

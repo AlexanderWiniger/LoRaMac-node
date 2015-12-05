@@ -91,15 +91,6 @@
 #define APP_TX_DUTYCYCLE_RND                        1000000  // 1 [s] value in us
 
 /*!
- *  Pilot data header option list.
- */
-#define SDUHDR_OPTION_LIST_MASK                     0x0F
-#define SDUHDR_OPTION_LIST_ALT_GPS_MASK             0x08
-#define SDUHDR_OPTION_LIST_ALT_BAR_MASK             0x04
-#define SDUHDR_OPTION_LIST_VEC_TRACK_MASK           0x02
-#define SDUHDR_OPTION_LIST_WIND_SPEED_MASK          0x01
-
-/*!
  * LoRaWAN confirmed messages
  */
 #define LORAWAN_CONFIRMED_MSG_ON                    false
