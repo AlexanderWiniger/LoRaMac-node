@@ -13,6 +13,8 @@
 /*******************************************************************************
  * INCLUDE FILES
  ******************************************************************************/
+#include "LoRaMesh-config.h"
+#include "LoRaPhy.h"
 
 /*******************************************************************************
  * CONSTANT DEFINITIONS
@@ -20,10 +22,17 @@
 #define LORAMAC_HEADER_SIZE                 (1)
 #define LORAMAC_PAYLOAD_SIZE                (LORAPHY_PAYLOAD_SIZE-LORAMAC_HEADER_SIZE)
 #define LORAMAC_BUFFER_SIZE                 (LORAPHY_BUFFER_SIZE)
+
+/* PHY buffer access macros */
+#define LORAMAC_BUF_IDX_HDR                 (LORAPHY_BUF_IDX_PAYLOAD+0) /* <Hdr> index */
+#define LORAMAC_BUF_IDX_PAYLOAD             (LORAMAC_BUF_IDX_HDR+LORAMAC_HEADER_SIZE) /* <nwk payload> index */
 /*******************************************************************************
  * MACRO DEFINITIONS
  ******************************************************************************/
+#define LORAMAC_BUF_HDR(phy)                ((phy)[LORAMAC_BUF_IDX_HDR])
 
+#define LORAMAC_BUF_PAYLOAD_START(phy)      (LORAPHY_BUF_PAYLOAD_START(phy) \
+                                             + LORAMAC_HEADER_SIZE)
 /*******************************************************************************
  * TYPE DEFINITIONS
  ******************************************************************************/
@@ -57,7 +66,7 @@ typedef struct {
 
 typedef struct {
     uint32_t Frequency;   // Hz
-    uint8_t Datarate;    // [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+    uint8_t Datarate; // [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
 } Rx2ChannelParams_t;
 
 /*! LoRaMAC message types */
@@ -91,6 +100,12 @@ typedef union {
 void LoRaMac_Init( void );
 
 /*!
+ *
+ */
+uint8_t LoRaMac_PutPayload( uint8_t* fBuffer, uint8_t fBufferSize,
+        uint8_t payloadSize, uint8_t pktHdrSize, LoRaMessageType_t type );
+
+/*!
  * \brief Set network and application session key
  */
 void LoRaMac_SetSessionKeys( uint8_t *nwkSKey, uint8_t *appSKey );
@@ -101,11 +116,6 @@ void LoRaMac_SetSessionKeys( uint8_t *nwkSKey, uint8_t *appSKey );
  * \param deviceClass End-device class
  */
 void LoRaMac_SetDeviceClass( DeviceClass_t deviceClass );
-
-/*
- * TODO: Add documentation
- */
-void LoRaMac_SetPublicNetwork( bool enable );
 
 /*
  * TODO: Add documentation
@@ -124,7 +134,7 @@ void LoRaMac_SetRx2Channel( Rx2ChannelParams_t param );
  TX_POWER_11_DBM, TX_POWER_08_DBM,
  TX_POWER_05_DBM, TX_POWER_02_DBM]
  */
-void LoRaMacSetChannelsTxPower( int8_t txPower );
+void LoRaMac_SetChannelsTxPower( int8_t txPower );
 
 /*!
  * Sets channels datarate
@@ -149,16 +159,6 @@ void LoRaMac_SetChannelsNbRep( uint8_t nbRep );
  */
 void LoRaMac_ChannelRemove( uint8_t id );
 
-/*
- * TODO: Add documentation
- */
-uint32_t LoRaMac_GetUpLinkCounter( void );
-
-/*
- * TODO: Add documentation
- */
-uint32_t LoRaMac_GetDownLinkCounter( void );
-
 /*!
  * LoRaMesh add child node to the network.
  *
@@ -172,30 +172,6 @@ void LoRaMac_AddChildNode( uint32_t nodeAddr );
  * \param [IN] grpAddr Multicast group address
  */
 void LoRaMac_AddMulticastGroup( uint32_t grpAddr );
-
-/*******************************************************************************
- * SETUP FUNCTION PROTOTYPES (PUBLIC) (FOR DEBUG PURPOSES ONLY)
- ******************************************************************************/
-/*!
- * Disables/Enables the duty cycle enforcement (EU868)
- *
- * \param   [IN] enable - Enabled or disables the duty cycle
- */
-void LoRaMac_TestSetDutyCycleOn( bool enable );
-
-/*!
- * Disables/Enables the reception windows opening
- *
- * \param [IN] enable [true: enable, false: disable]
- */
-void LoRaMac_TestRxWindowsOn( bool enable );
-
-/*!
- * Enables the MIC field test
- *
- * \param [IN] upLinkCounter Fixed Tx packet counter value
- */
-void LoRaMac_TestSetMic( uint16_t upLinkCounter );
 
 /*******************************************************************************
  * END OF CODE

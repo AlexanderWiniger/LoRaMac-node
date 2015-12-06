@@ -15,6 +15,10 @@
 
 /* Default configuration items, can be overwritten by the application configuration header file: */
 
+#ifndef LORAMESH_CONFIG_MAJOR_VERSION
+#define LORAMESH_CONFIG_MAJOR_VERSION                   (0)
+#endif
+
 /*! Class A&B receive delay in us  */
 #ifndef LORAMESH_CONFIG_RECEIVE_DELAY1
 #define LORAMESH_CONFIG_RECEIVE_DELAY1                  (1000000)

@@ -85,16 +85,20 @@ void LoRaMesh_AppInit( void )
     DevAddr = 0x013D02AB;
 
     LoRaNet_InitNwkIds(LORAWAN_NETWORK_ID, DevAddr, NwkSKey, AppSKey);
-    LOG_DEBUG("LoRaMesh network IDs initialized. Network ID: %u, DevAddr: 0x%08x.",
+    LOG_DEBUG(
+            "LoRaMesh network IDs initialized. Network ID: %u, DevAddr: 0x%08x.",
             LORAWAN_NETWORK_ID, DevAddr);
 
     LoRaNet_SetAdrOn (LORAWAN_ADR_ON);
     LoRaNet_SetPublicNetwork (LORAWAN_PUBLIC_NETWORK);
 //    LoRaMac_SetDeviceClass (CLASS_C);
-    LoRaMac_TestSetDutyCycleOn (LORAWAN_DUTYCYCLE_ON);
+    LoRaNet_TestSetDutyCycleOn (LORAWAN_DUTYCYCLE_ON);
 
-    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", configMINIMAL_STACK_SIZE, (void*) NULL,
-            tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
+    /* Test run */
+    SendFrame();
+
+    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", configMINIMAL_STACK_SIZE,
+            (void*) NULL, tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
         /*lint -e527 */
         for ( ;; ) {
         }; /* error! probably out of memory */
@@ -124,12 +128,19 @@ static bool SendFrame( void )
 {
     uint8_t sendFrameStatus = 0;
 
-    if ( IsTxConfirmed ) {
-        sendFrameStatus = LoRaNet_SendConfirmedFrame(AppPort, AppData, AppDataSize,
-                LORAMESH_NOF_RETRIES);
-    } else {
-        sendFrameStatus = LoRaNet_SendFrame(AppPort, AppData, AppDataSize);
-    }
+    AppData[0] = 0x55;
+    AppData[1] = 0xAA;
+    AppData[2] = 0x55;
+    AppData[3] = 0xAA;
+    AppData[4] = 0xFA;
+    AppData[5] = 0x34;
+    AppData[6] = 0x51;
+    AppData[7] = 0x2C;
+    AppData[8] = 0x9A;
+    AppData[9] = 0xBC;
+
+    sendFrameStatus = LoRaNet_SendFrame(AppData, AppDataSize, AppPort,
+            IsTxConfirmed);
 
     if ( sendFrameStatus == LORA_ERR_NOTAVAIL ) return true;
     else return false;

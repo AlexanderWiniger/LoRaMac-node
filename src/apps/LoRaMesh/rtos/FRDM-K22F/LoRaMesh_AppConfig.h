@@ -128,6 +128,6 @@
 /*!
  * User application data buffer size
  */
-#define LORAMESH_APP_DATA_SIZE              23
+#define LORAMESH_APP_DATA_SIZE              10
 
 #endif /* __LORAMESH_APPCONFIG_H_ */

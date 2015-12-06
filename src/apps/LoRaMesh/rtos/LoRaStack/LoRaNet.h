@@ -13,26 +13,34 @@
 /*******************************************************************************
  * INCLUDE FILES
  ******************************************************************************/
+#include "LoRaMesh-config.h"
+#include "LoRaMac.h"
+#include "LoRaPhy.h"
 
 /*******************************************************************************
  * CONSTANT DEFINITIONS
  ******************************************************************************/
-#define LORANET_HEADER_SIZE_MAX             (22)
-#define LORANET_HEADER_SIZE_MIN             (7)
-#define LORANET_PAYLOAD_SIZE                (LORAMAC_PAYLOAD_SIZE-LORANET_HEADER_SIZE_MIN)
-#define LORANET_BUFFER_SIZE                 (LORAMAC_BUFFER_SIZE)
+#define LORANET_HEADER_SIZE_MAX                 (22)
+#define LORANET_HEADER_SIZE_MIN                 (7)
+#define LORANET_PAYLOAD_SIZE                    (LORAMAC_PAYLOAD_SIZE-LORANET_HEADER_SIZE_MIN)
+#define LORANET_BUFFER_SIZE                     (LORAMAC_BUFFER_SIZE)
 
 /* PHY buffer access macros */
-#define LORANET_BUF_IDX_TYPE                 (RNWK_BUF_IDX_PAYLOAD+0) /* <type> index */
-#define LORANET_BUF_IDX_SIZE                 (RNWK_BUF_IDX_PAYLOAD+1) /* <size> index */
-#define LORANET_BUF_IDX_PAYLOAD              (RNWK_BUF_IDX_PAYLOAD+2) /* <app payload> index */
+#define LORANET_BUF_IDX_DEVADDR                 (LORAMAC_BUF_IDX_PAYLOAD+0) /* <DevAddr> index */
+#define LORANET_BUF_IDX_CTRL                    (LORAMAC_BUF_IDX_PAYLOAD+4) /* <fCtrl> index */
+#define LORANET_BUF_IDX_CNTR                    (LORAMAC_BUF_IDX_PAYLOAD+5) /* <fCnt> index */
+#define LORANET_BUF_IDX_OPTS                    (LORAMAC_BUF_IDX_PAYLOAD+6) /* <fOpts> index */
 /*******************************************************************************
  * MACRO DEFINITIONS
  ******************************************************************************/
-#define LORANET_BUF_DEVADDR(phy)                ((phy)[RAPP_BUF_IDX_TYPE])
-#define LORANET_BUF_FCTRL(phy)                ((phy)[RAPP_BUF_IDX_SIZE])
+#define LORANET_BUF_DEVADDR(phy)                ((phy)[LORANET_BUF_IDX_DEVADDR])
+#define LORANET_BUF_CTRL(phy)                   ((phy)[LORANET_BUF_IDX_CTRL])
+#define LORANET_BUF_CNTR(phy)                   ((phy)[LORANET_BUF_IDX_CNTR])
+#define LORANET_BUF_OPTS(phy)                   ((phy)[LORANET_BUF_IDX_OPTS])
 
-#define LORANET_BUF_PAYLOAD_START(phy)       (RNWK_BUF_PAYLOAD_START(phy)+RAPP_HEADER_SIZE)
+#define LORANET_BUF_IDX_PORT(optsLen)           (LORANET_BUF_IDX_OPTS + optsLen)
+#define LORANET_BUF_PAYLOAD_START(phy, optsLen) (LORAMAC_BUF_PAYLOAD_START(phy) \
+                                                + optsLen + LORANET_HEADER_SIZE_MIN)
 
 /*******************************************************************************
  * TYPE DEFINITIONS
@@ -67,7 +75,8 @@ typedef struct LoRaNetCallbacks_s {
      * \param handled   Pointer to a handled flag to be set true if the callback recipient has
      *                  dealt with the message
      */
-    void (*HandleProprietaryRxMsg)( uint8_t* buf, uint8_t bufSize, bool* handled );
+    void (*HandleProprietaryRxMsg)( uint8_t* buf, uint8_t bufSize,
+            bool* handled );
     /*!
      * Function callback prototype to handle received message
      *
@@ -77,7 +86,8 @@ typedef struct LoRaNetCallbacks_s {
      * \param handled   Pointer to a handled flag to be set true if the callback recipient has
      *                  dealt with the message
      */
-    void (*HandleRxMsg)( uint8_t* buf, uint8_t bufSize, uint8_t fPort, bool* handled );
+    void (*HandleRxMsg)( uint8_t* buf, uint8_t bufSize, uint8_t fPort,
+            bool* handled );
 } LoRaNetCallbacks_t;
 
 /*******************************************************************************
@@ -113,7 +123,8 @@ void LoRaNet_SetAdrOn( bool enable );
  * \param [IN] appSKey Pointer to the application session AES128 key array
  *                     ( 16 bytes )
  */
-void LoRaNet_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint8_t *appSKey );
+void LoRaNet_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey,
+        uint8_t *appSKey );
 
 /*!
  * Initiates the Over-the-Air activation
@@ -147,8 +158,8 @@ uint8_t LoRaNet_LinkCheckReq( void );
  *                          5: Unable to find a free channel
  *                          6: Device switched off]
  */
-uint8_t LoRaMacSendFrame( void *fPayload, uint16_t fPayloadSize, uint8_t fPort, bool confirmed,
-        uint8_t nofRetries );
+uint8_t LoRaNet_SendFrame( uint8_t *fPayload, uint16_t fPayloadSize,
+        uint8_t fPort, bool confirmed );
 
 /*!
  * \brief Print out child nodes.
@@ -163,6 +174,40 @@ void LoRaNet_PrintChildNodes( bool reverseOrder );
  * \param reverseOrder Print out the list in reversed order.
  */
 void LoRaNet_PrintMulticastGroups( bool reverseOrder );
+
+/*******************************************************************************
+ * SETUP FUNCTION PROTOTYPES (PUBLIC)
+ ******************************************************************************/
+/*!
+ * \brief Set network to public.
+ *
+ * \param enable Enable public network
+ */
+void LoRaNet_SetPublicNetwork( bool enable );
+
+/*******************************************************************************
+ * TEST FUNCTION PROTOTYPES (PUBLIC) (FOR DEBUG PURPOSES ONLY)
+ ******************************************************************************/
+/*!
+ * Disables/Enables the duty cycle enforcement (EU868)
+ *
+ * \param   [IN] enable - Enabled or disables the duty cycle
+ */
+void LoRaNet_TestSetDutyCycleOn( bool enable );
+
+/*!
+ * Disables/Enables the reception windows opening
+ *
+ * \param [IN] enable [true: enable, false: disable]
+ */
+void LoRaNet_TestRxWindowsOn( bool enable );
+
+/*!
+ * Enables the MIC field test
+ *
+ * \param [IN] upLinkCounter Fixed Tx packet counter value
+ */
+void LoRaNet_TestSetMic( uint16_t upLinkCounter );
 
 /*******************************************************************************
  * END OF CODE

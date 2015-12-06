@@ -14,6 +14,7 @@
  * INCLUDE FILES
  ******************************************************************************/
 #include "LoRaMac-board.h"
+#include "LoRaMesh-config.h"
 
 /*******************************************************************************
  * CONSTANT DEFINITIONS
@@ -41,7 +42,7 @@
 
 /*!  */
 #define LORAPHY_HEADER_SIZE                 (0)
-#define LORAPHY_PAYLOAD_SIZE                (LORANET_CONFIG_TRANSCEIVER_PAYLOAD_SIZE)
+#define LORAPHY_PAYLOAD_SIZE                (LORAMESH_CONFIG_TRANSCEIVER_PAYLOAD_SIZE)
 #define LORAPHY_BUFFER_SIZE                 (LORAPHY_HEADER_SIZE+LORAPHY_PAYLOAD_SIZE)
 
 /*! Class A&B receive delay in us  */
@@ -66,10 +67,13 @@
 #define ADV_PACKET_LEN                      (LORAMESH_CONFIG_ADV_PACKET_LEN)
 #define ADV_CRC_ON                          (LORAMESH_CONFIG_ADV_CRC_ON)
 
+/* PHY buffer access macros */
+#define LORAPHY_BUF_IDX_PAYLOAD             (0) /* <phy payload> index */
+
 /*******************************************************************************
  * MACRO DEFINITIONS
  ******************************************************************************/
-
+#define LORAPHY_BUF_PAYLOAD_START(phy)      ((phy) + LORAPHY_HEADER_SIZE)
 /*******************************************************************************
  * TYPE DEFINITIONS
  ******************************************************************************/
@@ -134,7 +138,8 @@ void LoRaPhy_Init( void );
  * \param payloadSize Size of payload data.
  * \return Error code, ERR_OK for everything fine.
  */
-uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, uint8_t payloadSize, uint8_t txConfig );
+uint8_t LoRaPhy_PutPayload( uint8_t *fBuffer, size_t fBufferSize,
+        uint8_t payloadSize );
 
 /*!
  * \brief Returns the PHY payload data.
@@ -151,8 +156,8 @@ uint8_t LoRaPhy_GetPayload( RxPacketDesc_t *packet );
  * \param [IN] bandwidth window channel bandwidth
  * \param [IN] timeout window channel timeout
  */
-void LoRaPhy_OpenRxWindow( uint32_t freq, int8_t datarate, uint32_t bandwidth, uint16_t timeout,
-        bool rxContinuous );
+void LoRaPhy_OpenRxWindow( uint32_t freq, int8_t datarate, uint32_t bandwidth,
+        uint16_t timeout, bool rxContinuous );
 
 /*
  * \brief Maximal duration a reception window will be opened for

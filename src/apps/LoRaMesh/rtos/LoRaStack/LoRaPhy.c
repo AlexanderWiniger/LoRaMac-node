@@ -22,9 +22,9 @@
 /*! Maximum PHY layer payload size */
 #define LORA_PHY_MAXPAYLOAD                      255
 /* Configuration for tx and rx queues */
-#define MSG_QUEUE_RX_NOF_ITEMS                  (LORANET_CONFIG_MSG_QUEUE_RX_LENGTH) /* number of items in the queue */
-#define MSG_QUEUE_TX_NOF_ITEMS                  (LORANET_CONFIG_MSG_QUEUE_TX_LENGTH) /* number of items in the queue */
-#define MSG_QUEUE_PUT_WAIT                      (LORANET_CONFIG_MSG_QUEUE_PUT_BLOCK_TIME_MS) /* blocking time for putting messages into queue */
+#define MSG_QUEUE_RX_NOF_ITEMS                  (LORAMESH_CONFIG_MSG_QUEUE_RX_LENGTH) /* number of items in the queue */
+#define MSG_QUEUE_TX_NOF_ITEMS                  (LORAMESH_CONFIG_MSG_QUEUE_TX_LENGTH) /* number of items in the queue */
+#define MSG_QUEUE_PUT_WAIT                      (LORAMESH_CONFIG_MSG_QUEUE_PUT_BLOCK_TIME_MS) /* blocking time for putting messages into queue */
 
 /*******************************************************************************
  * PRIVATE TYPE DEFINITIONS
@@ -77,7 +77,8 @@ static RadioTxConfig_t TxRadioConfigs[configTIMER_QUEUE_LENGTH];
 static void OnRadioTxDone( void );
 
 /*! \brief Function to be executed on Radio Rx Done event */
-static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr );
+static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi,
+        int8_t snr );
 
 /*! \brief Function to be executed on Radio Cad Done event */
 static void OnCadDone( bool channelActivityDetected );
@@ -95,8 +96,8 @@ static void OnRadioRxTimeout( void );
 static void OnRxWindowTimerEvent( TimerHandle_t xTimer );
 
 /*! brief Adds an element to the correct queue */
-static uint8_t QueuePut( uint8_t *buf, size_t bufSize, bool fromISR, bool isTx, bool toBack,
-        PacketDesc_t packedDesc );
+static uint8_t QueuePut( uint8_t *buf, size_t bufSize, bool fromISR, bool isTx,
+        bool toBack, PacketDesc_t packedDesc );
 
 /*******************************************************************************
  * API FUNCTIONS (PUBLIC)
@@ -115,17 +116,21 @@ void LoRaPhy_Init( void )
         RxWindowTimers[i].AutoReload = false;
     }
 
-    LoRaPhy_MsgRxQueue = xQueueCreate(MSG_QUEUE_RX_NOF_ITEMS, LORA_PHY_MAXPAYLOAD);
+    LoRaPhy_MsgRxQueue = xQueueCreate(MSG_QUEUE_RX_NOF_ITEMS,
+    LORA_PHY_MAXPAYLOAD);
     if ( LoRaPhy_MsgRxQueue == NULL ) { /* queue creation failed! */
-        LOG_ERROR("Could not create Rx queue at %s line %d", __FILE__, __LINE__);
+        LOG_ERROR("Could not create Rx queue at %s line %d", __FILE__,
+        __LINE__);
         for ( ;; ) {
         } /* not enough memory? */
     }
     vQueueAddToRegistry(LoRaPhy_MsgRxQueue, "RadioRxMsg");
 
-    LoRaPhy_MsgTxQueue = xQueueCreate(MSG_QUEUE_TX_NOF_ITEMS, LORA_PHY_MAXPAYLOAD);
+    LoRaPhy_MsgTxQueue = xQueueCreate(MSG_QUEUE_TX_NOF_ITEMS,
+    LORA_PHY_MAXPAYLOAD);
     if ( LoRaPhy_MsgTxQueue == NULL ) { /* queue creation failed! */
-        LOG_ERROR("Could not create Rx queue at %s line %d", __FILE__, __LINE__);
+        LOG_ERROR("Could not create Rx queue at %s line %d", __FILE__,
+        __LINE__);
         for ( ;; ) {
         } /* not enough memory? */
     }
@@ -139,8 +144,8 @@ void LoRaPhy_Init( void )
      */
     /* Advertising delay timer & config */
     TimerInit(&RxWindowTimers[ADV_RXWINDOW_CONFIG_IDX], "AdvRxWindowTimer",
-            (uint32_t) & RxWindowConfigs[ADV_RXWINDOW_CONFIG_IDX], 100, OnRxWindowTimerEvent,
-            false);
+            (uint32_t) & RxWindowConfigs[ADV_RXWINDOW_CONFIG_IDX], 100,
+            OnRxWindowTimerEvent, false);
     TimerStart(&RxWindowTimers[ADV_RXWINDOW_CONFIG_IDX]);
     /* RX1 delay timer & config */
     TimerInit(&RxWindowTimers[RX1WINDOW_CONFIG_IDX], "RxWindowTimer1",
@@ -167,9 +172,9 @@ void LoRaPhy_Init( void )
 #endif
 }
 
-uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, uint8_t payloadSize, uint8_t txConfig )
+uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, uint8_t payloadSize )
 {
-    return QueuePut(buf, bufSize, false, true, true, (PacketDesc_t) & TxRadioConfigs[txConfig]);
+
 }
 
 uint8_t LoRaPhy_GetPayload( RxPacketDesc_t *packet )
@@ -177,8 +182,8 @@ uint8_t LoRaPhy_GetPayload( RxPacketDesc_t *packet )
     return LORA_ERR_OK;
 }
 
-void LoRaPhy_OpenRxWindow( uint32_t freq, int8_t datarate, uint32_t bandwidth, uint16_t timeout,
-        bool rxContinuous )
+void LoRaPhy_OpenRxWindow( uint32_t freq, int8_t datarate, uint32_t bandwidth,
+        uint16_t timeout, bool rxContinuous )
 {
 
 }
@@ -236,8 +241,8 @@ uint8_t GetRxMsg( uint8_t *buf, size_t bufSize )
     return LORA_ERR_RXEMPTY;
 }
 
-static uint8_t QueuePut( uint8_t *buf, size_t bufSize, bool fromISR, bool isTx, bool toBack,
-        PacketDesc_t packedDesc )
+static uint8_t QueuePut( uint8_t *buf, size_t bufSize, bool fromISR, bool isTx,
+        bool toBack, PacketDesc_t packedDesc )
 {
     /* data format is: dataSize(8bit) data */
     uint8_t res = LORA_ERR_OK;
@@ -259,9 +264,11 @@ static uint8_t QueuePut( uint8_t *buf, size_t bufSize, bool fromISR, bool isTx, 
         pxHigherPriorityTaskWoken;
 
         if ( toBack ) {
-            qRes = xQueueSendToBackFromISR(queue, buf, &pxHigherPriorityTaskWoken);
+            qRes = xQueueSendToBackFromISR(queue, buf,
+                    &pxHigherPriorityTaskWoken);
         } else {
-            qRes = xQueueSendToFrontFromISR(queue, buf, &pxHigherPriorityTaskWoken);
+            qRes = xQueueSendToFrontFromISR(queue, buf,
+                    &pxHigherPriorityTaskWoken);
         }
         if ( qRes != pdTRUE ) {
             /* was not able to send to the queue. Well, not much we can do here... */
@@ -285,7 +292,8 @@ static void OnRadioTxDone( void )
 
 }
 
-static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr )
+static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi,
+        int8_t snr )
 {
 
 }
@@ -317,8 +325,8 @@ static void OnRxWindowTimerEvent( TimerHandle_t xTimer )
     rxConfig = (RadioRxConfig_t*) pvTimerGetTimerID(xTimer);
 }
 
-static void RxWindowSetup( uint32_t freq, int8_t dr, uint32_t bw, uint16_t timeout,
-        bool rxContinuous, RxWindowType_t windowType )
+static void RxWindowSetup( uint32_t freq, int8_t dr, uint32_t bw,
+        uint16_t timeout, bool rxContinuous, RxWindowType_t windowType )
 {
     if ( Radio.GetStatus() == RF_IDLE ) {
         RadioModems_t modem;
@@ -358,8 +366,9 @@ static void RxWindowSetup( uint32_t freq, int8_t dr, uint32_t bw, uint16_t timeo
             symbTimeout = timeout;
         }
 
-        Radio.SetRxConfig(modem, bandwidth, datarate, coderate, bandwidthAfc, preambleLen,
-                symbTimeout, fixLen, payloadLen, crcOn, 0, 0, false, rxContinuous);
+        Radio.SetRxConfig(modem, bandwidth, datarate, coderate, bandwidthAfc,
+                preambleLen, symbTimeout, fixLen, payloadLen, crcOn, 0, 0,
+                false, rxContinuous);
 
         if ( rxContinuous == false ) {
             Radio.Rx(MaxRxWindow);
