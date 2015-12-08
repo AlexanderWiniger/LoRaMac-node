@@ -66,6 +66,28 @@
 #define FAIL                           0
 #endif
 
+/* More specific error codes */
+#define ERR_OK                          0x00U /*!< OK */
+#define ERR_RANGE                       0x01U /*!< Parameter out of range. */
+#define ERR_VALUE                       0x02U /*!< Parameter of incorrect value. */
+#define ERR_OVERFLOW                    0x03U /*!< Timer overflow. */
+#define ERR_ENABLED                     0x04U /*!< Device is enabled. */
+#define ERR_DISABLED                    0x05U /*!< Device is disabled. */
+#define ERR_BUSY                        0x06U /*!< Device is busy. */
+#define ERR_NOTAVAIL                    0x07U /*!< Requested value or method not available. */
+#define ERR_RXEMPTY                     0x08U /*!< No data in receiver. */
+#define ERR_TXFULL                      0x09U /*!< Transmitter is full. */
+#define ERR_OVERRUN                     0x0AU /*!< Overrun error is detected. */
+#define ERR_IDLE                        0x0BU /*!< Idle error is detected. */
+#define ERR_FAULT                       0x0CU /*!< Fault error is detected. */
+#define ERR_CRC                         0x0DU /*!< CRC error is detected. */
+#define ERR_UNDERFLOW                   0x0EU /*!< Underflow error is detected. */
+#define ERR_UNDERRUN                    0x0FU /*!< Underrun error is detected. */
+#define ERR_COMMON                      0x10U /*!< Common error of a device. */
+#define ERR_FAILED                      0x11U /*!< Requested functionality or process failed. */
+#define ERR_QFULL                       0x12U /*!< Queue is full. */
+#define ERR_INVALID_TYPE                0x13U /*!< Invalid type. */
+
 /*!
  * Unique Devices IDs register set
  */

@@ -13,7 +13,7 @@
 #include <math.h>
 #include "board.h"
 
-#include "LoRaMesh.h"
+#include "LoRaMesh_App.h"
 
 #define LOG_LEVEL_TRACE
 #include "debug.h"

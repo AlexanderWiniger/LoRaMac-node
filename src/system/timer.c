@@ -84,7 +84,7 @@ void TimerSetValue( TimerEvent_t *obj, uint32_t value )
 
 TimerTime_t TimerGetCurrentTime( void )
 {
-    return 0;
+    return (TimerTime_t)xTaskGetTickCount();
 }
 
 void TimerLowPowerHandler( void )
@@ -117,7 +117,8 @@ static TimerEvent_t *TimerListHead = NULL;
  * \param [IN]  obj Timer object to be become the new head
  * \param [IN]  remainingTime Remaining time of the previous head to be replaced
  */
-static void TimerInsertNewHeadTimer( TimerEvent_t *obj, uint32_t remainingTime );
+static void TimerInsertNewHeadTimer( TimerEvent_t *obj,
+        uint32_t remainingTime );
 
 /*!
  * \brief Adds a timer to the list.
@@ -182,7 +183,7 @@ void TimerStart( TimerEvent_t *obj )
         if ( TimerListHead->IsRunning == true ) {
             elapsedTime = TimerGetValue();
             if ( elapsedTime > TimerListHead->Timestamp ) {
-                elapsedTime = TimerListHead->Timestamp;   // security but should never occur
+                elapsedTime = TimerListHead->Timestamp; // security but should never occur
             }
             remainingTime = TimerListHead->Timestamp - elapsedTime;
         } else {
@@ -201,7 +202,7 @@ void TimerStart( TimerEvent_t *obj )
 static void TimerInsertTimer( TimerEvent_t *obj, uint32_t remainingTime )
 {
     uint32_t aggregatedTimestamp = 0;      // hold the sum of timestamps 
-    uint32_t aggregatedTimestampNext = 0;   // hold the sum of timestamps up to the next event
+    uint32_t aggregatedTimestampNext = 0; // hold the sum of timestamps up to the next event
 
     TimerEvent_t* prev = TimerListHead;
     TimerEvent_t* cur = TimerListHead->Next;
@@ -214,7 +215,7 @@ static void TimerInsertTimer( TimerEvent_t *obj, uint32_t remainingTime )
         aggregatedTimestamp = remainingTime;
         aggregatedTimestampNext = remainingTime + cur->Timestamp;
 
-        while ( prev != NULL ) {
+        while (prev != NULL) {
             if ( aggregatedTimestampNext > obj->Timestamp ) {
                 obj->Timestamp -= aggregatedTimestamp;
                 if ( cur != NULL ) {
@@ -234,7 +235,8 @@ static void TimerInsertTimer( TimerEvent_t *obj, uint32_t remainingTime )
                     break;
                 } else {
                     aggregatedTimestamp = aggregatedTimestampNext;
-                    aggregatedTimestampNext = aggregatedTimestampNext + cur->Timestamp;
+                    aggregatedTimestampNext = aggregatedTimestampNext
+                            + cur->Timestamp;
                 }
             }
         }
@@ -262,7 +264,7 @@ void TimerIrqHandler( void )
 
     if ( LowPowerModeEnable == false ) {
         if ( TimerListHead == NULL ) {
-            return;   // Only necessary when the standard timer is used as a time base
+            return; // Only necessary when the standard timer is used as a time base
         }
     }
 
@@ -280,7 +282,7 @@ void TimerIrqHandler( void )
     elapsedTimer = TimerListHead;
 
     // remove all the expired object from the list
-    while ( (TimerListHead != NULL) && (TimerListHead->Timestamp == 0) ) {
+    while ((TimerListHead != NULL) && (TimerListHead->Timestamp == 0)) {
         if ( TimerListHead->Next != NULL ) {
             TimerListHead = TimerListHead->Next;
         } else {
@@ -290,7 +292,7 @@ void TimerIrqHandler( void )
 
     // execute the callbacks of all the expired objects
     // this is to avoid potential issues between the callback and the object list
-    while ( (elapsedTimer != NULL) && (elapsedTimer->Timestamp == 0) ) {
+    while ((elapsedTimer != NULL) && (elapsedTimer->Timestamp == 0)) {
         if ( elapsedTimer->Callback != NULL ) {
             elapsedTimer->Callback();
         }
@@ -320,9 +322,9 @@ void TimerStop( TimerEvent_t *obj )
         return;
     }
 
-    if ( TimerListHead == obj )   // Stop the Head                                    
+    if ( TimerListHead == obj ) // Stop the Head                                    
             {
-        if ( TimerListHead->IsRunning == true )   // The head is already running 
+        if ( TimerListHead->IsRunning == true )  // The head is already running 
                 {
             elapsedTime = TimerGetValue();
             if ( elapsedTime > obj->Timestamp ) {
@@ -354,7 +356,7 @@ void TimerStop( TimerEvent_t *obj )
     {
         remainingTime = obj->Timestamp;
 
-        while ( cur != NULL ) {
+        while (cur != NULL) {
             if ( cur == obj ) {
                 if ( cur->Next != NULL ) {
                     cur = cur->Next;
@@ -378,7 +380,7 @@ static bool TimerExists( TimerEvent_t *obj )
 {
     TimerEvent_t* cur = TimerListHead;
 
-    while ( cur != NULL ) {
+    while (cur != NULL) {
         if ( cur == obj ) {
             return true;
         }

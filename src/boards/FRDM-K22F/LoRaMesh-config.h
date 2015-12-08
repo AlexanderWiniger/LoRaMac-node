@@ -40,6 +40,20 @@
 #define LORAMESH_CONFIG_MAX_RX_WINDOW                   (3000000)
 #endif
 
+/*! Maximum allowed gap for the FCNT field */
+#ifndef LORAMESH_CONFIG_MAX_FCNT_GAP
+#define LORAMESH_CONFIG_MAX_FCNT_GAP                    (16384)
+#endif
+
+#ifndef LORAMESH_CONFIG_ADR_ACK_LIMIT
+#define LORAMESH_CONFIG_ADR_ACK_LIMIT                   (64)
+/*! ADR acknowledgement counter limit */
+#endif
+#ifndef LORAMESH_CONFIG_ADR_ACK_DELAY
+#define LORAMESH_CONFIG_ADR_ACK_DELAY                   (32)
+/*! Number of ADR acknowledgement requests before returning to default datarate */
+#endif
+
 /* Advertising constants */
 #ifndef LORAMESH_CONFIG_ADV_CHANNEL_FREQUENCY
 #define LORAMESH_CONFIG_ADV_CHANNEL_FREQUENCY           (868300000)
@@ -49,7 +63,6 @@
 #define LORAMESH_CONFIG_ADV_BANDWIDTH                   (0)
 /*! Advertising bandwidth */
 #endif
-
 #ifndef LORAMESH_CONFIG_ADV_DATARATE
 #define LORAMESH_CONFIG_ADV_DATARATE                    (DR_5)
 /*! Advertising data rate */
@@ -58,7 +71,6 @@
 #define LORAMESH_CONFIG_ADV_TX_POWER                    (1)
 /*! Advertising tx power */
 #endif
-
 #ifndef LORAMESH_CONFIG_ADV_INTERVAL
 #define LORAMESH_CONFIG_ADV_INTERVAL                    (30000000)
 /*! Advertising interval in us */
@@ -90,12 +102,10 @@
 #define LORAMESH_CONFIG_MSG_QUEUE_RX_LENGTH             (6)
 /*!< Number items in the Rx message queue. The higher, the more items can be buffered. */
 #endif
-
 #ifndef LORAMESH_CONFIG_MSG_QUEUE_TX_LENGTH
 #define LORAMESH_CONFIG_MSG_QUEUE_TX_LENGTH             (6)
 /*!< Number items in the Tx message queue. The higher, the more items can be buffered. */
 #endif
-
 #ifndef LORAMESH_CONFIG_MSG_QUEUE_PUT_BLOCK_TIME_MS
 #define LORAMESH_CONFIG_MSG_QUEUE_PUT_BLOCK_TIME_MS     (200/portTICK_RATE_MS)
 /*!< Blocking time for putting items into the message queue before timeout. Use portMAX_DELAY for blocking. */

@@ -12,10 +12,9 @@
  ******************************************************************************/
 #include "board.h"
 
+#include "LoRaMesh.h"
 #include "LoRaMesh_App.h"
 #include "LoRaMesh_AppConfig.h"
-#include "LoRaNet.h"
-#include "LoRaPhy.h"
 
 #define LOG_LEVEL_TRACE
 #include "debug.h"
@@ -42,7 +41,7 @@ typedef enum {
  ******************************************************************************/
 static LoRaMeshApp_State_t appState = LORAMESH_INITIAL;
 
-static LoRaNetCallbacks_t sLoRaNetCallbacks;
+static LoRaMeshCallbacks_t sLoRaMeshCallbacks;
 
 static uint8_t NwkSKey[] = LORAWAN_NWKSKEY;
 static uint8_t AppSKey[] = LORAWAN_APPSKEY;
@@ -79,23 +78,20 @@ static portTASK_FUNCTION(LoRaMeshTask, pvParameters);
  ******************************************************************************/
 void LoRaMesh_AppInit( void )
 {
-    LoRaNet_Init(&sLoRaNetCallbacks);
+    LoRaMesh_Init(&sLoRaMeshCallbacks);
 
     // NwkAddr
     DevAddr = 0x013D02AB;
 
-    LoRaNet_InitNwkIds(LORAWAN_NETWORK_ID, DevAddr, NwkSKey, AppSKey);
+    LoRaMesh_InitNwkIds(LORAWAN_NETWORK_ID, DevAddr, NwkSKey, AppSKey);
     LOG_DEBUG(
             "LoRaMesh network IDs initialized. Network ID: %u, DevAddr: 0x%08x.",
             LORAWAN_NETWORK_ID, DevAddr);
 
-    LoRaNet_SetAdrOn (LORAWAN_ADR_ON);
-    LoRaNet_SetPublicNetwork (LORAWAN_PUBLIC_NETWORK);
-//    LoRaMac_SetDeviceClass (CLASS_C);
-    LoRaNet_TestSetDutyCycleOn (LORAWAN_DUTYCYCLE_ON);
-
-    /* Test run */
-    SendFrame();
+    LoRaMesh_SetAdrOn (LORAWAN_ADR_ON);
+    LoRaMesh_SetPublicNetwork (LORAWAN_PUBLIC_NETWORK);
+//    LoRaMesh_SetDeviceClass (CLASS_C);
+    LoRaMesh_TestSetDutyCycleCtrlOff (LORAWAN_DUTYCYCLE_OFF);
 
     if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", configMINIMAL_STACK_SIZE,
             (void*) NULL, tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
@@ -114,14 +110,16 @@ static void Process( void )
     for ( ;; ) {
         switch (appState) {
             case LORAMESH_INITIAL:
-                break;
+                appState = LORAMESH_TX_RX;
+                continue;
             case LORAMESH_LOWPOWER:
                 break;
             case LORAMESH_TX_RX:
-//                (void) LoRaMac_Process();
+                (void) LoRaPhy_Process();
                 break;
-        }
-    }
+        } /* end switch */
+        break; /* break for loop */
+    } /* end for loop */
 }
 
 static bool SendFrame( void )
@@ -139,10 +137,10 @@ static bool SendFrame( void )
     AppData[8] = 0x9A;
     AppData[9] = 0xBC;
 
-    sendFrameStatus = LoRaNet_SendFrame(AppData, AppDataSize, AppPort,
+    sendFrameStatus = LoRaMesh_SendFrame(AppData, AppDataSize, AppPort,
             IsTxConfirmed);
 
-    if ( sendFrameStatus == LORA_ERR_NOTAVAIL ) return true;
+    if ( sendFrameStatus == ERR_NOTAVAIL ) return true;
     else return false;
 }
 

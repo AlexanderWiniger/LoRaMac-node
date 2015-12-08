@@ -108,7 +108,7 @@
  *
  * \remark Please note that ETSI mandates duty cycled transmissions. Use only for test purposes
  */
-#define LORAWAN_DUTYCYCLE_ON                false
+#define LORAWAN_DUTYCYCLE_OFF               true
 
 /*!
  * LoRaMesh default number of retries
