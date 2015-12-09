@@ -155,13 +155,11 @@ const RadioRegisters_t RadioRegsInit[] = RADIO_INIT_REGISTERS_VALUE;
 /*!
  * Precomputed FSK bandwidth registers values
  */
-const FskBandwidth_t FskBandwidths[] = { { 2600, 0x17 }, { 3100, 0x0F }, { 3900,
-        0x07 }, { 5200, 0x16 }, { 6300, 0x0E }, { 7800, 0x06 }, { 10400, 0x15 },
-        { 12500, 0x0D }, { 15600, 0x05 }, { 20800, 0x14 }, { 25000, 0x0C }, {
-                31300, 0x04 }, { 41700, 0x13 }, { 50000, 0x0B },
-        { 62500, 0x03 }, { 83333, 0x12 }, { 100000, 0x0A }, { 125000, 0x02 }, {
-                166700, 0x11 }, { 200000, 0x09 }, { 250000, 0x01 }, { 300000,
-                0x00 },   // Invalid Badwidth
+const FskBandwidth_t FskBandwidths[] = { { 2600, 0x17 }, { 3100, 0x0F }, { 3900, 0x07 }, { 5200,
+        0x16 }, { 6300, 0x0E }, { 7800, 0x06 }, { 10400, 0x15 }, { 12500, 0x0D }, { 15600, 0x05 }, {
+        20800, 0x14 }, { 25000, 0x0C }, { 31300, 0x04 }, { 41700, 0x13 }, { 50000, 0x0B }, { 62500,
+        0x03 }, { 83333, 0x12 }, { 100000, 0x0A }, { 125000, 0x02 }, { 166700, 0x11 }, { 200000,
+        0x09 }, { 250000, 0x01 }, { 300000, 0x00 },   // Invalid Badwidth
         };
 
 /*
@@ -190,8 +188,8 @@ SX1276_t SX1276;
 /*!
  * Hardware DIO IRQ callback initialization
  */
-DioIrqHandler *DioIrq[] = { SX1276OnDio0Irq, SX1276OnDio1Irq, SX1276OnDio2Irq,
-        SX1276OnDio3Irq, SX1276OnDio4Irq, NULL };
+DioIrqHandler *DioIrq[] = { SX1276OnDio0Irq, SX1276OnDio1Irq, SX1276OnDio2Irq, SX1276OnDio3Irq,
+        SX1276OnDio4Irq, NULL };
 
 /*!
  * Tx and Rx timers
@@ -229,8 +227,8 @@ void SX1276Init( RadioEvents_t *events )
 
     // Initialize driver timeout timers
 #if defined(FSL_RTOS_FREE_RTOS) || defined(USE_FREE_RTOS)
-    TimerInit(&TxTimeoutTimer, "TxTimeoutTimer", 0, 10, SX1276OnTimeoutIrq, false);
-    TimerInit(&RxTimeoutTimer, "RxTimeoutTimer", 0, 10, SX1276OnTimeoutIrq, false);
+    TimerInit(&TxTimeoutTimer, "TxTimeoutTimer", 0, 3000, SX1276OnTimeoutIrq, false);
+    TimerInit(&RxTimeoutTimer, "RxTimeoutTimer", 0, 3000, SX1276OnTimeoutIrq, false);
     TimerInit(&RxTimeoutSyncWord, "RxTimeoutSyncWord", 0, 10, SX1276OnTimeoutIrq, false);
 #else
     TimerInit(&TxTimeoutTimer, SX1276OnTimeoutIrq);
@@ -270,8 +268,7 @@ void SX1276SetChannel( uint32_t freq )
     SX1276Write(REG_FRFLSB, (uint8_t)(freq & 0xFF));
 }
 
-bool SX1276IsChannelFree( RadioModems_t modem, uint32_t freq,
-        int16_t rssiThresh )
+bool SX1276IsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThresh )
 {
     int16_t rssi = 0;
 
@@ -306,11 +303,9 @@ uint32_t SX1276Random( void )
 
     // Disable LoRa modem interrupts
     SX1276Write(REG_LR_IRQFLAGSMASK,
-            RFLR_IRQFLAGS_RXTIMEOUT | RFLR_IRQFLAGS_RXDONE
-                    | RFLR_IRQFLAGS_PAYLOADCRCERROR | RFLR_IRQFLAGS_VALIDHEADER
-                    | RFLR_IRQFLAGS_TXDONE | RFLR_IRQFLAGS_CADDONE
-                    | RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL
-                    | RFLR_IRQFLAGS_CADDETECTED);
+            RFLR_IRQFLAGS_RXTIMEOUT | RFLR_IRQFLAGS_RXDONE | RFLR_IRQFLAGS_PAYLOADCRCERROR
+                    | RFLR_IRQFLAGS_VALIDHEADER | RFLR_IRQFLAGS_TXDONE | RFLR_IRQFLAGS_CADDONE
+                    | RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL | RFLR_IRQFLAGS_CADDETECTED);
 
     // Set radio in continuous reception
     SX1276SetOpMode (RF_OPMODE_RECEIVER);
@@ -339,18 +334,16 @@ static void RxChainCalibration( void )
     // Save context
     regPaConfigInitVal = SX1276Read(REG_PACONFIG);
     initialFreq = (double) (((uint32_t) SX1276Read(REG_FRFMSB) << 16)
-            | ((uint32_t) SX1276Read(REG_FRFMID) << 8)
-            | ((uint32_t) SX1276Read(REG_FRFLSB))) * (double) FREQ_STEP;
+            | ((uint32_t) SX1276Read(REG_FRFMID) << 8) | ((uint32_t) SX1276Read(REG_FRFLSB)))
+            * (double) FREQ_STEP;
 
     // Cut the PA just in case, RFO output, power = -1 dBm
     SX1276Write(REG_PACONFIG, 0x00);
 
     // Launch Rx chain calibration for LF band
     SX1276Write(REG_IMAGECAL,
-            (SX1276Read(REG_IMAGECAL) & RF_IMAGECAL_IMAGECAL_MASK)
-                    | RF_IMAGECAL_IMAGECAL_START);
-    while ((SX1276Read(REG_IMAGECAL) & RF_IMAGECAL_IMAGECAL_RUNNING)
-            == RF_IMAGECAL_IMAGECAL_RUNNING) {
+            (SX1276Read(REG_IMAGECAL) & RF_IMAGECAL_IMAGECAL_MASK) | RF_IMAGECAL_IMAGECAL_START);
+    while ((SX1276Read(REG_IMAGECAL) & RF_IMAGECAL_IMAGECAL_RUNNING) == RF_IMAGECAL_IMAGECAL_RUNNING) {
     }
 
     // Sets a Frequency in HF band
@@ -358,10 +351,8 @@ static void RxChainCalibration( void )
 
     // Launch Rx chain calibration for HF band 
     SX1276Write(REG_IMAGECAL,
-            (SX1276Read(REG_IMAGECAL) & RF_IMAGECAL_IMAGECAL_MASK)
-                    | RF_IMAGECAL_IMAGECAL_START);
-    while ((SX1276Read(REG_IMAGECAL) & RF_IMAGECAL_IMAGECAL_RUNNING)
-            == RF_IMAGECAL_IMAGECAL_RUNNING) {
+            (SX1276Read(REG_IMAGECAL) & RF_IMAGECAL_IMAGECAL_MASK) | RF_IMAGECAL_IMAGECAL_START);
+    while ((SX1276Read(REG_IMAGECAL) & RF_IMAGECAL_IMAGECAL_RUNNING) == RF_IMAGECAL_IMAGECAL_RUNNING) {
     }
 
     // Restore context
@@ -379,8 +370,7 @@ static uint8_t GetFskBandwidthRegValue( uint32_t bandwidth )
 {
     uint8_t i;
 
-    for ( i = 0; i < (sizeof(FskBandwidths) / sizeof(FskBandwidth_t)) - 1;
-            i++ ) {
+    for ( i = 0; i < (sizeof(FskBandwidths) / sizeof(FskBandwidth_t)) - 1; i++ ) {
         if ( (bandwidth >= FskBandwidths[i].bandwidth)
                 && (bandwidth < FskBandwidths[i + 1].bandwidth) ) {
             return FskBandwidths[i].RegValue;
@@ -391,10 +381,9 @@ static uint8_t GetFskBandwidthRegValue( uint32_t bandwidth )
         ;
 }
 
-void SX1276SetRxConfig( RadioModems_t modem, uint32_t bandwidth,
-        uint32_t datarate, uint8_t coderate, uint32_t bandwidthAfc,
-        uint16_t preambleLen, uint16_t symbTimeout, bool fixLen,
-        uint8_t payloadLen, bool crcOn, bool freqHopOn, uint8_t hopPeriod,
+void SX1276SetRxConfig( RadioModems_t modem, uint32_t bandwidth, uint32_t datarate,
+        uint8_t coderate, uint32_t bandwidthAfc, uint16_t preambleLen, uint16_t symbTimeout,
+        bool fixLen, uint8_t payloadLen, bool crcOn, bool freqHopOn, uint8_t hopPeriod,
         bool iqInverted, bool rxContinuous )
 {
     LOG_TRACE("Entering %s...", __FUNCTION__);
@@ -432,8 +421,7 @@ void SX1276SetRxConfig( RadioModems_t modem, uint32_t bandwidth,
                             & RF_PACKETCONFIG1_PACKETFORMAT_MASK)
                             | ((fixLen == 1) ?
                                     RF_PACKETCONFIG1_PACKETFORMAT_FIXED :
-                                    RF_PACKETCONFIG1_PACKETFORMAT_VARIABLE)
-                            | (crcOn << 4));
+                                    RF_PACKETCONFIG1_PACKETFORMAT_VARIABLE) | (crcOn << 4));
         }
             break;
         case MODEM_LORA:
@@ -471,24 +459,22 @@ void SX1276SetRxConfig( RadioModems_t modem, uint32_t bandwidth,
             SX1276Write(REG_LR_MODEMCONFIG1,
                     (SX1276Read(REG_LR_MODEMCONFIG1) & RFLR_MODEMCONFIG1_BW_MASK
                             & RFLR_MODEMCONFIG1_CODINGRATE_MASK
-                            & RFLR_MODEMCONFIG1_IMPLICITHEADER_MASK)
-                            | (bandwidth << 4) | (coderate << 1) | fixLen);
+                            & RFLR_MODEMCONFIG1_IMPLICITHEADER_MASK) | (bandwidth << 4)
+                            | (coderate << 1) | fixLen);
             LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_MODEMCONFIG1,
                     SX1276Read(REG_LR_MODEMCONFIG1));
 
             SX1276Write(REG_LR_MODEMCONFIG2,
                     (SX1276Read(REG_LR_MODEMCONFIG2) & RFLR_MODEMCONFIG2_SF_MASK
                             & RFLR_MODEMCONFIG2_RXPAYLOADCRC_MASK
-                            & RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK)
-                            | (datarate << 4) | (crcOn << 2)
-                            | ((symbTimeout >> 8)
-                                    & ~RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK));
+                            & RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK) | (datarate << 4)
+                            | (crcOn << 2)
+                            | ((symbTimeout >> 8) & ~RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK));
             LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_MODEMCONFIG2,
                     SX1276Read(REG_LR_MODEMCONFIG2));
 
             SX1276Write(REG_LR_MODEMCONFIG3,
-                    (SX1276Read(REG_LR_MODEMCONFIG3)
-                            & RFLR_MODEMCONFIG3_LOWDATARATEOPTIMIZE_MASK)
+                    (SX1276Read(REG_LR_MODEMCONFIG3) & RFLR_MODEMCONFIG3_LOWDATARATEOPTIMIZE_MASK)
                             | (SX1276.Settings.LoRa.LowDatarateOptimize << 3));
             LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_MODEMCONFIG3,
                     SX1276Read(REG_LR_MODEMCONFIG3));
@@ -497,8 +483,7 @@ void SX1276SetRxConfig( RadioModems_t modem, uint32_t bandwidth,
             LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_SYMBTIMEOUTLSB,
                     SX1276Read(REG_LR_SYMBTIMEOUTLSB));
 
-            SX1276Write(REG_LR_PREAMBLEMSB,
-                    (uint8_t)((preambleLen >> 8) & 0xFF));
+            SX1276Write(REG_LR_PREAMBLEMSB, (uint8_t)((preambleLen >> 8) & 0xFF));
             LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_PREAMBLEMSB,
                     SX1276Read(REG_LR_PREAMBLEMSB));
             SX1276Write(REG_LR_PREAMBLELSB, (uint8_t)(preambleLen & 0xFF));
@@ -515,8 +500,7 @@ void SX1276SetRxConfig( RadioModems_t modem, uint32_t bandwidth,
                 SX1276Write(REG_LR_PLLHOP,
                         (SX1276Read(REG_LR_PLLHOP) & RFLR_PLLHOP_FASTHOP_MASK)
                                 | RFLR_PLLHOP_FASTHOP_ON);
-                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_PLLHOP,
-                        SX1276Read(REG_LR_PLLHOP));
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_PLLHOP, SX1276Read(REG_LR_PLLHOP));
                 SX1276Write(REG_LR_HOPPERIOD, SX1276.Settings.LoRa.HopPeriod);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_HOPPERIOD,
                         SX1276Read(REG_LR_HOPPERIOD));
@@ -537,27 +521,21 @@ void SX1276SetRxConfig( RadioModems_t modem, uint32_t bandwidth,
 
             if ( datarate == 6 ) {
                 SX1276Write(REG_LR_DETECTOPTIMIZE,
-                        (SX1276Read(REG_LR_DETECTOPTIMIZE)
-                                & RFLR_DETECTIONOPTIMIZE_MASK)
+                        (SX1276Read(REG_LR_DETECTOPTIMIZE) & RFLR_DETECTIONOPTIMIZE_MASK)
                                 | RFLR_DETECTIONOPTIMIZE_SF6);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTOPTIMIZE,
                         SX1276Read(REG_LR_DETECTOPTIMIZE));
-                SX1276Write(REG_LR_DETECTIONTHRESHOLD,
-                        RFLR_DETECTIONTHRESH_SF6);
-                LOG_TRACE("Value at 0x%02x:\t 0x%02x.",
-                        REG_LR_DETECTIONTHRESHOLD,
+                SX1276Write(REG_LR_DETECTIONTHRESHOLD, RFLR_DETECTIONTHRESH_SF6);
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTIONTHRESHOLD,
                         SX1276Read(REG_LR_DETECTIONTHRESHOLD));
             } else {
                 SX1276Write(REG_LR_DETECTOPTIMIZE,
-                        (SX1276Read(REG_LR_DETECTOPTIMIZE)
-                                & RFLR_DETECTIONOPTIMIZE_MASK)
+                        (SX1276Read(REG_LR_DETECTOPTIMIZE) & RFLR_DETECTIONOPTIMIZE_MASK)
                                 | RFLR_DETECTIONOPTIMIZE_SF7_TO_SF12);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTOPTIMIZE,
                         SX1276Read(REG_LR_DETECTOPTIMIZE));
-                SX1276Write(REG_LR_DETECTIONTHRESHOLD,
-                        RFLR_DETECTIONTHRESH_SF7_TO_SF12);
-                LOG_TRACE("Value at 0x%02x:\t 0x%02x.",
-                        REG_LR_DETECTIONTHRESHOLD,
+                SX1276Write(REG_LR_DETECTIONTHRESHOLD, RFLR_DETECTIONTHRESH_SF7_TO_SF12);
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTIONTHRESHOLD,
                         SX1276Read(REG_LR_DETECTIONTHRESHOLD));
             }
         }
@@ -566,10 +544,9 @@ void SX1276SetRxConfig( RadioModems_t modem, uint32_t bandwidth,
     LOG_TRACE("Leaving %s...", __FUNCTION__);
 }
 
-void SX1276SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
-        uint32_t bandwidth, uint32_t datarate, uint8_t coderate,
-        uint16_t preambleLen, bool fixLen, bool crcOn, bool freqHopOn,
-        uint8_t hopPeriod, bool iqInverted, uint32_t timeout )
+void SX1276SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev, uint32_t bandwidth,
+        uint32_t datarate, uint8_t coderate, uint16_t preambleLen, bool fixLen, bool crcOn,
+        bool freqHopOn, uint8_t hopPeriod, bool iqInverted, uint32_t timeout )
 {
     uint8_t paConfig = 0;
     uint8_t paDac = 0;
@@ -581,12 +558,10 @@ void SX1276SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
     paConfig = SX1276Read(REG_PACONFIG);
     paDac = SX1276Read(REG_PADAC);
 
-    paConfig = (paConfig & RF_PACONFIG_PASELECT_MASK)
-            | SX1276GetPaSelect(SX1276.Settings.Channel);
+    paConfig = (paConfig & RF_PACONFIG_PASELECT_MASK) | SX1276GetPaSelect(SX1276.Settings.Channel);
     paConfig = (paConfig & RF_PACONFIG_MAX_POWER_MASK) | 0x70;
 
-    if ( (paConfig & RF_PACONFIG_PASELECT_PABOOST)
-            == RF_PACONFIG_PASELECT_PABOOST ) {
+    if ( (paConfig & RF_PACONFIG_PASELECT_PABOOST) == RF_PACONFIG_PASELECT_PABOOST ) {
         if ( power > 17 ) {
             paDac = (paDac & RF_PADAC_20DBM_MASK) | RF_PADAC_20DBM_ON;
         } else {
@@ -622,8 +597,7 @@ void SX1276SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
                 | (uint8_t)((uint16_t)(power + 1) & 0x0F);
     }
     SX1276Write(REG_PACONFIG, paConfig);
-    LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_PACONFIG,
-            SX1276Read(REG_PACONFIG));
+    LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_PACONFIG, SX1276Read(REG_PACONFIG));
     SX1276Write(REG_PADAC, paDac);
     LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_PADAC, SX1276Read(REG_PADAC));
 
@@ -656,8 +630,7 @@ void SX1276SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
                             & RF_PACKETCONFIG1_PACKETFORMAT_MASK)
                             | ((fixLen == 1) ?
                                     RF_PACKETCONFIG1_PACKETFORMAT_FIXED :
-                                    RF_PACKETCONFIG1_PACKETFORMAT_VARIABLE)
-                            | (crcOn << 4));
+                                    RF_PACKETCONFIG1_PACKETFORMAT_VARIABLE) | (crcOn << 4));
 
         }
             break;
@@ -697,8 +670,7 @@ void SX1276SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
                 SX1276Write(REG_LR_PLLHOP,
                         (SX1276Read(REG_LR_PLLHOP) & RFLR_PLLHOP_FASTHOP_MASK)
                                 | RFLR_PLLHOP_FASTHOP_ON);
-                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_PLLHOP,
-                        SX1276Read(REG_LR_PLLHOP));
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_PLLHOP, SX1276Read(REG_LR_PLLHOP));
                 SX1276Write(REG_LR_HOPPERIOD, SX1276.Settings.LoRa.HopPeriod);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_HOPPERIOD,
                         SX1276Read(REG_LR_HOPPERIOD));
@@ -707,21 +679,20 @@ void SX1276SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
             SX1276Write(REG_LR_MODEMCONFIG1,
                     (SX1276Read(REG_LR_MODEMCONFIG1) & RFLR_MODEMCONFIG1_BW_MASK
                             & RFLR_MODEMCONFIG1_CODINGRATE_MASK
-                            & RFLR_MODEMCONFIG1_IMPLICITHEADER_MASK)
-                            | (bandwidth << 4) | (coderate << 1) | fixLen);
+                            & RFLR_MODEMCONFIG1_IMPLICITHEADER_MASK) | (bandwidth << 4)
+                            | (coderate << 1) | fixLen);
             LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_MODEMCONFIG1,
                     SX1276Read(REG_LR_MODEMCONFIG1));
 
             SX1276Write(REG_LR_MODEMCONFIG2,
                     (SX1276Read(REG_LR_MODEMCONFIG2) & RFLR_MODEMCONFIG2_SF_MASK
-                            & RFLR_MODEMCONFIG2_RXPAYLOADCRC_MASK)
-                            | (datarate << 4) | (crcOn << 2));
+                            & RFLR_MODEMCONFIG2_RXPAYLOADCRC_MASK) | (datarate << 4)
+                            | (crcOn << 2));
             LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_MODEMCONFIG2,
                     SX1276Read(REG_LR_MODEMCONFIG2));
 
             SX1276Write(REG_LR_MODEMCONFIG3,
-                    (SX1276Read(REG_LR_MODEMCONFIG3)
-                            & RFLR_MODEMCONFIG3_LOWDATARATEOPTIMIZE_MASK)
+                    (SX1276Read(REG_LR_MODEMCONFIG3) & RFLR_MODEMCONFIG3_LOWDATARATEOPTIMIZE_MASK)
                             | (SX1276.Settings.LoRa.LowDatarateOptimize << 3));
             LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_MODEMCONFIG3,
                     SX1276Read(REG_LR_MODEMCONFIG3));
@@ -735,27 +706,21 @@ void SX1276SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
 
             if ( datarate == 6 ) {
                 SX1276Write(REG_LR_DETECTOPTIMIZE,
-                        (SX1276Read(REG_LR_DETECTOPTIMIZE)
-                                & RFLR_DETECTIONOPTIMIZE_MASK)
+                        (SX1276Read(REG_LR_DETECTOPTIMIZE) & RFLR_DETECTIONOPTIMIZE_MASK)
                                 | RFLR_DETECTIONOPTIMIZE_SF6);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTOPTIMIZE,
                         SX1276Read(REG_LR_DETECTOPTIMIZE));
-                SX1276Write(REG_LR_DETECTIONTHRESHOLD,
-                        RFLR_DETECTIONTHRESH_SF6);
-                LOG_TRACE("Value at 0x%02x:\t 0x%02x.",
-                        REG_LR_DETECTIONTHRESHOLD,
+                SX1276Write(REG_LR_DETECTIONTHRESHOLD, RFLR_DETECTIONTHRESH_SF6);
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTIONTHRESHOLD,
                         SX1276Read(REG_LR_DETECTIONTHRESHOLD));
             } else {
                 SX1276Write(REG_LR_DETECTOPTIMIZE,
-                        (SX1276Read(REG_LR_DETECTOPTIMIZE)
-                                & RFLR_DETECTIONOPTIMIZE_MASK)
+                        (SX1276Read(REG_LR_DETECTOPTIMIZE) & RFLR_DETECTIONOPTIMIZE_MASK)
                                 | RFLR_DETECTIONOPTIMIZE_SF7_TO_SF12);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTOPTIMIZE,
                         SX1276Read(REG_LR_DETECTOPTIMIZE));
-                SX1276Write(REG_LR_DETECTIONTHRESHOLD,
-                        RFLR_DETECTIONTHRESH_SF7_TO_SF12);
-                LOG_TRACE("Value at 0x%02x:\t 0x%02x.",
-                        REG_LR_DETECTIONTHRESHOLD,
+                SX1276Write(REG_LR_DETECTIONTHRESHOLD, RFLR_DETECTIONTHRESH_SF7_TO_SF12);
+                LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTIONTHRESHOLD,
                         SX1276Read(REG_LR_DETECTIONTHRESHOLD));
             }
         }
@@ -771,21 +736,17 @@ uint32_t SX1276GetTimeOnAir( RadioModems_t modem, uint8_t pktLen )
     switch (modem) {
         case MODEM_FSK:
         {
-            airTime =
-                    round(
-                            (8
-                                    * (SX1276.Settings.Fsk.PreambleLen
-                                            + ((SX1276Read(REG_SYNCCONFIG)
-                                                    & ~RF_SYNCCONFIG_SYNCSIZE_MASK)
-                                                    + 1)
-                                            + ((SX1276.Settings.Fsk.FixLen
-                                                    == 0x01) ? 0.0 : 1.0)
-                                            + (((SX1276Read(REG_PACKETCONFIG1)
-                                                    & ~RF_PACKETCONFIG1_ADDRSFILTERING_MASK)
-                                                    != 0x00) ? 1.0 : 0) + pktLen
-                                            + ((SX1276.Settings.Fsk.CrcOn
-                                                    == 0x01) ? 2.0 : 0))
-                                    / SX1276.Settings.Fsk.Datarate) * 1e6);
+            airTime = round(
+                    (8
+                            * (SX1276.Settings.Fsk.PreambleLen
+                                    + ((SX1276Read(REG_SYNCCONFIG) & ~RF_SYNCCONFIG_SYNCSIZE_MASK)
+                                            + 1)
+                                    + ((SX1276.Settings.Fsk.FixLen == 0x01) ? 0.0 : 1.0)
+                                    + (((SX1276Read(REG_PACKETCONFIG1)
+                                            & ~RF_PACKETCONFIG1_ADDRSFILTERING_MASK) != 0x00) ?
+                                            1.0 : 0) + pktLen
+                                    + ((SX1276.Settings.Fsk.CrcOn == 0x01) ? 2.0 : 0))
+                            / SX1276.Settings.Fsk.Datarate) * 1e6);
         }
             break;
         case MODEM_LORA:
@@ -836,8 +797,7 @@ uint32_t SX1276GetTimeOnAir( RadioModems_t modem, uint8_t pktLen )
                             + 16 * SX1276.Settings.LoRa.CrcOn
                             - (SX1276.Settings.LoRa.FixLen ? 20 : 0))
                             / (double) (4 * SX1276.Settings.LoRa.Datarate
-                                    - ((SX1276.Settings.LoRa.LowDatarateOptimize
-                                            > 0) ? 8 : 0)))
+                                    - ((SX1276.Settings.LoRa.LowDatarateOptimize > 0) ? 8 : 0)))
                     * (SX1276.Settings.LoRa.Coderate + 4);
             double nPayload = 8 + ((tmp > 0) ? tmp : 0);
             double tPayload = nPayload * ts;
@@ -875,8 +835,7 @@ void SX1276Send( uint8_t *buffer, uint8_t size )
 
             // Write payload buffer
             SX1276WriteFifo(buffer, SX1276.Settings.FskPacketHandler.ChunkSize);
-            SX1276.Settings.FskPacketHandler.NbBytes +=
-                    SX1276.Settings.FskPacketHandler.ChunkSize;
+            SX1276.Settings.FskPacketHandler.NbBytes += SX1276.Settings.FskPacketHandler.ChunkSize;
             txTimeout = SX1276.Settings.Fsk.TxTimeout;
         }
             break;
@@ -906,8 +865,7 @@ void SX1276Send( uint8_t *buffer, uint8_t size )
             SX1276Write(REG_LR_FIFOADDRPTR, 0);
 
             // FIFO operations can not take place in Sleep mode
-            if ( (SX1276Read(REG_OPMODE) & ~RF_OPMODE_MASK)
-                    == RF_OPMODE_SLEEP ) {
+            if ( (SX1276Read(REG_OPMODE) & ~RF_OPMODE_MASK) == RF_OPMODE_SLEEP ) {
                 SX1276SetStby();
                 DelayMs(1);
             }
@@ -965,8 +923,7 @@ void SX1276SetRx( uint32_t timeout )
                             & RF_DIOMAPPING2_MAP_MASK) | RF_DIOMAPPING2_DIO4_11
                             | RF_DIOMAPPING2_MAP_PREAMBLEDETECT);
 
-            SX1276.Settings.FskPacketHandler.FifoThresh = SX1276Read(
-                    REG_FIFOTHRESH) & 0x3F;
+            SX1276.Settings.FskPacketHandler.FifoThresh = SX1276Read(REG_FIFOTHRESH) & 0x3F;
 
             SX1276.Settings.FskPacketHandler.PreambleDetected = false;
             SX1276.Settings.FskPacketHandler.SyncWordDetected = false;
@@ -1000,8 +957,7 @@ void SX1276SetRx( uint32_t timeout )
 
             // ERRATA 2.3 - Receiver Spurious Reception of a LoRa Signal
             if ( SX1276.Settings.LoRa.Bandwidth < 9 ) {
-                SX1276Write(REG_LR_DETECTOPTIMIZE,
-                        SX1276Read(REG_LR_DETECTOPTIMIZE) & 0x7F);
+                SX1276Write(REG_LR_DETECTOPTIMIZE, SX1276Read(REG_LR_DETECTOPTIMIZE) & 0x7F);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTOPTIMIZE,
                         SX1276Read(REG_LR_DETECTOPTIMIZE));
                 SX1276Write(REG_LR_TEST30, 0x00);
@@ -1041,8 +997,7 @@ void SX1276SetRx( uint32_t timeout )
                         break;
                 }
             } else {
-                SX1276Write(REG_LR_DETECTOPTIMIZE,
-                        SX1276Read(REG_LR_DETECTOPTIMIZE) | 0x80);
+                SX1276Write(REG_LR_DETECTOPTIMIZE, SX1276Read(REG_LR_DETECTOPTIMIZE) | 0x80);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_DETECTOPTIMIZE,
                         SX1276Read(REG_LR_DETECTOPTIMIZE));
             }
@@ -1050,23 +1005,19 @@ void SX1276SetRx( uint32_t timeout )
             rxContinuous = SX1276.Settings.LoRa.RxContinuous;
 
             if ( SX1276.Settings.LoRa.FreqHopOn == true ) {
-                SX1276Write(
-                        REG_LR_IRQFLAGSMASK,   //RFLR_IRQFLAGS_RXTIMEOUT |
-                                               //RFLR_IRQFLAGS_RXDONE |
-                                               //RFLR_IRQFLAGS_PAYLOADCRCERROR |
-                        RFLR_IRQFLAGS_VALIDHEADER | RFLR_IRQFLAGS_TXDONE
-                                | RFLR_IRQFLAGS_CADDONE |
-                                //RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
+                SX1276Write(REG_LR_IRQFLAGSMASK,   //RFLR_IRQFLAGS_RXTIMEOUT |
+                                                   //RFLR_IRQFLAGS_RXDONE |
+                                                   //RFLR_IRQFLAGS_PAYLOADCRCERROR |
+                        RFLR_IRQFLAGS_VALIDHEADER | RFLR_IRQFLAGS_TXDONE | RFLR_IRQFLAGS_CADDONE |
+                        //RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
                                 RFLR_IRQFLAGS_CADDETECTED);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_IRQFLAGSMASK,
                         SX1276Read(REG_LR_IRQFLAGSMASK));
 
                 // DIO0=RxDone, DIO2=FhssChangeChannel
                 SX1276Write(REG_DIOMAPPING1,
-                        (SX1276Read(REG_DIOMAPPING1)
-                                & RFLR_DIOMAPPING1_DIO0_MASK
-                                & RFLR_DIOMAPPING1_DIO2_MASK)
-                                | RFLR_DIOMAPPING1_DIO0_00
+                        (SX1276Read(REG_DIOMAPPING1) & RFLR_DIOMAPPING1_DIO0_MASK
+                                & RFLR_DIOMAPPING1_DIO2_MASK) | RFLR_DIOMAPPING1_DIO0_00
                                 | RFLR_DIOMAPPING1_DIO2_00);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING1,
                         SX1276Read(REG_DIOMAPPING1));
@@ -1075,17 +1026,14 @@ void SX1276SetRx( uint32_t timeout )
                         REG_LR_IRQFLAGSMASK,   //RFLR_IRQFLAGS_RXTIMEOUT |
                                                //RFLR_IRQFLAGS_RXDONE |
                                                //RFLR_IRQFLAGS_PAYLOADCRCERROR |
-                        RFLR_IRQFLAGS_VALIDHEADER | RFLR_IRQFLAGS_TXDONE
-                                | RFLR_IRQFLAGS_CADDONE
-                                | RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL
-                                | RFLR_IRQFLAGS_CADDETECTED);
+                        RFLR_IRQFLAGS_VALIDHEADER | RFLR_IRQFLAGS_TXDONE | RFLR_IRQFLAGS_CADDONE
+                                | RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL | RFLR_IRQFLAGS_CADDETECTED);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_IRQFLAGSMASK,
                         SX1276Read(REG_LR_IRQFLAGSMASK));
 
                 // DIO0=RxDone
                 SX1276Write(REG_DIOMAPPING1,
-                        (SX1276Read(REG_DIOMAPPING1)
-                                & RFLR_DIOMAPPING1_DIO0_MASK)
+                        (SX1276Read(REG_DIOMAPPING1) & RFLR_DIOMAPPING1_DIO0_MASK)
                                 | RFLR_DIOMAPPING1_DIO0_00);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING1,
                         SX1276Read(REG_DIOMAPPING1));
@@ -1111,10 +1059,9 @@ void SX1276SetRx( uint32_t timeout )
             TimerSetValue(&RxTimeoutSyncWord,
                     (8.0
                             * (SX1276.Settings.Fsk.PreambleLen
-                                    + ((SX1276Read(REG_SYNCCONFIG)
-                                            & ~RF_SYNCCONFIG_SYNCSIZE_MASK)
-                                            + 1.0) + 10.0)
-                            / (double) SX1276.Settings.Fsk.Datarate) * 1e6);
+                                    + ((SX1276Read(REG_SYNCCONFIG) & ~RF_SYNCCONFIG_SYNCSIZE_MASK)
+                                            + 1.0) + 10.0) / (double) SX1276.Settings.Fsk.Datarate)
+                            * 1e6);
             TimerStart(&RxTimeoutSyncWord);
         }
     } else {
@@ -1148,8 +1095,7 @@ void SX1276SetTx( uint32_t timeout )
             SX1276Write(REG_DIOMAPPING2,
                     (SX1276Read(REG_DIOMAPPING2) & RF_DIOMAPPING2_DIO4_MASK
                             & RF_DIOMAPPING2_MAP_MASK));
-            SX1276.Settings.FskPacketHandler.FifoThresh = SX1276Read(
-                    REG_FIFOTHRESH) & 0x3F;
+            SX1276.Settings.FskPacketHandler.FifoThresh = SX1276Read(REG_FIFOTHRESH) & 0x3F;
         }
             break;
         case MODEM_LORA:
@@ -1157,8 +1103,7 @@ void SX1276SetTx( uint32_t timeout )
             if ( SX1276.Settings.LoRa.FreqHopOn == true ) {
                 SX1276Write(REG_LR_IRQFLAGSMASK,
                         RFLR_IRQFLAGS_RXTIMEOUT | RFLR_IRQFLAGS_RXDONE
-                                | RFLR_IRQFLAGS_PAYLOADCRCERROR
-                                | RFLR_IRQFLAGS_VALIDHEADER |
+                                | RFLR_IRQFLAGS_PAYLOADCRCERROR | RFLR_IRQFLAGS_VALIDHEADER |
                                 //RFLR_IRQFLAGS_TXDONE |
                                 RFLR_IRQFLAGS_CADDONE |
                                 //RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
@@ -1168,30 +1113,25 @@ void SX1276SetTx( uint32_t timeout )
 
                 // DIO0=TxDone, DIO2=FhssChangeChannel
                 SX1276Write(REG_DIOMAPPING1,
-                        (SX1276Read(REG_DIOMAPPING1)
-                                & RFLR_DIOMAPPING1_DIO0_MASK
-                                & RFLR_DIOMAPPING1_DIO2_MASK)
-                                | RFLR_DIOMAPPING1_DIO0_01
+                        (SX1276Read(REG_DIOMAPPING1) & RFLR_DIOMAPPING1_DIO0_MASK
+                                & RFLR_DIOMAPPING1_DIO2_MASK) | RFLR_DIOMAPPING1_DIO0_01
                                 | RFLR_DIOMAPPING1_DIO2_00);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING1,
                         SX1276Read(REG_DIOMAPPING1));
             } else {
                 SX1276Write(REG_LR_IRQFLAGSMASK,
                         RFLR_IRQFLAGS_RXTIMEOUT | RFLR_IRQFLAGS_RXDONE
-                                | RFLR_IRQFLAGS_PAYLOADCRCERROR
-                                | RFLR_IRQFLAGS_VALIDHEADER
+                                | RFLR_IRQFLAGS_PAYLOADCRCERROR | RFLR_IRQFLAGS_VALIDHEADER
                                 |
                                 //RFLR_IRQFLAGS_TXDONE |
-                                RFLR_IRQFLAGS_CADDONE
-                                | RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL
+                                RFLR_IRQFLAGS_CADDONE | RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL
                                 | RFLR_IRQFLAGS_CADDETECTED);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_LR_IRQFLAGSMASK,
                         SX1276Read(REG_LR_IRQFLAGSMASK));
 
                 // DIO0=TxDone
                 SX1276Write(REG_DIOMAPPING1,
-                        (SX1276Read(REG_DIOMAPPING1)
-                                & RFLR_DIOMAPPING1_DIO0_MASK)
+                        (SX1276Read(REG_DIOMAPPING1) & RFLR_DIOMAPPING1_DIO0_MASK)
                                 | RFLR_DIOMAPPING1_DIO0_01);
                 LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING1,
                         SX1276Read(REG_DIOMAPPING1));
@@ -1217,8 +1157,7 @@ void SX1276StartCad( void )
         case MODEM_LORA:
         {
             SX1276Write(REG_LR_IRQFLAGSMASK,
-                    RFLR_IRQFLAGS_RXTIMEOUT | RFLR_IRQFLAGS_RXDONE
-                            | RFLR_IRQFLAGS_PAYLOADCRCERROR
+                    RFLR_IRQFLAGS_RXTIMEOUT | RFLR_IRQFLAGS_RXDONE | RFLR_IRQFLAGS_PAYLOADCRCERROR
                             | RFLR_IRQFLAGS_VALIDHEADER | RFLR_IRQFLAGS_TXDONE |
                             //RFLR_IRQFLAGS_CADDONE |
                             RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL   // |
@@ -1264,15 +1203,13 @@ int16_t SX1276ReadRssi( RadioModems_t modem )
 void SX1276Reset( void )
 {
 // Set RESET pin to 0
-    GpioInit(&SX1276.Reset, RADIO_RESET, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL,
-            0);
+    GpioInit(&SX1276.Reset, RADIO_RESET, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
 
 // Wait 1 ms
     DelayMs(1);
 
 // Configure RESET as input
-    GpioInit(&SX1276.Reset, RADIO_RESET, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL,
-            1);
+    GpioInit(&SX1276.Reset, RADIO_RESET, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
 // Wait 6 ms
     DelayMs(6);
@@ -1295,10 +1232,8 @@ void SX1276SetOpMode( uint8_t opMode )
                 SX1276SetAntSw(0);
             }
         }
-        SX1276Write(REG_OPMODE,
-                (SX1276Read(REG_OPMODE) & RF_OPMODE_MASK) | opMode);
-        LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_OPMODE,
-                SX1276Read(REG_OPMODE));
+        SX1276Write(REG_OPMODE, (SX1276Read(REG_OPMODE) & RF_OPMODE_MASK) | opMode);
+        LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_OPMODE, SX1276Read(REG_OPMODE));
     }
     LOG_TRACE("Leaving %s...", __FUNCTION__);
 }
@@ -1335,12 +1270,9 @@ void SX1276SetModem( RadioModems_t modem )
 
             SX1276Write(REG_DIOMAPPING1, 0x00);
             SX1276Write(REG_DIOMAPPING2, 0x00);
-            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_OPMODE,
-                    SX1276Read(REG_OPMODE));
-            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING1,
-                    SX1276Read(REG_DIOMAPPING1));
-            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING2,
-                    SX1276Read(REG_DIOMAPPING2));
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_OPMODE, SX1276Read(REG_OPMODE));
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING1, SX1276Read(REG_DIOMAPPING1));
+            LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_DIOMAPPING2, SX1276Read(REG_DIOMAPPING2));
             break;
     }
     LOG_TRACE("Leaving %s...", __FUNCTION__);
@@ -1453,8 +1385,7 @@ void SX1276OnTimeoutIrq( void )
                 if ( SX1276.Settings.Fsk.RxContinuous == true ) {
                     // Continuous mode restart Rx chain
                     SX1276Write(REG_RXCONFIG,
-                            SX1276Read(REG_RXCONFIG)
-                                    | RF_RXCONFIG_RESTARTRXWITHOUTPLLLOCK);
+                            SX1276Read(REG_RXCONFIG) | RF_RXCONFIG_RESTARTRXWITHOUTPLLLOCK);
                 } else {
                     SX1276.Settings.State = RF_IDLE;
                     TimerStop(&RxTimeoutSyncWord);
@@ -1488,15 +1419,12 @@ void SX1276OnDio0Irq( void )
                 case MODEM_FSK:
                     if ( SX1276.Settings.Fsk.CrcOn == true ) {
                         irqFlags = SX1276Read(REG_IRQFLAGS2);
-                        if ( (irqFlags & RF_IRQFLAGS2_CRCOK)
-                                != RF_IRQFLAGS2_CRCOK ) {
+                        if ( (irqFlags & RF_IRQFLAGS2_CRCOK) != RF_IRQFLAGS2_CRCOK ) {
                             // Clear Irqs
                             SX1276Write(REG_IRQFLAGS1,
-                                    RF_IRQFLAGS1_RSSI
-                                            | RF_IRQFLAGS1_PREAMBLEDETECT
+                                    RF_IRQFLAGS1_RSSI | RF_IRQFLAGS1_PREAMBLEDETECT
                                             | RF_IRQFLAGS1_SYNCADDRESSMATCH);
-                            SX1276Write(REG_IRQFLAGS2,
-                                    RF_IRQFLAGS2_FIFOOVERRUN);
+                            SX1276Write(REG_IRQFLAGS2, RF_IRQFLAGS2_FIFOOVERRUN);
 
                             if ( SX1276.Settings.Fsk.RxContinuous == false ) {
                                 SX1276.Settings.State = RF_IDLE;
@@ -1509,14 +1437,11 @@ void SX1276OnDio0Irq( void )
                             }
                             TimerStop(&RxTimeoutTimer);
 
-                            if ( (RadioEvents != NULL)
-                                    && (RadioEvents->RxError != NULL) ) {
+                            if ( (RadioEvents != NULL) && (RadioEvents->RxError != NULL) ) {
                                 RadioEvents->RxError();
                             }
-                            SX1276.Settings.FskPacketHandler.PreambleDetected =
-                                    false;
-                            SX1276.Settings.FskPacketHandler.SyncWordDetected =
-                                    false;
+                            SX1276.Settings.FskPacketHandler.PreambleDetected = false;
+                            SX1276.Settings.FskPacketHandler.SyncWordDetected = false;
                             SX1276.Settings.FskPacketHandler.NbBytes = 0;
                             SX1276.Settings.FskPacketHandler.Size = 0;
                             break;
@@ -1527,25 +1452,18 @@ void SX1276OnDio0Irq( void )
                     if ( (SX1276.Settings.FskPacketHandler.Size == 0)
                             && (SX1276.Settings.FskPacketHandler.NbBytes == 0) ) {
                         if ( SX1276.Settings.Fsk.FixLen == false ) {
-                            SX1276ReadFifo(
-                                    (uint8_t*) &SX1276.Settings.FskPacketHandler.Size,
-                                    1);
+                            SX1276ReadFifo((uint8_t*) &SX1276.Settings.FskPacketHandler.Size, 1);
                         } else {
-                            SX1276.Settings.FskPacketHandler.Size = SX1276Read(
-                                    REG_PAYLOADLENGTH);
+                            SX1276.Settings.FskPacketHandler.Size = SX1276Read(REG_PAYLOADLENGTH);
                         }
-                        SX1276ReadFifo(
-                                RxBuffer
-                                        + SX1276.Settings.FskPacketHandler.NbBytes,
+                        SX1276ReadFifo(RxBuffer + SX1276.Settings.FskPacketHandler.NbBytes,
                                 SX1276.Settings.FskPacketHandler.Size
                                         - SX1276.Settings.FskPacketHandler.NbBytes);
                         SX1276.Settings.FskPacketHandler.NbBytes +=
                                 (SX1276.Settings.FskPacketHandler.Size
                                         - SX1276.Settings.FskPacketHandler.NbBytes);
                     } else {
-                        SX1276ReadFifo(
-                                RxBuffer
-                                        + SX1276.Settings.FskPacketHandler.NbBytes,
+                        SX1276ReadFifo(RxBuffer + SX1276.Settings.FskPacketHandler.NbBytes,
                                 SX1276.Settings.FskPacketHandler.Size
                                         - SX1276.Settings.FskPacketHandler.NbBytes);
                         SX1276.Settings.FskPacketHandler.NbBytes +=
@@ -1559,15 +1477,12 @@ void SX1276OnDio0Irq( void )
                     } else {
                         // Continuous mode restart Rx chain
                         SX1276Write(REG_RXCONFIG,
-                                SX1276Read(REG_RXCONFIG)
-                                        | RF_RXCONFIG_RESTARTRXWITHOUTPLLLOCK);
+                                SX1276Read(REG_RXCONFIG) | RF_RXCONFIG_RESTARTRXWITHOUTPLLLOCK);
                     }
                     TimerStop(&RxTimeoutTimer);
 
-                    if ( (RadioEvents != NULL)
-                            && (RadioEvents->RxDone != NULL) ) {
-                        RadioEvents->RxDone(RxBuffer,
-                                SX1276.Settings.FskPacketHandler.Size,
+                    if ( (RadioEvents != NULL) && (RadioEvents->RxDone != NULL) ) {
+                        RadioEvents->RxDone(RxBuffer, SX1276.Settings.FskPacketHandler.Size,
                                 SX1276.Settings.FskPacketHandler.RssiValue, 0);
                     }
                     SX1276.Settings.FskPacketHandler.PreambleDetected = false;
@@ -1586,34 +1501,28 @@ void SX1276OnDio0Irq( void )
                     if ( (irqFlags & RFLR_IRQFLAGS_PAYLOADCRCERROR_MASK)
                             == RFLR_IRQFLAGS_PAYLOADCRCERROR ) {
                         // Clear Irq
-                        SX1276Write(REG_LR_IRQFLAGS,
-                                RFLR_IRQFLAGS_PAYLOADCRCERROR);
+                        SX1276Write(REG_LR_IRQFLAGS, RFLR_IRQFLAGS_PAYLOADCRCERROR);
 
                         if ( SX1276.Settings.LoRa.RxContinuous == false ) {
                             SX1276.Settings.State = RF_IDLE;
                         }
                         TimerStop(&RxTimeoutTimer);
 
-                        if ( (RadioEvents != NULL)
-                                && (RadioEvents->RxError != NULL) ) {
+                        if ( (RadioEvents != NULL) && (RadioEvents->RxError != NULL) ) {
                             RadioEvents->RxError();
                         }
                         break;
                     }
 
-                    SX1276.Settings.LoRaPacketHandler.SnrValue = SX1276Read(
-                            REG_LR_PKTSNRVALUE);
+                    SX1276.Settings.LoRaPacketHandler.SnrValue = SX1276Read(REG_LR_PKTSNRVALUE);
                     if ( SX1276.Settings.LoRaPacketHandler.SnrValue & 0x80 ) // The SNR sign bit is 1
                             {
                         // Invert and divide by 4
-                        snr = ((~SX1276.Settings.LoRaPacketHandler.SnrValue + 1)
-                                & 0xFF) >> 2;
+                        snr = ((~SX1276.Settings.LoRaPacketHandler.SnrValue + 1) & 0xFF) >> 2;
                         snr = -snr;
                     } else {
                         // Divide by 4
-                        snr =
-                                (SX1276.Settings.LoRaPacketHandler.SnrValue
-                                        & 0xFF) >> 2;
+                        snr = (SX1276.Settings.LoRaPacketHandler.SnrValue & 0xFF) >> 2;
                     }
 
                     int16_t rssi = SX1276Read(REG_LR_PKTRSSIVALUE);
@@ -1635,13 +1544,11 @@ void SX1276OnDio0Irq( void )
                         }
                     }
 
-                    SX1276.Settings.LoRaPacketHandler.Size = SX1276Read(
-                            REG_LR_RXNBBYTES);
+                    SX1276.Settings.LoRaPacketHandler.Size = SX1276Read(REG_LR_RXNBBYTES);
 #if defined(FSL_RTOS_FREE_RTOS) || defined(USE_FREE_RTOS)
                     SX1276ReadFifo(LORAPHY_BUF_PAYLOAD_START(RxBuffer), SX1276.Settings.LoRaPacketHandler.Size);
 #else
-                    SX1276ReadFifo(RxBuffer,
-                            SX1276.Settings.LoRaPacketHandler.Size);
+                    SX1276ReadFifo(RxBuffer, SX1276.Settings.LoRaPacketHandler.Size);
 #endif
 
                     if ( SX1276.Settings.LoRa.RxContinuous == false ) {
@@ -1649,10 +1556,8 @@ void SX1276OnDio0Irq( void )
                     }
                     TimerStop(&RxTimeoutTimer);
 
-                    if ( (RadioEvents != NULL)
-                            && (RadioEvents->RxDone != NULL) ) {
-                        RadioEvents->RxDone(RxBuffer,
-                                SX1276.Settings.LoRaPacketHandler.Size,
+                    if ( (RadioEvents != NULL) && (RadioEvents->RxDone != NULL) ) {
+                        RadioEvents->RxDone(RxBuffer, SX1276.Settings.LoRaPacketHandler.Size,
                                 SX1276.Settings.LoRaPacketHandler.RssiValue,
                                 SX1276.Settings.LoRaPacketHandler.SnrValue);
                     }
@@ -1673,8 +1578,7 @@ void SX1276OnDio0Irq( void )
                 case MODEM_FSK:
                 default:
                     SX1276.Settings.State = RF_IDLE;
-                    if ( (RadioEvents != NULL)
-                            && (RadioEvents->TxDone != NULL) ) {
+                    if ( (RadioEvents != NULL) && (RadioEvents->TxDone != NULL) ) {
                         RadioEvents->TxDone();
                     }
                     break;
@@ -1696,28 +1600,21 @@ void SX1276OnDio1Irq( void )
                     if ( (SX1276.Settings.FskPacketHandler.Size == 0)
                             && (SX1276.Settings.FskPacketHandler.NbBytes == 0) ) {
                         if ( SX1276.Settings.Fsk.FixLen == false ) {
-                            SX1276ReadFifo(
-                                    (uint8_t*) &SX1276.Settings.FskPacketHandler.Size,
-                                    1);
+                            SX1276ReadFifo((uint8_t*) &SX1276.Settings.FskPacketHandler.Size, 1);
                         } else {
-                            SX1276.Settings.FskPacketHandler.Size = SX1276Read(
-                                    REG_PAYLOADLENGTH);
+                            SX1276.Settings.FskPacketHandler.Size = SX1276Read(REG_PAYLOADLENGTH);
                         }
                     }
 
                     if ( (SX1276.Settings.FskPacketHandler.Size
                             - SX1276.Settings.FskPacketHandler.NbBytes)
                             > SX1276.Settings.FskPacketHandler.FifoThresh ) {
-                        SX1276ReadFifo(
-                                (RxBuffer
-                                        + SX1276.Settings.FskPacketHandler.NbBytes),
+                        SX1276ReadFifo((RxBuffer + SX1276.Settings.FskPacketHandler.NbBytes),
                                 SX1276.Settings.FskPacketHandler.FifoThresh);
                         SX1276.Settings.FskPacketHandler.NbBytes +=
                                 SX1276.Settings.FskPacketHandler.FifoThresh;
                     } else {
-                        SX1276ReadFifo(
-                                (RxBuffer
-                                        + SX1276.Settings.FskPacketHandler.NbBytes),
+                        SX1276ReadFifo((RxBuffer + SX1276.Settings.FskPacketHandler.NbBytes),
                                 SX1276.Settings.FskPacketHandler.Size
                                         - SX1276.Settings.FskPacketHandler.NbBytes);
                         SX1276.Settings.FskPacketHandler.NbBytes +=
@@ -1729,8 +1626,7 @@ void SX1276OnDio1Irq( void )
                     // Sync time out
                     TimerStop(&RxTimeoutTimer);
                     SX1276.Settings.State = RF_IDLE;
-                    if ( (RadioEvents != NULL)
-                            && (RadioEvents->RxTimeout != NULL) ) {
+                    if ( (RadioEvents != NULL) && (RadioEvents->RxTimeout != NULL) ) {
                         RadioEvents->RxTimeout();
                     }
                     break;
@@ -1745,17 +1641,13 @@ void SX1276OnDio1Irq( void )
                     if ( (SX1276.Settings.FskPacketHandler.Size
                             - SX1276.Settings.FskPacketHandler.NbBytes)
                             > SX1276.Settings.FskPacketHandler.ChunkSize ) {
-                        SX1276WriteFifo(
-                                (RxBuffer
-                                        + SX1276.Settings.FskPacketHandler.NbBytes),
+                        SX1276WriteFifo((RxBuffer + SX1276.Settings.FskPacketHandler.NbBytes),
                                 SX1276.Settings.FskPacketHandler.ChunkSize);
                         SX1276.Settings.FskPacketHandler.NbBytes +=
                                 SX1276.Settings.FskPacketHandler.ChunkSize;
                     } else {
                         // Write the last chunk of data
-                        SX1276WriteFifo(
-                                RxBuffer
-                                        + SX1276.Settings.FskPacketHandler.NbBytes,
+                        SX1276WriteFifo(RxBuffer + SX1276.Settings.FskPacketHandler.NbBytes,
                                 SX1276.Settings.FskPacketHandler.Size
                                         - SX1276.Settings.FskPacketHandler.NbBytes);
                         SX1276.Settings.FskPacketHandler.NbBytes +=
@@ -1780,38 +1672,29 @@ void SX1276OnDio2Irq( void )
         case RF_RX_RUNNING:
             switch (SX1276.Settings.Modem) {
                 case MODEM_FSK:
-                    if ( (SX1276.Settings.FskPacketHandler.PreambleDetected
-                            == true)
-                            && (SX1276.Settings.FskPacketHandler.SyncWordDetected
-                                    == false) ) {
+                    if ( (SX1276.Settings.FskPacketHandler.PreambleDetected == true)
+                            && (SX1276.Settings.FskPacketHandler.SyncWordDetected == false) ) {
                         TimerStop(&RxTimeoutSyncWord);
 
-                        SX1276.Settings.FskPacketHandler.SyncWordDetected =
-                                true;
+                        SX1276.Settings.FskPacketHandler.SyncWordDetected = true;
 
-                        SX1276.Settings.FskPacketHandler.RssiValue =
-                                -(SX1276Read(REG_RSSIVALUE) >> 1);
+                        SX1276.Settings.FskPacketHandler.RssiValue = -(SX1276Read(REG_RSSIVALUE)
+                                >> 1);
 
                         SX1276.Settings.FskPacketHandler.AfcValue =
-                                (int32_t) (double) (((uint16_t) SX1276Read(
-                                        REG_AFCMSB) << 8)
-                                        | (uint16_t) SX1276Read(REG_AFCLSB))
-                                        * (double) FREQ_STEP;
-                        SX1276.Settings.FskPacketHandler.RxGain = (SX1276Read(
-                                REG_LNA) >> 5) & 0x07;
+                                (int32_t) (double) (((uint16_t) SX1276Read(REG_AFCMSB) << 8)
+                                        | (uint16_t) SX1276Read(REG_AFCLSB)) * (double) FREQ_STEP;
+                        SX1276.Settings.FskPacketHandler.RxGain = (SX1276Read(REG_LNA) >> 5) & 0x07;
                     }
                     break;
                 case MODEM_LORA:
                     if ( SX1276.Settings.LoRa.FreqHopOn == true ) {
                         // Clear Irq
-                        SX1276Write(REG_LR_IRQFLAGS,
-                                RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL);
+                        SX1276Write(REG_LR_IRQFLAGS, RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL);
 
-                        if ( (RadioEvents != NULL)
-                                && (RadioEvents->FhssChangeChannel != NULL) ) {
+                        if ( (RadioEvents != NULL) && (RadioEvents->FhssChangeChannel != NULL) ) {
                             RadioEvents->FhssChangeChannel(
-                                    (SX1276Read(REG_LR_HOPCHANNEL)
-                                            & RFLR_HOPCHANNEL_CHANNEL_MASK));
+                                    (SX1276Read(REG_LR_HOPCHANNEL) & RFLR_HOPCHANNEL_CHANNEL_MASK));
                         }
                     }
                     break;
@@ -1826,14 +1709,11 @@ void SX1276OnDio2Irq( void )
                 case MODEM_LORA:
                     if ( SX1276.Settings.LoRa.FreqHopOn == true ) {
                         // Clear Irq
-                        SX1276Write(REG_LR_IRQFLAGS,
-                                RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL);
+                        SX1276Write(REG_LR_IRQFLAGS, RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL);
 
-                        if ( (RadioEvents != NULL)
-                                && (RadioEvents->FhssChangeChannel != NULL) ) {
+                        if ( (RadioEvents != NULL) && (RadioEvents->FhssChangeChannel != NULL) ) {
                             RadioEvents->FhssChangeChannel(
-                                    (SX1276Read(REG_LR_HOPCHANNEL)
-                                            & RFLR_HOPCHANNEL_CHANNEL_MASK));
+                                    (SX1276Read(REG_LR_HOPCHANNEL) & RFLR_HOPCHANNEL_CHANNEL_MASK));
                         }
                     }
                     break;
@@ -1855,8 +1735,7 @@ void SX1276OnDio3Irq( void )
             if ( (SX1276Read(REG_LR_IRQFLAGS) & RFLR_IRQFLAGS_CADDETECTED)
                     == RFLR_IRQFLAGS_CADDETECTED ) {
                 // Clear Irq
-                SX1276Write(REG_LR_IRQFLAGS,
-                        RFLR_IRQFLAGS_CADDETECTED | RFLR_IRQFLAGS_CADDONE);
+                SX1276Write(REG_LR_IRQFLAGS, RFLR_IRQFLAGS_CADDETECTED | RFLR_IRQFLAGS_CADDONE);
                 if ( (RadioEvents != NULL) && (RadioEvents->CadDone != NULL) ) {
                     RadioEvents->CadDone(true);
                 }

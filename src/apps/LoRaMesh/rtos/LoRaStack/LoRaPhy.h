@@ -56,13 +56,36 @@
  * TYPE DEFINITIONS
  ******************************************************************************/
 typedef enum {
-    PHY_INITIAL_STATE,
-    PHY_IDLE,
-    PHY_RECEIVING,
-    PHY_POWER_DOWN,
-    PHY_WAIT_FOR_TXDONE,
-    PHY_TIMEOUT
+    PHY_INITIAL_STATE, PHY_IDLE, PHY_RECEIVING, PHY_POWER_DOWN, PHY_WAIT_FOR_TXDONE, PHY_TIMEOUT
 } LoRaPhy_AppStatus_t;
+
+/*! LoRaPhy channels parameters definition */
+typedef union {
+    int8_t Value;
+    struct {
+        int8_t Min :4;
+        int8_t Max :4;
+    } Fields;
+} DrRange_t;
+
+typedef struct {
+    uint16_t DCycle;
+    int8_t TxMaxPower;
+    uint64_t LastTxDoneTime;
+    uint64_t TimeOff;
+} Band_t;
+
+typedef struct {
+    uint32_t Frequency;   // Hz
+    DrRange_t DrRange; // Max datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+                       // Min datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+    uint8_t Band;        // Band index
+} ChannelParams_t;
+
+typedef struct {
+    uint32_t Frequency;   // Hz
+    uint8_t Datarate; // [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+} Rx2ChannelParams_t;
 
 /*! Rx reception window type */
 typedef enum {
@@ -130,8 +153,7 @@ uint8_t LoRaPhy_OnPacketRx( LoRaPhy_PacketDesc *packet );
  * \param payloadSize Size of payload data.
  * \return Error code, ERR_OK for everything fine.
  */
-uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, size_t payloadSize,
-        uint8_t flags );
+uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, size_t payloadSize, uint8_t flags );
 
 /*!
  * Initializes and opens the reception window
@@ -141,13 +163,31 @@ uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, size_t payloadSize,
  * \param [IN] bandwidth window channel bandwidth
  * \param [IN] timeout window channel timeout
  */
-void LoRaPhy_OpenRxWindow( uint32_t freq, uint8_t datarate, uint32_t bandwidth,
-        uint16_t timeout, bool rxContinuous );
+void LoRaPhy_OpenRxWindow( uint32_t freq, uint8_t datarate, uint32_t bandwidth, uint16_t timeout,
+        bool rxContinuous );
 
 /*!
  * Returns a radomly generated 16-bit value called nonce to generate session keys
  */
 uint16_t LoRaPhy_GenerateNonce( void );
+
+/*******************************************************************************
+ * SETUP FUNCTION PROTOTYPES (PUBLIC)
+ ******************************************************************************/
+/*!
+ * \brief
+ *
+ * \param id
+ * \param params
+ */
+void LoRaPhy_SetChannel( uint8_t id, ChannelParams_t params );
+
+/*!
+ * \brief
+ *
+ * \param id
+ */
+void LoRaPhy_ChannelRemove( uint8_t id );
 
 /*
  * \brief Maximal duration a reception window will be opened for
@@ -187,6 +227,14 @@ void LoRaPhy_SetJoinAcceptDelay1( uint32_t delay );
  * \param delay Delay in ms
  */
 void LoRaPhy_SetJoinAcceptDelay2( uint32_t delay );
+
+/*!
+ * \brief Set the delay of the second reception window after Tx
+ *
+ * \param rx1DrOffset Offset between up and down link
+ * \param rx2Dr Data rate of second reception window
+ */
+void LoRaPhy_SetDownLinkSettings( uint8_t rx1DrOffset, uint8_t rx2Dr );
 
 /*******************************************************************************
  * END OF CODE

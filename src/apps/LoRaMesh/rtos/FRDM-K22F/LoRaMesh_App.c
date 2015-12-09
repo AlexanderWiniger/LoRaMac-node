@@ -84,8 +84,7 @@ void LoRaMesh_AppInit( void )
     DevAddr = 0x013D02AB;
 
     LoRaMesh_InitNwkIds(LORAWAN_NETWORK_ID, DevAddr, NwkSKey, AppSKey);
-    LOG_DEBUG(
-            "LoRaMesh network IDs initialized. Network ID: %u, DevAddr: 0x%08x.",
+    LOG_DEBUG("LoRaMesh network IDs initialized. Network ID: %u, DevAddr: 0x%08x.",
             LORAWAN_NETWORK_ID, DevAddr);
 
     LoRaMesh_SetAdrOn (LORAWAN_ADR_ON);
@@ -93,8 +92,8 @@ void LoRaMesh_AppInit( void )
 //    LoRaMesh_SetDeviceClass (CLASS_C);
     LoRaMesh_TestSetDutyCycleCtrlOff (LORAWAN_DUTYCYCLE_OFF);
 
-    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", configMINIMAL_STACK_SIZE,
-            (void*) NULL, tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
+    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", configMINIMAL_STACK_SIZE, (void*) NULL,
+            tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
         /*lint -e527 */
         for ( ;; ) {
         }; /* error! probably out of memory */
@@ -137,8 +136,7 @@ static bool SendFrame( void )
     AppData[8] = 0x9A;
     AppData[9] = 0xBC;
 
-    sendFrameStatus = LoRaMesh_SendFrame(AppData, AppDataSize, AppPort,
-            IsTxConfirmed);
+    sendFrameStatus = LoRaMesh_SendFrame(AppData, AppDataSize, AppPort, true, IsTxConfirmed);
 
     if ( sendFrameStatus == ERR_NOTAVAIL ) return true;
     else return false;

@@ -16,7 +16,7 @@
 #include "rtc-board.h"
 #include "timer-board.h"
 
-#define LOG_LEVEL_ERROR
+#define LOG_LEVEL_TRACE
 #include "debug.h"
 
 static bool LowPowerModeEnable = true;
@@ -43,6 +43,8 @@ void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t perio
         obj->Callback = callback;
         obj->IsRunning = false;
         NrOfTimers++;
+
+        LOG_TRACE("%s created.", name);
     } else {
         LOG_ERROR("Failed to create %s timer", name);
     }
@@ -52,6 +54,7 @@ void TimerStart( TimerEvent_t *obj )
 {
     if(xTimerStart( obj->Handle, 0 ) != pdFAIL) {
         obj->IsRunning = true;
+        LOG_TRACE("%s started.", pcTimerGetTimerName(obj->Handle));
     } else {
         LOG_ERROR("Failed to start %s timer", pcTimerGetTimerName(obj->Handle));
     }
@@ -61,6 +64,7 @@ void TimerStop( TimerEvent_t *obj )
 {
     if(xTimerStop( obj->Handle, 0 ) != pdFAIL) {
         obj->IsRunning = true;
+        LOG_TRACE("%s stopped.", pcTimerGetTimerName(obj->Handle));
     } else {
         LOG_ERROR("Failed to stop %s timer", pcTimerGetTimerName(obj->Handle));
     }
@@ -68,7 +72,9 @@ void TimerStop( TimerEvent_t *obj )
 
 void TimerReset( TimerEvent_t *obj )
 {
-    if(xTimerReset(obj->Handle, 0) != pdPASS) {
+    if(xTimerReset(obj->Handle, 0) != pdFAIL) {
+        LOG_TRACE("%s reset.", pcTimerGetTimerName(obj->Handle));
+    } else {
         LOG_ERROR("Failed to reset %s timer", pcTimerGetTimerName(obj->Handle));
     }
 }
@@ -76,6 +82,7 @@ void TimerReset( TimerEvent_t *obj )
 void TimerSetValue( TimerEvent_t *obj, uint32_t value )
 {
     if(xTimerChangePeriod(obj->Handle, (value / portTICK_PERIOD_MS), 0) != pdFAIL) {
+        LOG_TRACE("%s period changed from %u to %u.", pcTimerGetTimerName(obj->Handle), obj->PeriodInMs, value);
         obj->PeriodInMs = value;
     } else {
         LOG_ERROR("Failed to change %s timers value from %u to %u", pcTimerGetTimerName(obj->Handle), obj->PeriodInMs, (value / portTICK_PERIOD_MS));
@@ -117,8 +124,7 @@ static TimerEvent_t *TimerListHead = NULL;
  * \param [IN]  obj Timer object to be become the new head
  * \param [IN]  remainingTime Remaining time of the previous head to be replaced
  */
-static void TimerInsertNewHeadTimer( TimerEvent_t *obj,
-        uint32_t remainingTime );
+static void TimerInsertNewHeadTimer( TimerEvent_t *obj, uint32_t remainingTime );
 
 /*!
  * \brief Adds a timer to the list.
@@ -235,8 +241,7 @@ static void TimerInsertTimer( TimerEvent_t *obj, uint32_t remainingTime )
                     break;
                 } else {
                     aggregatedTimestamp = aggregatedTimestampNext;
-                    aggregatedTimestampNext = aggregatedTimestampNext
-                            + cur->Timestamp;
+                    aggregatedTimestampNext = aggregatedTimestampNext + cur->Timestamp;
                 }
             }
         }

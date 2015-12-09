@@ -22,6 +22,8 @@
  ******************************************************************************/
 #define LORAFRM_HEADER_SIZE_MAX                 (22)
 #define LORAFRM_HEADER_SIZE_MIN                 (7)
+#define LORAFRM_OPTSLEN_MAX                     (15)
+#define LORAFRM_PORT_SIZE                       (1)
 #define LORAFRM_PAYLOAD_SIZE                    (LORAMAC_PAYLOAD_SIZE-LORAFRM_HEADER_SIZE_MIN)
 #define LORAFRM_BUFFER_SIZE                     (LORAMAC_BUFFER_SIZE)
 
@@ -29,7 +31,7 @@
 #define LORAFRM_BUF_IDX_DEVADDR                 (LORAMAC_BUF_IDX_PAYLOAD+0) /* <DevAddr> index */
 #define LORAFRM_BUF_IDX_CTRL                    (LORAMAC_BUF_IDX_PAYLOAD+4) /* <fCtrl> index */
 #define LORAFRM_BUF_IDX_CNTR                    (LORAMAC_BUF_IDX_PAYLOAD+5) /* <fCnt> index */
-#define LORAFRM_BUF_IDX_OPTS                    (LORAMAC_BUF_IDX_PAYLOAD+6) /* <fOpts> index */
+#define LORAFRM_BUF_IDX_OPTS                    (LORAMAC_BUF_IDX_PAYLOAD+7) /* <fOpts> index */
 /*******************************************************************************
  * MACRO DEFINITIONS
  ******************************************************************************/
@@ -39,8 +41,8 @@
 #define LORAFRM_BUF_OPTS(phy)                   ((phy)[LORAFRM_BUF_IDX_OPTS])
 
 #define LORAFRM_BUF_IDX_PORT(optsLen)           (LORAFRM_BUF_IDX_OPTS + optsLen)
-#define LORAFRM_BUF_PAYLOAD_START(phy, optsLen) (LORAMAC_BUF_PAYLOAD_START(phy) \
-                                                + optsLen + LORAFRM_HEADER_SIZE_MIN)
+#define LORAFRM_BUF_PAYLOAD_START(phy)          (LORAMAC_BUF_PAYLOAD_START(phy) + LORAFRM_HEADER_SIZE_MIN)
+#define LORAFRM_BUF_PAYLOAD_START_WPORT(phy)    (LORAMAC_BUF_PAYLOAD_START(phy) + LORAFRM_HEADER_SIZE_MIN + LORAFRM_PORT_SIZE)
 
 /*******************************************************************************
  * TYPE DEFINITIONS
@@ -76,7 +78,7 @@ void LoRaFrm_Init( void );
  * \param packet Pointer to the packet descriptor
  * \return Error code, ERR_OK if everything is ok, ERR_OVERFLOW if buffer is too small.
  */
-uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet );
+uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, LoRaMessageType_t type );
 
 /*!
  * \brief Puts a payload into the buffer queue to be sent asynchronously.
@@ -91,9 +93,8 @@ uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet );
  *
  * \return Error code, ERR_OK if everything is ok, ERR_OVERFLOW if buffer is too small.
  */
-uint8_t LoRaFrm_PutPayload( uint8_t* fBuffer, uint16_t fBufferSize,
-        uint8_t payloadSize, uint8_t fPort, uint8_t* fOpts, uint8_t fOptsLen,
-        LoRaMessageType_t type );
+uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
+        uint8_t* fOpts, uint8_t fOptsLen, LoRaMessageType_t type, bool encrypted );
 
 /*******************************************************************************
  * END OF CODE

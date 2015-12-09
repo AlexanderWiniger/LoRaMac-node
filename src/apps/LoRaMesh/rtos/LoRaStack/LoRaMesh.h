@@ -41,33 +41,30 @@ typedef enum {
     CLASS_A, CLASS_B, CLASS_C, CLASS_D /* LoRaMesh class */,
 } DeviceClass_t;
 
-/*! LoRaMAC channels parameters definition */
-typedef union {
-    int8_t Value;
-    struct {
-        int8_t Min :4;
-        int8_t Max :4;
-    } Fields;
-} DrRange_t;
+/* LoRaMesh connection info structure */
+typedef struct ConnectionInfo_s {
+    uint32_t Address;
+    uint8_t NwkSKey[16];
+    uint8_t AppSKey[16];
+    uint8_t ChannelIndex;
+    uint8_t DataRateIndex;
+    uint32_t UpLinkCounter;
+    uint32_t DownLinkCounter;
+} ConnectionInfo_t;
 
-typedef struct {
-    uint16_t DCycle;
-    int8_t TxMaxPower;
-    uint64_t LastTxDoneTime;
-    uint64_t TimeOff;
-} Band_t;
+/*! LoRaMesh connection slot info structure */
+typedef struct ConnectionSlotInfo_s {
+    ConnectionInfo_t Connection;
+    uint32_t Periodicity;
+    uint32_t Duration;
+} ConnectionSlotInfo_t;
 
-typedef struct {
-    uint32_t Frequency;   // Hz
-    DrRange_t DrRange; // Max datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
-                       // Min datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
-    uint8_t Band;        // Band index
-} ChannelParams_t;
-
-typedef struct {
-    uint32_t Frequency;   // Hz
-    uint8_t Datarate; // [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
-} Rx2ChannelParams_t;
+/*! LoRaMesh advertising info structure. */
+typedef struct AdvertisingBeaconInfo_s {
+    uint32_t Time;
+    uint8_t Interval; /* In seconds */
+    uint8_t Duration; /* In milliseconds */
+} AdvertisingInfo_t;
 
 typedef union {
     uint8_t Value;
@@ -206,7 +203,24 @@ void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, ui
  *                          5: Unable to find a free channel
  *                          6: Device switched off]
  */
-uint8_t LoRaMesh_SendFrame( uint8_t *fPayload, size_t fPayloadSize, uint8_t fPort, bool confirmed );
+uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t fPort,
+        bool isUpLink, bool isConfirmed );
+
+/*!
+ *
+ */
+uint8_t LoRaMesh_OnPacketRx( LoRaPhy_PacketDesc* packet );
+
+/*!
+ *
+ */
+uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
+        uint8_t* fOpts, uint8_t fOptsLen, LoRaMessageType_t type );
+
+/*!
+ *
+ */
+uint8_t LoRaMesh_ProcessAdvertising( uint8_t *aPayload, uint8_t aPayloadSize );
 
 /*!
  * Initiates the Over-the-Air activation

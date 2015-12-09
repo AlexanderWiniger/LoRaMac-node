@@ -30,10 +30,10 @@
 /*******************************************************************************
  * MACRO DEFINITIONS
  ******************************************************************************/
-#define LORAMAC_BUF_HDR(phy)                ((phy)[LORAMAC_BUF_IDX_HDR])
+#define LORAMAC_BUF_HDR(phy)                        ((phy)[LORAMAC_BUF_IDX_HDR])
 
-#define LORAMAC_BUF_PAYLOAD_START(phy)      (LORAPHY_BUF_PAYLOAD_START(phy) \
-                                             + LORAMAC_HEADER_SIZE)
+#define LORAMAC_BUF_MIC_START(phy, payloadSize)     (LORAPHY_BUF_PAYLOAD_START(phy) + payloadSize)
+#define LORAMAC_BUF_PAYLOAD_START(phy)              (LORAPHY_BUF_PAYLOAD_START(phy) + LORAMAC_HEADER_SIZE)
 /*******************************************************************************
  * TYPE DEFINITIONS
  ******************************************************************************/
@@ -84,8 +84,8 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet );
  *
  * \return Error code, ERR_OK if everything is ok, ERR_OVERFLOW if buffer is too small.
  */
-uint8_t LoRaMac_PutPayload( uint8_t* fBuffer, size_t fBufferSize,
-        size_t payloadSize, LoRaMessageType_t type );
+uint8_t LoRaMac_PutPayload( uint8_t* bif, size_t bufSize, size_t payloadSize,
+        LoRaMessageType_t type );
 
 /*******************************************************************************
  * END OF CODE

@@ -101,20 +101,20 @@ void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, ui
 uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t fPort,
         bool isUpLink, bool isConfirmed )
 {
-    uint8_t i, fBuffer[LORAFRM_BUFFER_SIZE];
+    uint8_t i, buf[LORAMESH_BUFFER_SIZE];
     LoRaMessageType_t msgType;
 
     if ( !LoRaMesh_IsNetworkJoined() ) {
         return ERR_NOTAVAIL; // No network has been joined yet
     }
 
-    if ( appPayloadSize > LORAFRM_PAYLOAD_SIZE ) {
+    if ( appPayloadSize > LORAMESH_PAYLOAD_SIZE ) {
         return ERR_OVERFLOW; /* block too large for payload */
     }
 
     i = 0;
     while (i < appPayloadSize) {
-        LORAMESH_BUF_PAYLOAD_START (buf)[i] = *appPayload;
+        buf[LORAMESH_BUF_PAYLOAD_START(buf) + i] = *appPayload;
         appPayload++;
         i++;
     }
@@ -125,16 +125,32 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
         msgType = ((isConfirmed) ? MSG_TYPE_DATA_CONFIRMED_DOWN : MSG_TYPE_DATA_UNCONFIRMED_DOWN);
     }
 
-    return LoRaMesh_PutPayload(fBuffer, sizeof(fBuffer), appPayloadSize, fPort, NULL, 0, msgType);
+    return LoRaMesh_PutPayload(buf, sizeof(buf), appPayloadSize, fPort, NULL, 0, msgType);
 
 }
 
-uint8_t LoRaMesh_PutPayload( uint8_t* fBuffer, uint16_t fBufferSize, uint8_t payloadSize,
-        uint8_t fPort, uint8_t* fOpts, uint8_t fOptsLen, LoRaMessageType_t type )
+uint8_t LoRaMesh_OnPacketRx( LoRaPhy_PacketDesc* packet )
+{
+    return ERR_OK;
+}
+
+uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
+        uint8_t* fOpts, uint8_t fOptsLen, LoRaMessageType_t type )
 {
     /* Add app information */
 
-    return LoRaFrm_PutPayload(fBuffer, sizeof(fBuffer), fPayloadSize, fPort, NULL, 0, msgType);
+    LOG_TRACE("%s - Size %d", __FUNCTION__, payloadSize);
+    LOG_TRACE_BARE("\t");
+    for ( uint8_t i = 0; i < payloadSize; i++ )
+        LOG_TRACE_BARE("0x%02x ", buf[i]);
+    LOG_TRACE_BARE("\r\n");
+
+    return LoRaFrm_PutPayload(buf, bufSize, payloadSize, fPort, fOpts, fOptsLen, type, false);
+}
+
+uint8_t LoRaMesh_ProcessAdvertising( uint8_t *aPayload, uint8_t aPayloadSize )
+{
+    return ERR_OK;
 }
 
 uint8_t LoRaMesh_JoinReq( uint8_t * devEui, uint8_t * appEui, uint8_t * appKey )
@@ -142,9 +158,9 @@ uint8_t LoRaMesh_JoinReq( uint8_t * devEui, uint8_t * appEui, uint8_t * appKey )
     uint8_t fPayloadSize = 0, fPayload[LORAFRM_BUFFER_SIZE];
     uint16_t devNonce;
 
-    memcpy(&LORAFRM_BUF_PAYLOAD_START(fPayload, 0)[fPayloadSize], appEui, 8);
+    memcpy(&LORAFRM_BUF_PAYLOAD_START(fPayload)[fPayloadSize], appEui, 8);
     fPayloadSize += 8;
-    memcpy(&LORAFRM_BUF_PAYLOAD_START(fPayload, 0)[fPayloadSize], devEui, 8);
+    memcpy(&LORAFRM_BUF_PAYLOAD_START(fPayload)[fPayloadSize], devEui, 8);
     fPayloadSize += 8;
 
     devNonce = LoRaPhy_GenerateNonce();
@@ -154,11 +170,11 @@ uint8_t LoRaMesh_JoinReq( uint8_t * devEui, uint8_t * appEui, uint8_t * appKey )
     memcpy(pLoRaDevice->devEui, devEui, 8);
     memcpy(pLoRaDevice->appKey, appKey, 16);
 
-    LORAFRM_BUF_PAYLOAD_START(fPayload, 0)[fPayloadSize++] = devNonce & 0xFF;
-    LORAFRM_BUF_PAYLOAD_START(fPayload, 0)[fPayloadSize++] = (devNonce >> 8) & 0xFF;
+    LORAFRM_BUF_PAYLOAD_START(fPayload)[fPayloadSize++] = devNonce & 0xFF;
+    LORAFRM_BUF_PAYLOAD_START(fPayload)[fPayloadSize++] = (devNonce >> 8) & 0xFF;
 
     return LoRaFrm_PutPayload(fPayload, LORAFRM_PAYLOAD_SIZE, fPayloadSize, 0, NULL, 0,
-            MSG_TYPE_JOIN_REQ);
+            MSG_TYPE_JOIN_REQ, false);
 }
 
 bool LoRaMesh_IsNetworkJoined( void )
