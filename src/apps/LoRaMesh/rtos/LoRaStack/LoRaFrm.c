@@ -43,226 +43,91 @@ void LoRaFrm_Init( void )
 
 }
 
-uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, LoRaMessageType_t type )
+uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr, LoRaFrmDir_t fDir,
+        uint32_t fCnt )
 {
+    uint8_t fPayloadSize = 0, fBuffer[LORAFRM_BUFFER_SIZE];
+    LoRaFrmType_t fType;
     LoRaFrmCtrl_t fCtrl;
+    uint8_t fPort;
 
-    uint8_t pktHeaderLen = 0;
-    uint32_t address = 0;
-    uint8_t appPayloadStartIndex = 0;
-    uint8_t port = 0xFF;
-    uint8_t frameLen = 0;
-    uint32_t mic = 0;
-    uint32_t micRx = 0;
+    fType = (LoRaFrmType_t)(packet->flags & LORAPHY_PACKET_FLAGS_FRM_MASK);
+    fCtrl.Value = LORAFRM_BUF_CTRL(packet->phyData);
+    fPort = packet->phyData[LORAFRM_BUF_IDX_PORT(fCtrl.Bits.FOptsLen)];
 
-    uint16_t sequenceCounter = 0;
-    uint16_t sequenceCounterPrev = 0;
-    uint16_t sequenceCounterDiff = 0;
-    uint32_t linkCounter = 0;
-
-    MulticastGroupInfo_t *curMulticastGrp = NULL;
-    ChildNodeInfo_t *curChildNode = NULL;
-    uint8_t *nwkSKey = LoRaMacNwkSKey;
-    uint8_t *appSKey = LoRaMacAppSKey;
-
-    bool isMicOk = false;
-    FrameDirection_t direction;
-
-    if ( type == MSG_TYPE_DATA_UNCONFIRMED_UP || type == MSG_TYPE_DATA_CONFIRMED_UP ) {
-        direction = UP_LINK;
-    } else if ( type == MSG_TYPE_DATA_UNCONFIRMED_DOWN || type == MSG_TYPE_DATA_CONFIRMED_DOWN ) {
-        direction = DOWN_LINK;
-    } else {
-        return ERR_FAILED;
+    if ( packet->flags & LORAPHY_PACKET_FLAGS_ACK_REQ ) {
+        pLoRaDevice->ctrlFlags.Bits.ackRequested = 1;
     }
 
-    address = payload[pktHeaderLen++];
-    address |= ((uint32_t) payload[pktHeaderLen++] << 8);
-    address |= ((uint32_t) payload[pktHeaderLen++] << 16);
-    address |= ((uint32_t) payload[pktHeaderLen++] << 24);
+    switch (fType) {
+        case FRM_TYPE_REGULAR:
+            if ( fDir == DOWN_LINK ) {
+                fPayloadSize = LORAPHY_BUF_SIZE(packet->phyData) - LORAFRM_HEADER_SIZE_MIN
+                        - LORAFRM_PORT_SIZE - LORAMAC_HEADER_SIZE - LORAMAC_MIC_SIZE
+                        - fCtrl.Bits.FOptsLen;
+                if ( fPort == 0 ) {
+                    /* Decrypt with encrypt function */
+                    LoRaMacPayloadEncrypt(LORAFRM_BUF_PAYLOAD_START_WPORT(packet->phyData),
+                            fPayloadSize, pLoRaDevice->upLinkSlot.NwkSKey, devAddr, fDir, fCnt,
+                            fBuffer);
 
-    if ( direction == UP_LINK ) {
-        /* Up link, therefore child node */
-        curChildNode = ChildNodeFind(address);
-        if ( curChildNode != NULL ) {
-            nwkSKey = curChildNode->NwkSKey;
-            appSKey = curChildNode->AppSKey;
-            linkCounter = curChildNode->UpLinkCounter;
-        } else {
-            /* We are not the destination of this frame. */
-            LOG_ERROR("Address didn't match any child node");
-            LoRaMacEventFlags.Bits.Tx = 1;
-            LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_ADDRESS_FAIL;
-            LoRaMacState &= ~MAC_TX_RUNNING;
-            return;
-        }
-    } else {
-        /* Down link, therefore either from parent node or multicast group */
-        if ( address != LoRaMacDevAddr ) {
-            curMulticastGrp = MulticastGroupFind(address);
-            if ( curMulticastGrp != NULL ) {
-                LoRaMacEventFlags.Bits.Multicast = 1;
-                nwkSKey = curMulticastGrp->NwkSKey;
-                appSKey = curMulticastGrp->AppSKey;
-                linkCounter = curMulticastGrp->DownLinkCounter;
-            } else {
-                /* We are not the destination of this frame. */
-                LoRaMacEventFlags.Bits.Tx = 1;
-                LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_ADDRESS_FAIL;
-                LoRaMacState &= ~MAC_TX_RUNNING;
-                return;
+                    // Decode frame payload MAC commands
+                    LoRaMac_ProcessCommands(fBuffer, 0, fPayloadSize);
+                } else {
+                    /* Decrypt with encrypt function */
+                    LoRaMacPayloadEncrypt(LORAFRM_BUF_PAYLOAD_START_WPORT(packet->phyData),
+                            fPayloadSize, pLoRaDevice->upLinkSlot.AppSKey, devAddr, fDir, fCnt,
+                            fBuffer);
+                }
+                // Decode frame options MAC commands
+                if ( fCtrl.Bits.FOptsLen > 0 )
+                    LoRaMac_ProcessCommands(fBuffer, LORAFRM_HEADER_SIZE_MIN + LORAMAC_HEADER_SIZE,
+                            fPayloadSize);
             }
-        } else {
-            LoRaMacEventFlags.Bits.Multicast = 0;
-            nwkSKey = LoRaMacNwkSKey;
-            appSKey = LoRaMacAppSKey;
-            linkCounter = DownLinkCounter;
-        }
+            break;
+        case FRM_TYPE_ADVERTISING:
+            break;
+        case FRM_TYPE_MULTICAST:
+            break;
     }
 
-    fCtrl.Value = payload[pktHeaderLen++];
+    LOG_TRACE("%s - Size %d", __FUNCTION__, fPayloadSize);
+    LOG_TRACE_BARE("\t");
+    for ( uint8_t i = 0; i < fPayloadSize; i++ )
+        LOG_TRACE_BARE("0x%02x ", fBuffer[i]);
+    LOG_TRACE_BARE("\r\n");
 
-    sequenceCounter = (uint16_t) payload[pktHeaderLen++];
-    sequenceCounter |= (uint16_t) payload[pktHeaderLen++] << 8;
-
-    appPayloadStartIndex = 8 + fCtrl.Bits.FOptsLen;
-
-    micRx |= (uint32_t) payload[size - LORAMAC_MFR_LEN];
-    micRx |= ((uint32_t) payload[size - LORAMAC_MFR_LEN + 1] << 8);
-    micRx |= ((uint32_t) payload[size - LORAMAC_MFR_LEN + 2] << 16);
-    micRx |= ((uint32_t) payload[size - LORAMAC_MFR_LEN + 3] << 24);
-
-    sequenceCounterPrev = (uint16_t) linkCounter;
-    sequenceCounterDiff = (sequenceCounter - sequenceCounterPrev);
-
-    if ( sequenceCounterDiff < (1 << 15) ) {
-        linkCounter += sequenceCounterDiff;
-        LoRaMacComputeMic(payload, size - LORAMAC_MFR_LEN, nwkSKey, address, direction, linkCounter,
-                &mic);
-        if ( micRx == mic ) {
-            isMicOk = true;
-        }
-    } else {
-        // check for link counter roll-over
-        uint32_t linkCounterTmp = linkCounter + 0x10000 + (int16_t) sequenceCounterDiff;
-        LoRaMacComputeMic(payload, size - LORAMAC_MFR_LEN, nwkSKey, address, direction,
-                linkCounterTmp, &mic);
-        if ( micRx == mic ) {
-            isMicOk = true;
-            linkCounterTmp = linkCounterTmp;
-        }
-    }
-
-    if ( isMicOk ) {
-        LoRaMacEventFlags.Bits.Rx = 1;
-        LoRaMacEventInfo.RxSnr = snr;
-        LoRaMacEventInfo.RxRssi = rssi;
-        LoRaMacEventInfo.RxBufferSize = 0;
-        AdrAckCounter = 0;
-
-        // Update 32 bits downlink counter
-        if ( LoRaMacEventFlags.Bits.Multicast == 1 ) {
-            curMulticastGrp->DownLinkCounter = linkCounter;
-        } else {
-            DownLinkCounter = linkCounter;
-        }
-
-        if ( macHdr.Bits.MType == FRAME_TYPE_DATA_CONFIRMED_DOWN ) {
-            SrvAckRequested = true;
-        } else {
-            SrvAckRequested = false;
-        }
-
-        // Check if the frame is an acknowledgement
-        if ( fCtrl.Bits.Ack == 1 ) {
-            LoRaMacEventInfo.TxAckReceived = true;
-
-            // Stop the AckTimeout timer as no more retransmissions
-            // are needed.
-            TimerStop (&AckTimeoutTimer);
-        } else {
-            LoRaMacEventInfo.TxAckReceived = false;
-            if ( AckTimeoutRetriesCounter > AckTimeoutRetries ) {
-                // Stop the AckTimeout timer as no more retransmissions
-                // are needed.
-                TimerStop (&AckTimeoutTimer);
-            }
-        }
-
-        if ( (fCtrl.Bits.FOptsLen > 0) && (LoRaMacEventFlags.Bits.Multicast == 0) ) {
-            // Decode Options field MAC commands
-            ProcessMacCommands(payload, 8, appPayloadStartIndex);
-        }
-
-        if ( ((size - 4) - appPayloadStartIndex) > 0 ) {
-            port = payload[appPayloadStartIndex++];
-            frameLen = (size - 4) - appPayloadStartIndex;
-
-            if ( port == 0 ) {
-                LoRaMacPayloadDecrypt(payload + appPayloadStartIndex, frameLen, nwkSKey, address,
-                        direction, linkCounter, LoRaMacRxPayload);
-
-                // Decode frame payload MAC commands
-                ProcessMacCommands(LoRaMacRxPayload, 0, frameLen);
-            } else {
-                LoRaMacPayloadDecrypt(payload + appPayloadStartIndex, frameLen, appSKey, address,
-                        direction, linkCounter, LoRaMacRxPayload);
-
-                LoRaMacEventFlags.Bits.RxData = 1;
-                LoRaMacEventInfo.RxPort = port;
-                LoRaMacEventInfo.RxBuffer = LoRaMacRxPayload;
-                LoRaMacEventInfo.RxBufferSize = frameLen;
-            }
-        }
-
-        LoRaMacEventFlags.Bits.Tx = 1;
-        LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_OK;
-    } else {
-        LoRaMacEventInfo.TxAckReceived = false;
-
-        LoRaMacEventFlags.Bits.Tx = 1;
-        LoRaMacEventInfo.Status = LORAMAC_EVENT_INFO_STATUS_MIC_FAIL;
-        LoRaMacState &= ~MAC_TX_RUNNING;
-    }
-
-    return LoRaMesh_OnPacketRx(packet); /* Pass message up the stack */
+    return LoRaMesh_OnPacketRx((uint8_t*) &fBuffer, fPayloadSize, fPort, fType); /* Pass message up the stack */
 }
 
 uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
-        uint8_t* fOpts, uint8_t fOptsLen, LoRaMessageType_t type, bool encrypted )
+        LoRaFrmType_t fType, LoRaFrmDir_t fDir, bool confirmed, bool encrypted )
 {
-    switch (type) {
-        case MSG_TYPE_JOIN_REQ:
-            break;
-        case MSG_TYPE_JOIN_ACCEPT:
-            break;
-        case MSG_TYPE_DATA_CONFIRMED_DOWN:
-        case MSG_TYPE_DATA_UNCONFIRMED_DOWN:
-        case MSG_TYPE_DATA_CONFIRMED_UP:
-        case MSG_TYPE_DATA_UNCONFIRMED_UP:
+    uint8_t pktHdrSize = 0, fBuffer[LORAFRM_BUFFER_SIZE];
+    LoRaFrmCtrl_t fCtrl;
+
+    /* Initialize buffer */
+    memset1(fBuffer, 0U, LORAFRM_BUFFER_SIZE);
+
+    fCtrl.Value = 0;
+
+    switch (fType) {
+        case FRM_TYPE_REGULAR:
         {
-            uint8_t pktHdrSize = 0, fBuffer[LORAFRM_BUFFER_SIZE];
-            LoRaFrmCtrl_t fCtrl;
-
-            /* Initialize buffer */
-            memset1(fBuffer, 0U, LORAFRM_BUFFER_SIZE);
-
-            fCtrl.Value = 0;
-
-            fCtrl.Bits.FOptsLen = fOptsLen;
+            fCtrl.Bits.FOptsLen = 0;
             fCtrl.Bits.FPending = 0;
-            fCtrl.Bits.Ack = 0;
+            fCtrl.Bits.Ack = (confirmed ? 1 : 0);
             fCtrl.Bits.AdrAckReq = 0;
             fCtrl.Bits.Adr = pLoRaDevice->ctrlFlags.Bits.adrCtrlOn;
 
             /* Payload encryption */
             if ( (payloadSize > 0) && (fPort == 0) ) { /* Encrypt frame payload with NwkSKey */
-                LoRaMacPayloadEncrypt(buf, payloadSize, pLoRaDevice->nwkSKey, pLoRaDevice->devAddr,
-                        UP_LINK, pLoRaDevice->upLinkCounter,
+                LoRaMacPayloadEncrypt(buf, payloadSize, pLoRaDevice->upLinkSlot.NwkSKey,
+                        pLoRaDevice->devAddr, fDir, pLoRaDevice->upLinkSlot.UpLinkCounter,
                         (LORAFRM_BUF_PAYLOAD_START_WPORT(fBuffer) + pLoRaDevice->macCmdBufferSize));
             } else if ( (payloadSize > 0) && (!encrypted) ) { /* Encrypt frame payload with AppSKey */
-                LoRaMacPayloadEncrypt(buf, payloadSize, pLoRaDevice->appSKey, pLoRaDevice->devAddr,
-                        UP_LINK, pLoRaDevice->upLinkCounter,
+                LoRaMacPayloadEncrypt(buf, payloadSize, pLoRaDevice->upLinkSlot.AppSKey,
+                        pLoRaDevice->devAddr, fDir, pLoRaDevice->upLinkSlot.UpLinkCounter,
                         (LORAFRM_BUF_PAYLOAD_START_WPORT(fBuffer) + pLoRaDevice->macCmdBufferSize));
             }
 
@@ -274,7 +139,7 @@ uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
 
             /* Adjust datarate if adr is enabled */
             if ( fCtrl.Bits.Adr == true ) {
-                if ( pLoRaDevice->curDatarateIdx == LORAMAC_MIN_DATARATE ) {
+                if ( pLoRaDevice->upLinkSlot.DataRateIndex == LORAMAC_MIN_DATARATE ) {
                     pLoRaDevice->adrAckCounter = 0;
                     fCtrl.Bits.AdrAckReq = false;
                 } else {
@@ -285,8 +150,8 @@ uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
                     }
                     if ( pLoRaDevice->adrAckCounter > (ADR_ACK_LIMIT + ADR_ACK_DELAY) ) {
                         pLoRaDevice->adrAckCounter = 0;
-                        if ( pLoRaDevice->curDatarateIdx > LORAMAC_MIN_DATARATE ) {
-                            pLoRaDevice->curDatarateIdx--;
+                        if ( pLoRaDevice->upLinkSlot.DataRateIndex > LORAMAC_MIN_DATARATE ) {
+                            pLoRaDevice->upLinkSlot.DataRateIndex--;
                         } else {
                             // Re-enable default channels LC1, LC2, LC3
                             pLoRaDevice->channelsMask[0] |= (LC(1) + LC(2) + LC(3));
@@ -302,31 +167,39 @@ uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
 
             fBuffer[LORAFRM_BUF_IDX_CTRL] = fCtrl.Value;
 
-            fBuffer[LORAFRM_BUF_IDX_CNTR] = pLoRaDevice->upLinkCounter & 0xFF;
-            fBuffer[LORAFRM_BUF_IDX_CNTR + 1] = (pLoRaDevice->upLinkCounter >> 8) & 0xFF;
+            fBuffer[LORAFRM_BUF_IDX_CNTR] = pLoRaDevice->upLinkSlot.UpLinkCounter & 0xFF;
+            fBuffer[LORAFRM_BUF_IDX_CNTR + 1] = (pLoRaDevice->upLinkSlot.UpLinkCounter >> 8) & 0xFF;
 
             pktHdrSize += LORAFRM_HEADER_SIZE_MIN;
 
-            if ( fOptsLen > 0 ) {
-                for ( uint8_t i = 0; i < fOptsLen; i++ ) {
-                    fBuffer[LORAFRM_BUF_IDX_OPTS + i] = fOpts[i];
-                }
-                pktHdrSize += fOptsLen;
-            }
+//            if ( fCtrl.Bits.FOptsLen > 0 ) {
+//                LoRaMac_AddCommands(&buf[LORAFRM_BUF_IDX_OPTS], 15);
+//                pktHdrSize += fCtrl.Bits.FOptsLen;
+//            }
 
             if ( payloadSize > 0 ) {
-                fBuffer[LORAFRM_BUF_IDX_PORT(fOptsLen)] = fPort;
+                fBuffer[LORAFRM_BUF_IDX_PORT(/*fOptsLen*/0)] = fPort;
                 pktHdrSize++;
             }
 
             payloadSize += pktHdrSize;
         }
             break;
-        case MSG_TYPE_PROPRIETARY:
-            //Intentional falltrough
+            break;
+        case FRM_TYPE_ADVERTISING:
+            break;
+        case FRM_TYPE_MULTICAST:
+            break;
         default:
             return ERR_INVALID_TYPE;
             break;
+    }
+
+    LoRaMacMsgType_t msgType;
+    if ( fDir == UP_LINK ) {
+        msgType = (confirmed ? MSG_TYPE_DATA_CONFIRMED_UP : MSG_TYPE_DATA_UNCONFIRMED_UP);
+    } else {
+        msgType = (confirmed ? MSG_TYPE_DATA_CONFIRMED_DOWN : MSG_TYPE_DATA_UNCONFIRMED_DOWN);
     }
 
     LOG_TRACE("%s - Size %d", __FUNCTION__, payloadSize);
@@ -335,7 +208,7 @@ uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
         LOG_TRACE_BARE("0x%02x ", fBuffer[i]);
     LOG_TRACE_BARE("\r\n");
 
-    return LoRaMac_PutPayload(fBuffer, sizeof(fBuffer), payloadSize, type);
+    return LoRaMac_PutPayload(fBuffer, sizeof(fBuffer), payloadSize, msgType);
 }
 
 /*******************************************************************************

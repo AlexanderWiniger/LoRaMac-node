@@ -297,6 +297,12 @@ uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, size_t payloadSize, ui
 
 uint8_t LoRaPhy_OnPacketRx( LoRaPhy_PacketDesc *packet )
 {
+    LOG_TRACE("%s - Size %d", __FUNCTION__, LORAPHY_BUF_SIZE(packet->phyData));
+    LOG_TRACE_BARE("\t");
+    for ( uint8_t i = 0; i < (LORAPHY_BUF_SIZE(packet->phyData) + 2); i++ )
+        LOG_TRACE_BARE("0x%02x ", packet->phyData[i]);
+    LOG_TRACE_BARE("\r\n");
+
     return LoRaMac_OnPacketRx(packet); /* Pass message up the stack */
 }
 
@@ -418,6 +424,14 @@ void LoRaPhy_SetDownLinkSettings( uint8_t rx1DrOffset, uint8_t rx2Dr )
 }
 
 /*******************************************************************************
+ * TEST FUNCTION PROTOTYPES (PUBLIC) (FOR DEBUG PURPOSES ONLY)
+ ******************************************************************************/
+uint8_t LoRaPhy_QueueRxMessage( uint8_t *payload, size_t payloadSize, bool toBack, uint8_t flags )
+{
+    return QueuePut(payload, LORAPHY_BUFFER_SIZE, payloadSize, false, false, toBack, flags);
+}
+
+/*******************************************************************************
  * PRIVATE FUNCTIONS (STATIC)
  ******************************************************************************/
 /*!
@@ -441,8 +455,6 @@ static void HandleStateMachine()
                 if ( result == ERR_OK ) { /* there was data and it has been sent */
                     PhyStatus = PHY_WAIT_FOR_TXDONE;
                     break; /* process switch again */
-                } else if ( result == ERR_DISABLED ) { /* powered down transceiver */
-                    PhyStatus = PHY_POWER_DOWN;
                 }
                 return;
             case PHY_POWER_DOWN:
@@ -453,14 +465,15 @@ static void HandleStateMachine()
                     phyFlags.Bits.TxDone = 0;
                     if ( pLoRaDevice->devClass != CLASS_C ) PhyStatus = PHY_IDLE;
                     else PhyStatus = PHY_RECEIVING;
+                    break;
                 }
-                break;
+                return;
             case PHY_RECEIVING:
                 return;
             case PHY_TIMEOUT:
                 PhyStatus = PHY_IDLE;
                 LOG_ERROR("Radio timeout.");
-                return;
+                break;
             default:
                 return;
         }
@@ -520,14 +533,15 @@ static uint8_t CheckTx( void )
             // Send now
             LOG_TRACE("Sending now on channel %d (DR: %u).", channel.Frequency,
                     pLoRaDevice->curDatarateIdx);
-            Radio.Send(LORAPHY_BUF_PAYLOAD_START(TxDataBuffer), LORAPHY_BUF_SIZE(TxDataBuffer));
+//            Radio.Send(LORAPHY_BUF_PAYLOAD_START(TxDataBuffer), LORAPHY_BUF_SIZE(TxDataBuffer));
         }
 
-        if ( flags & LORAPHY_PACKET_FLAGS_TX_ADVERTISING ) {
+        if ( (flags & LORAPHY_PACKET_FLAGS_FRM_MASK) == LORAPHY_PACKET_FLAGS_FRM_ADVERTISING ) {
             phyFlags.Bits.TxType = LORAPHY_TXTYPE_ADVERTISING;
-        } else if ( flags & LORAPHY_PACKET_FLAGS_TX_REGULAR ) {
+        } else if ( (flags & LORAPHY_PACKET_FLAGS_FRM_MASK) == LORAPHY_PACKET_FLAGS_FRM_REGULAR ) {
             phyFlags.Bits.TxType = LORAPHY_TXTYPE_REGULAR;
-        } else if ( flags & LORAPHY_PACKET_FLAGS_TX_MULTICAST ) {
+        } else if ( (flags & LORAPHY_PACKET_FLAGS_FRM_MASK)
+                == LORAPHY_PACKET_FLAGS_FRM_MULTICAST ) {
             phyFlags.Bits.TxType = LORAPHY_TXTYPE_MULTICAST;
         } else {
             return ERR_VALUE;
@@ -662,12 +676,12 @@ static uint8_t SetNextChannel( void )
 
     memset1(enabledChannels, 0, LORA_MAX_NB_CHANNELS);
 
-// Update Aggregated duty cycle
+    // Update Aggregated duty cycle
     if ( AggregatedTimeOff < (curTime - AggregatedLastTxDoneTime) ) {
         AggregatedTimeOff = 0;
     }
 
-// Update bands Time OFF
+    // Update bands Time OFF
     TimerTime_t minTime = (TimerTime_t)(-1);
     for ( i = 0; i < LORA_MAX_NB_BANDS; i++ ) {
         if ( pLoRaDevice->dbgFlags.Bits.dutyCycleCtrlOff == 0 ) {
@@ -683,7 +697,7 @@ static uint8_t SetNextChannel( void )
         }
     }
 
-// Search how many channels are enabled
+    // Search how many channels are enabled
     for ( i = 0, k = 0; i < LORA_MAX_NB_CHANNELS; i += 16, k++ ) {
         for ( j = 0; j < 16; j++ ) {
             if ( (pLoRaDevice->channelsMask[k] & (1 << j)) != 0 ) {
@@ -735,12 +749,8 @@ static void OnRadioTxDone( void )
 
     } else if ( phyFlags.Bits.TxType == LORAPHY_TXTYPE_REGULAR
             && pLoRaDevice->dbgFlags.Bits.rxWindowsDisabled != 1 ) {
-        if ( RxWindowTimers[LORAPHY_RXSLOT_RX1WINDOW].PeriodInMs != RxWindow1Delay )
-            TimerSetValue(&RxWindowTimers[LORAPHY_RXSLOT_RX1WINDOW], RxWindow1Delay);
-        if ( RxWindowTimers[LORAPHY_RXSLOT_RX2WINDOW].PeriodInMs != RxWindow2Delay )
-            TimerSetValue(&RxWindowTimers[LORAPHY_RXSLOT_RX2WINDOW], RxWindow2Delay);
-        TimerStart(&RxWindowTimers[LORAPHY_RXSLOT_RX1WINDOW]);
-        TimerStart(&RxWindowTimers[LORAPHY_RXSLOT_RX2WINDOW]);
+        TimerSetValue(&RxWindowTimers[LORAPHY_RXSLOT_RX1WINDOW], RxWindow1Delay);
+        TimerSetValue(&RxWindowTimers[LORAPHY_RXSLOT_RX2WINDOW], RxWindow2Delay);
     } else {
         phyFlags.Bits.TxDone = 1;
     }

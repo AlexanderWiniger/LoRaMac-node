@@ -47,7 +47,7 @@ typedef enum {
     MSG_TYPE_DATA_CONFIRMED_DOWN = 0x05,
     MSG_TYPE_RFU = 0x06,
     MSG_TYPE_PROPRIETARY = 0x07,
-} LoRaMessageType_t;
+} LoRaMacMsgType_t;
 
 /*! LoRaMAC header field definition */
 typedef union {
@@ -57,7 +57,7 @@ typedef union {
         uint8_t RFU :3;
         uint8_t MType :3;
     } Bits;
-} LoRaMacHeader_t;
+} LoRaMacHdr_t;
 
 /*******************************************************************************
  * API FUNCTION PROTOTYPES (PUBLIC)
@@ -85,7 +85,18 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet );
  * \return Error code, ERR_OK if everything is ok, ERR_OVERFLOW if buffer is too small.
  */
 uint8_t LoRaMac_PutPayload( uint8_t* bif, size_t bufSize, size_t payloadSize,
-        LoRaMessageType_t type );
+        LoRaMacMsgType_t type );
+
+/*!
+ * Processes received MAC commands.
+ *
+ * \Remark MAC layer internal function
+ *
+ * \param [in] payload Pointer to the rx packet payload.
+ * \param [in] macIndex Index of the MAC command to be processed.
+ * \param [in] commandsSize Size of MAC commands to be processed.
+ */
+void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t commandsSize );
 
 /*******************************************************************************
  * END OF CODE

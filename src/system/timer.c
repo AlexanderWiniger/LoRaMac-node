@@ -26,6 +26,7 @@ static uint32_t NrOfTimers = 0;
 
 void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t periodInMs, TimerCallbackFunction_t callback, bool autoReload )
 {
+#if 0
     if(NrOfTimers > configTIMER_QUEUE_LENGTH) {
         LOG_ERROR("Maximum number of timers created.");
     }
@@ -48,45 +49,58 @@ void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t perio
     } else {
         LOG_ERROR("Failed to create %s timer", name);
     }
+#endif
 }
 
 void TimerStart( TimerEvent_t *obj )
 {
+#if 0
+    if(obj->IsRunning) return;
+
     if(xTimerStart( obj->Handle, 0 ) != pdFAIL) {
         obj->IsRunning = true;
         LOG_TRACE("%s started.", pcTimerGetTimerName(obj->Handle));
     } else {
         LOG_ERROR("Failed to start %s timer", pcTimerGetTimerName(obj->Handle));
     }
+#endif
 }
 
 void TimerStop( TimerEvent_t *obj )
 {
+#if 0
+    if(!obj->IsRunning) return;
+
     if(xTimerStop( obj->Handle, 0 ) != pdFAIL) {
-        obj->IsRunning = true;
+        obj->IsRunning = false;
         LOG_TRACE("%s stopped.", pcTimerGetTimerName(obj->Handle));
     } else {
         LOG_ERROR("Failed to stop %s timer", pcTimerGetTimerName(obj->Handle));
     }
+#endif
 }
 
 void TimerReset( TimerEvent_t *obj )
 {
+#if 0
     if(xTimerReset(obj->Handle, 0) != pdFAIL) {
         LOG_TRACE("%s reset.", pcTimerGetTimerName(obj->Handle));
     } else {
         LOG_ERROR("Failed to reset %s timer", pcTimerGetTimerName(obj->Handle));
     }
+#endif
 }
 
 void TimerSetValue( TimerEvent_t *obj, uint32_t value )
 {
-    if(xTimerChangePeriod(obj->Handle, (value / portTICK_PERIOD_MS), 0) != pdFAIL) {
+#if 0
+    if(xTimerChangePeriod(obj->Handle, (value / portTICK_PERIOD_MS), 100) != pdFAIL) {
         LOG_TRACE("%s period changed from %u to %u.", pcTimerGetTimerName(obj->Handle), obj->PeriodInMs, value);
         obj->PeriodInMs = value;
     } else {
         LOG_ERROR("Failed to change %s timers value from %u to %u", pcTimerGetTimerName(obj->Handle), obj->PeriodInMs, (value / portTICK_PERIOD_MS));
     }
+#endif
 }
 
 TimerTime_t TimerGetCurrentTime( void )

@@ -1048,8 +1048,9 @@ void SX1276SetRx( uint32_t timeout )
 
     SX1276.Settings.State = RF_RX_RUNNING;
     if ( timeout != 0 ) {
+        /* Changed timer period and starts it */
         TimerSetValue(&RxTimeoutTimer, timeout);
-        TimerStart(&RxTimeoutTimer);
+//        TimerStart(&RxTimeoutTimer);
     }
 
     if ( SX1276.Settings.Modem == MODEM_FSK ) {
@@ -1062,7 +1063,7 @@ void SX1276SetRx( uint32_t timeout )
                                     + ((SX1276Read(REG_SYNCCONFIG) & ~RF_SYNCCONFIG_SYNCSIZE_MASK)
                                             + 1.0) + 10.0) / (double) SX1276.Settings.Fsk.Datarate)
                             * 1e6);
-            TimerStart(&RxTimeoutSyncWord);
+//            TimerStart(&RxTimeoutSyncWord);
         }
     } else {
         if ( rxContinuous == true ) {
@@ -1077,7 +1078,6 @@ void SX1276SetRx( uint32_t timeout )
 void SX1276SetTx( uint32_t timeout )
 {
     LOG_TRACE("Entering %s...", __FUNCTION__);
-    TimerSetValue(&TxTimeoutTimer, timeout);
 
     switch (SX1276.Settings.Modem) {
         case MODEM_FSK:
@@ -1141,7 +1141,8 @@ void SX1276SetTx( uint32_t timeout )
     }
 
     SX1276.Settings.State = RF_TX_RUNNING;
-    TimerStart(&TxTimeoutTimer);
+    TimerSetValue(&TxTimeoutTimer, timeout);
+//    TimerStart(&TxTimeoutTimer);
     SX1276SetOpMode (RF_OPMODE_TRANSMITTER);
     LOG_TRACE("Leaving %s...", __FUNCTION__);
 }

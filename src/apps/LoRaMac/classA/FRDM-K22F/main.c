@@ -121,7 +121,7 @@
 /*!
  * User application data buffer size
  */
-#define LORAWAN_APP_DATA_SIZE                       2
+#define LORAWAN_APP_DATA_SIZE                       12
 
 #if( OVER_THE_AIR_ACTIVATION != 0 )
 
@@ -210,23 +210,33 @@ bool SwitchBPushEvent = false;
 /*!
  * \brief Switch A IRQ callback
  */
-void SwitchAIrq(void);
+void SwitchAIrq( void );
 
 /*!
  * \brief Switch B IRQ callback
  */
-void SwitchBIrq(void);
+void SwitchBIrq( void );
 
 /*!
  * Prepares the frame buffer to be sent
  */
-static void PrepareTxFrame(uint8_t port)
+static void PrepareTxFrame( uint8_t port )
 {
     switch (port) {
         case 2:
         {
-            AppData[0] = AppLedStateOn;
-            AppData[1] = AppSensorTransmissionStateOn;
+            AppData[0] = 'H';
+            AppData[1] = 'e';
+            AppData[2] = 'l';
+            AppData[3] = 'l';
+            AppData[4] = 'o';
+            AppData[5] = ' ';
+            AppData[6] = 'W';
+            AppData[7] = 'o';
+            AppData[8] = 'r';
+            AppData[9] = 'l';
+            AppData[10] = 'd';
+            AppData[11] = '\0';
         }
             break;
         default:
@@ -234,13 +244,13 @@ static void PrepareTxFrame(uint8_t port)
     }
 }
 
-static void ProcessRxFrame(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
+static void ProcessRxFrame( LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info )
 {
     switch (info->RxPort) // Check Rx port number
     {
         case 1: // The application LED can be controlled on port 1 or 2
         case 2:
-            if (info->RxBufferSize == 15) {
+            if ( info->RxBufferSize == 15 ) {
                 AppLedStateOn = ((info->RxBuffer[0] & 0x01) == 0 ? false : true);
                 AppSensorTransmissionStateOn = ((info->RxBuffer[1] & 0x01) == 0 ? false : true);
 
@@ -260,11 +270,11 @@ static void ProcessRxFrame(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
     }
 }
 
-static bool SendFrame(void)
+static bool SendFrame( void )
 {
     uint8_t sendFrameStatus = 0;
 
-    if (IsTxConfirmed == false) {
+    if ( IsTxConfirmed == false ) {
         sendFrameStatus = LoRaMacSendFrame(AppPort, AppData, AppDataSize);
     } else {
         sendFrameStatus = LoRaMacSendConfirmedFrame(AppPort, AppData, AppDataSize, 8);
@@ -295,19 +305,19 @@ static void OnJoinReqTimerEvent( void )
 /*!
  * \brief Function to be executed on MAC layer event
  */
-static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
+static void OnMacEvent( LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info )
 {
-    if (flags->Bits.JoinAccept == 1) {
+    if ( flags->Bits.JoinAccept == 1 ) {
 #if( OVER_THE_AIR_ACTIVATION != 0 )
         TimerStop( &JoinReqTimer );
 #endif
         IsNetworkJoined = true;
     } else {
-        if (flags->Bits.Tx == 1) {
+        if ( flags->Bits.Tx == 1 ) {
         }
 
-        if (flags->Bits.Rx == 1) {
-            if (flags->Bits.RxData == true) {
+        if ( flags->Bits.Rx == 1 ) {
+            if ( flags->Bits.RxData == true ) {
                 ProcessRxFrame(flags, info);
             }
 
@@ -321,7 +331,7 @@ static void OnMacEvent(LoRaMacEventFlags_t *flags, LoRaMacEventInfo_t *info)
 /*!
  * \brief Function executed on TxNextPacket Timeout event
  */
-static void OnTxNextPacketTimerEvent(void)
+static void OnTxNextPacketTimerEvent( void )
 {
     TimerStop(&TxNextPacketTimer);
     TxNextPacket = true;
@@ -330,7 +340,7 @@ static void OnTxNextPacketTimerEvent(void)
 /**
  * Main application entry point.
  */
-int main(void)
+int main( void )
 {
 #if( OVER_THE_AIR_ACTIVATION != 0 )
     uint8_t sendFrameStatus = 0;
@@ -338,22 +348,22 @@ int main(void)
     bool trySendingFrameAgain = false;
 
     BoardInitMcu();
-	PRINTF("DEBUG: Mcu initialized.\r\n");
-	BoardInitPeriph();
-	PRINTF("DEBUG: Peripherals initialized.\r\n");
+    PRINTF("DEBUG: Mcu initialized.\r\n");
+    BoardInitPeriph();
+    PRINTF("DEBUG: Peripherals initialized.\r\n");
 
-	/* Switch A & B */
-	GpioSetInterrupt(&SwitchA, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchAIrq);
-	GpioSetInterrupt(&SwitchB, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchBIrq);
+    /* Switch A & B */
+    GpioSetInterrupt(&SwitchA, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchAIrq);
+    GpioSetInterrupt(&SwitchB, IRQ_FALLING_EDGE, IRQ_LOW_PRIORITY, SwitchBIrq);
 
-	LoRaMacCallbacks.MacEvent = OnMacEvent;
-	LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
-	LoRaMacInit(&LoRaMacCallbacks);
-	PRINTF("DEBUG: LoRaMac initialized.\r\n");
+    LoRaMacCallbacks.MacEvent = OnMacEvent;
+    LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
+    LoRaMacInit(&LoRaMacCallbacks);
+    PRINTF("DEBUG: LoRaMac initialized.\r\n");
 
-	AppLedStateChanged = true;
-	AppSensorTransmissionStateChanged = true;
-	IsNetworkJoined = false;
+    AppLedStateChanged = true;
+    AppSensorTransmissionStateChanged = true;
+    IsNetworkJoined = false;
 
 #if( OVER_THE_AIR_ACTIVATION == 0 )
     // Random seed initialization
@@ -379,6 +389,7 @@ DevAddr    = randr(0, 0x01FFFFFF);
 
     LoRaMacSetAdrOn( LORAWAN_ADR_ON);
     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON);
+    LoRaMacTestSetMic(1u);
     LoRaMacSetPublicNetwork( LORAWAN_PUBLIC_NETWORK);
 
     while (1) {
@@ -408,79 +419,76 @@ DevAddr    = randr(0, 0x01FFFFFF);
 #endif
         }
 
-        if (SwitchAPushEvent) {
-			DelayMs(20);    // Software debouncing
-			SwitchAPushEvent = false;
-			if (AppLedStateOn)
-				PRINTF("TRACE: Remotely disable LED.\r\n");
-			else
-				PRINTF("TRACE: Remotely enable LED.\r\n");
-			AppLedStateOn = !AppLedStateOn;
-			AppLedStateChanged = true;
-		}
+        if ( SwitchAPushEvent ) {
+            DelayMs(20);    // Software debouncing
+            SwitchAPushEvent = false;
+            if ( AppLedStateOn ) PRINTF("TRACE: Remotely disable LED.\r\n");
+            else PRINTF("TRACE: Remotely enable LED.\r\n");
+            AppLedStateOn = !AppLedStateOn;
+            AppLedStateChanged = true;
+        }
 
-		if (SwitchBPushEvent) {
-			DelayMs(20);    // Software debouncing
-			SwitchBPushEvent = false;
-			if (AppSensorTransmissionStateOn)
-				PRINTF("TRACE: Remotely disable sensor data collecting.\r\n");
-			else
-				PRINTF("TRACE: Remotely enable sensor data collecting.\r\n");
-			AppSensorTransmissionStateOn = !AppSensorTransmissionStateOn;
-			AppSensorTransmissionStateChanged = true;
-		}
+        if ( SwitchBPushEvent ) {
+            DelayMs(20);    // Software debouncing
+            SwitchBPushEvent = false;
+            if ( AppSensorTransmissionStateOn ) PRINTF(
+                    "TRACE: Remotely disable sensor data collecting.\r\n");
+            else PRINTF("TRACE: Remotely enable sensor data collecting.\r\n");
+            AppSensorTransmissionStateOn = !AppSensorTransmissionStateOn;
+            AppSensorTransmissionStateChanged = true;
+        }
 
-		if (DownlinkStatusUpdate == true) {
-			DownlinkStatusUpdate = false;
-		}
+        if ( DownlinkStatusUpdate == true ) {
+            DownlinkStatusUpdate = false;
+        }
 
-		if (NewSensorDataReceived) {
-			NewSensorDataReceived = false;
-			PRINTF("DATA: Accelerometer (x/y/z) \t%d \t%d \t%d\r\n", SensorData.accelX,
-					SensorData.accelY, SensorData.accelZ);
-			PRINTF("DATA: Magnetometer (x/y/z) \t%d \t%d \t%d\r\n", SensorData.magX,
-					SensorData.magY, SensorData.magZ);
-		}
+        if ( NewSensorDataReceived ) {
+            NewSensorDataReceived = false;
+            PRINTF("DATA: Accelerometer (x/y/z) \t%d \t%d \t%d\r\n", SensorData.accelX,
+                    SensorData.accelY, SensorData.accelZ);
+            PRINTF("DATA: Magnetometer (x/y/z) \t%d \t%d \t%d\r\n", SensorData.magX,
+                    SensorData.magY, SensorData.magZ);
+        }
 
-		if (ScheduleNextTx && AppSensorTransmissionStateOn) {
-			PRINTF("TRACE: Schedule next uplink packet.\r\n");
-			ScheduleNextTx = false;
+        if ( ScheduleNextTx && AppSensorTransmissionStateOn ) {
+            PRINTF("TRACE: Schedule next uplink packet.\r\n");
+            ScheduleNextTx = false;
 
-			// Schedule next packet transmission
-			TxDutyCycleTime = APP_TX_DUTYCYCLE + randr(-APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND);
-			TimerSetValue(&TxNextPacketTimer, TxDutyCycleTime);
-			TimerStart(&TxNextPacketTimer);
-		}
+            // Schedule next packet transmission
+            TxDutyCycleTime = APP_TX_DUTYCYCLE + randr(-APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND);
+            TimerSetValue(&TxNextPacketTimer, TxDutyCycleTime);
+            TimerStart(&TxNextPacketTimer);
+        }
 
-		if (trySendingFrameAgain == true) {
-			PRINTF("TRACE: Re-sending frame...\r\n");
-			trySendingFrameAgain = SendFrame();
-			if (trySendingFrameAgain) PRINTF("TRACE: No free channel. Try again later.\r\n");
-		}
+        if ( trySendingFrameAgain == true ) {
+            PRINTF("TRACE: Re-sending frame...\r\n");
+            trySendingFrameAgain = SendFrame();
+            if ( trySendingFrameAgain ) PRINTF("TRACE: No free channel. Try again later.\r\n");
+        }
 
-		if (TxNextPacket) {
-			PRINTF("TRACE: Trying to send frame...\r\n");
-			TxNextPacket = false;
-			if (AppSensorTransmissionStateChanged) AppSensorTransmissionStateChanged = false;
-			if (AppLedStateChanged) AppLedStateChanged = false;
+        if ( TxNextPacket ) {
+            PRINTF("TRACE: Trying to send frame...\r\n");
+            TxNextPacket = false;
+            if ( AppSensorTransmissionStateChanged ) AppSensorTransmissionStateChanged = false;
+            if ( AppLedStateChanged ) AppLedStateChanged = false;
 
-			PrepareTxFrame(AppPort);
+            PrepareTxFrame(AppPort);
 
-			trySendingFrameAgain = SendFrame();
+            trySendingFrameAgain = SendFrame();
 
-			if (trySendingFrameAgain) PRINTF("TRACE: No free channel. Try again later.\r\n");
-		}
+            if ( trySendingFrameAgain ) PRINTF("TRACE: No free channel. Try again later.\r\n");
+        }
 
-		TimerLowPowerHandler();
+        TimerLowPowerHandler();
     }
 }
 
-void SwitchAIrq(void)
+void SwitchAIrq( void )
 {
     SwitchAPushEvent = true;
 }
 
-void SwitchBIrq(void)
+void SwitchBIrq( void )
 {
     SwitchBPushEvent = true;
 }

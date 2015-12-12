@@ -27,24 +27,28 @@
  * FRM:                     <fhdr><fport><frm payload>
  * MSH:                                  <mesh payload>
  */
-#define LORAPHY_HEADER_SIZE                 (2)
-#define LORAPHY_PAYLOAD_SIZE                (LORAMESH_CONFIG_TRANSCEIVER_PAYLOAD_SIZE)
-#define LORAPHY_BUFFER_SIZE                 (LORAPHY_HEADER_SIZE+LORAPHY_PAYLOAD_SIZE)
+#define LORAPHY_HEADER_SIZE                     (2)
+#define LORAPHY_PAYLOAD_SIZE                    (LORAMESH_CONFIG_TRANSCEIVER_PAYLOAD_SIZE)
+#define LORAPHY_BUFFER_SIZE                     (LORAPHY_HEADER_SIZE+LORAPHY_PAYLOAD_SIZE)
 
 /* PHY buffer access macros */
-#define LORAPHY_BUF_IDX_FLAGS               (0) /* <flags> index */
-#define LORAPHY_BUF_IDX_SIZE                (1) /* <size> index */
-#define LORAPHY_BUF_IDX_PAYLOAD             (2) /* <phy payload> index */
+#define LORAPHY_BUF_IDX_FLAGS                   (0) /* <flags> index */
+#define LORAPHY_BUF_IDX_SIZE                    (1) /* <size> index */
+#define LORAPHY_BUF_IDX_PAYLOAD                 (2) /* <phy payload> index */
 
 /* flag bits inside PacketDesc below */
-#define LORAPHY_PACKET_FLAGS_NONE           (0)
+#define LORAPHY_PACKET_FLAGS_NONE               (0)
 /*!< initialization value */
-#define LORAPHY_PACKET_FLAGS_TX_ADVERTISING (1<<0)
-/*!< valid ACK received */
-#define LORAPHY_PACKET_FLAGS_TX_REGULAR     (1<<1)
-/*!< request acknowledge */
-#define LORAPHY_PACKET_FLAGS_TX_MULTICAST   (1<<2)
-/*!< power down transceiver */
+#define LORAPHY_PACKET_FLAGS_FRM_REGULAR        (0<<0)
+/*!< regular message received (down link) */
+#define LORAPHY_PACKET_FLAGS_FRM_ADVERTISING    (1<<0)
+/*!< advertising received */
+#define LORAPHY_PACKET_FLAGS_FRM_MULTICAST      (2<<0)
+/*!< multicast received */
+#define LORAPHY_PACKET_FLAGS_ACK_REQ            (1<<3)
+/*!< acknowledge requested */
+
+#define LORAPHY_PACKET_FLAGS_FRM_MASK           (0x3)
 
 /*******************************************************************************
  * MACRO DEFINITIONS
@@ -235,6 +239,11 @@ void LoRaPhy_SetJoinAcceptDelay2( uint32_t delay );
  * \param rx2Dr Data rate of second reception window
  */
 void LoRaPhy_SetDownLinkSettings( uint8_t rx1DrOffset, uint8_t rx2Dr );
+
+/*******************************************************************************
+ * TEST FUNCTION PROTOTYPES (PUBLIC) (FOR DEBUG PURPOSES ONLY)
+ ******************************************************************************/
+uint8_t LoRaPhy_QueueRxMessage( uint8_t *payload, size_t payloadSize, bool toBack, uint8_t flags );
 
 /*******************************************************************************
  * END OF CODE

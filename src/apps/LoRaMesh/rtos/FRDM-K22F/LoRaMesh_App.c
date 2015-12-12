@@ -15,13 +15,14 @@
 #include "LoRaMesh.h"
 #include "LoRaMesh_App.h"
 #include "LoRaMesh_AppConfig.h"
+#include "LoRaTest_App.h"
 
 #define LOG_LEVEL_TRACE
 #include "debug.h"
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
  ******************************************************************************/
-#define RADIO_PROCESS_INTERVAL      10      /* in [ms] = 10ms */
+#define RADIO_PROCESS_INTERVAL      50      /* in [ms] = 10ms */
 #define RADIO_RTOS_TICK_DELAY       (RADIO_PROCESS_INTERVAL/portTICK_RATE_MS)
 
 /*******************************************************************************
@@ -79,6 +80,7 @@ static portTASK_FUNCTION(LoRaMeshTask, pvParameters);
 void LoRaMesh_AppInit( void )
 {
     LoRaMesh_Init(&sLoRaMeshCallbacks);
+    LoRaTest_AppInit();
 
     // NwkAddr
     DevAddr = 0x013D02AB;
@@ -125,16 +127,18 @@ static bool SendFrame( void )
 {
     uint8_t sendFrameStatus = 0;
 
-    AppData[0] = 0x55;
-    AppData[1] = 0xAA;
-    AppData[2] = 0x55;
-    AppData[3] = 0xAA;
-    AppData[4] = 0xFA;
-    AppData[5] = 0x34;
-    AppData[6] = 0x51;
-    AppData[7] = 0x2C;
-    AppData[8] = 0x9A;
-    AppData[9] = 0xBC;
+    AppData[0] = 'H';
+    AppData[1] = 'e';
+    AppData[2] = 'l';
+    AppData[3] = 'l';
+    AppData[4] = 'o';
+    AppData[5] = ' ';
+    AppData[6] = 'W';
+    AppData[7] = 'o';
+    AppData[8] = 'r';
+    AppData[9] = 'l';
+    AppData[10] = 'd';
+    AppData[11] = '\0';
 
     sendFrameStatus = LoRaMesh_SendFrame(AppData, AppDataSize, AppPort, true, IsTxConfirmed);
 
@@ -155,9 +159,12 @@ static portTASK_FUNCTION(LoRaMeshTask, pvParameters)
         /* with an RTOS 10 ms/100 Hz tick rate, this is every second */
         if (cntr==APP_CNTR_VALUE(LORAMESH_APP_TX_INTERVAL)) {
             /* Send data packet */
-            SendFrame();
+//            SendFrame();
+            vTaskDelay(20/portTICK_RATE_MS);
+            LoRaTest_AddFrame();
+            cntr = 0;
         }
-        vTaskDelay(RADIO_RTOS_TICK_DELAY);
+        vTaskDelay(10/portTICK_RATE_MS);
     } /* for */
 }
 /*******************************************************************************

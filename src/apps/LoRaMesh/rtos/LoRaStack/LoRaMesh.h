@@ -44,10 +44,11 @@ typedef enum {
 /* LoRaMesh connection info structure */
 typedef struct ConnectionInfo_s {
     uint32_t Address;
-    uint8_t NwkSKey[16];
-    uint8_t AppSKey[16];
+    uint8_t *NwkSKey;
+    uint8_t *AppSKey;
     uint8_t ChannelIndex;
     uint8_t DataRateIndex;
+    uint8_t TxPowerIndex;
     uint32_t UpLinkCounter;
     uint32_t DownLinkCounter;
 } ConnectionInfo_t;
@@ -59,12 +60,15 @@ typedef struct ConnectionSlotInfo_s {
     uint32_t Duration;
 } ConnectionSlotInfo_t;
 
+typedef ConnectionSlotInfo_t MulticastGroupInfo_t;
+typedef ConnectionSlotInfo_t ChildNodeInfo_t;
+
 /*! LoRaMesh advertising info structure. */
-typedef struct AdvertisingBeaconInfo_s {
+typedef struct AdvertisingSlotInfo_s {
     uint32_t Time;
     uint8_t Interval; /* In seconds */
     uint8_t Duration; /* In milliseconds */
-} AdvertisingInfo_t;
+} AdvertisingSlotInfo_t;
 
 typedef union {
     uint8_t Value;
@@ -127,17 +131,17 @@ typedef struct {
     DeviceClass_t devClass; /* Device class */
     uint8_t *appEui; /* Application extended unique identifier (64-Bit) */
     uint8_t *appKey; /* Application key AES 128-Bit */
-    uint8_t *nwkSKey; /* Network session key AES 128-Bit */
-    uint8_t *appSKey; /* Application session key AES 128-Bit */
-    uint32_t upLinkCounter; /* Frame counter up link */
-    uint32_t downLinkCounter; /* Frame counter down link */
-    uint32_t adrAckCounter; /* Adaptive data rate acknowledgement counter */
-    uint8_t nbRep; /* Configured redundancy [1:15] (automatic uplink message repetition) */
-    uint8_t nbRepCounter; /* Automatic repetition counter */
-    uint16_t channelsMask[6]; /* Channel mask to disable channels from the channel list */
+    ConnectionInfo_t upLinkSlot; /* Up link slot information */
+    AdvertisingSlotInfo_t advertisingSlot; /* Advertising slot information */
+    ListPointer_t childNodes; /* List of connected child nodes */
+    ListPointer_t multicastGroups; /* List of joined multicast groups */
     uint8_t curChannelIdx; /* Index of the currently selected channel from the channel list */
     uint8_t curDatarateIdx; /* Currently selected data rate */
     uint8_t curTxPowerIdx; /* Currently selected output power */
+    uint16_t channelsMask[6]; /* Channel mask to disable channels from the channel list */
+    uint32_t adrAckCounter; /* Adaptive data rate acknowledgement counter */
+    uint8_t nbRep; /* Configured redundancy [1:15] (automatic uplink message repetition) */
+    uint8_t nbRepCounter; /* Automatic repetition counter */
     uint8_t macCmdBuffer[15]; /* MAC command buffer of commands to be added to FOpts field */
     uint8_t macCmdBufferSize; /* MAC command buffer size */
     LoRaMeshCtrlFlags_t ctrlFlags; /* Network flags */
@@ -209,13 +213,14 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
 /*!
  *
  */
-uint8_t LoRaMesh_OnPacketRx( LoRaPhy_PacketDesc* packet );
+uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort,
+        LoRaFrmType_t fType );
 
 /*!
  *
  */
-uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
-        uint8_t* fOpts, uint8_t fOptsLen, LoRaMessageType_t type );
+uint8_t LoRaMesh_PutPayload( uint8_t *buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
+        LoRaFrmType_t fType );
 
 /*!
  *
@@ -246,11 +251,27 @@ uint8_t LoRaMesh_LinkCheckReq( void );
 bool LoRaMesh_IsNetworkJoined( void );
 
 /*!
+ * \brief Find child node with specified address.
+ *
+ * \param devAddr Device address of child node to find.
+ * \return LoRaMacChildNodeInfo_t* Returns pointer to the found child node or NULL if not found.
+ */
+ChildNodeInfo_t* LoRaMesh_FindChildNode( uint32_t devAddr );
+
+/*!
  * \brief Print out child nodes.
  *
  * \param reverseOrder Print out the list in reversed order.
  */
 void LoRaMesh_PrintChildNodes( bool reverseOrder );
+
+/*!
+ * \brief Find multicast group with specified address.
+ *
+ * \param grpAddr Address of the group to find.
+ * \return MulticastGroupInfo_t* Returns pointer to the found multicast group or NULL if not found.
+ */
+MulticastGroupInfo_t* LoRaMesh_FindMulticastGroup( uint32_t grpAddr );
 
 /*!
  * \brief Print out multicast groups.
