@@ -59,11 +59,6 @@ typedef struct {
 static void RxChainCalibration( void );
 
 /*!
- * \brief Resets the SX1276
- */
-void SX1276Reset( void );
-
-/*!
  * \brief Sets the SX1276 in transmission mode for the given time
  * \param [IN] timeout Transmission timeout [us] [0: continuous, others timeout]
  */
@@ -198,32 +193,13 @@ TimerEvent_t TxTimeoutTimer;
 TimerEvent_t RxTimeoutTimer;
 TimerEvent_t RxTimeoutSyncWord;
 
-#if defined(FSL_RTOS_FREE_RTOS)
-mutex_t radioLock;
-#elif defined(USE_FREE_RTOS)
-SemaphoreHandle_t radioLock;
-#endif
-
 /*
  * Radio driver functions implementation
  */
 
 void SX1276Init( RadioEvents_t *events )
 {
-    uint8_t i;
-
     RadioEvents = events;
-#if defined(FSL_RTOS_FREE_RTOS)
-    osa_status_t status = OSA_MutexCreate(&radioLock);
-    if( status == kStatus_OSA_Error ) {
-        LOG_ERROR("Couldn't create semaphore.");
-    }
-#elif defined(USE_FREE_RTOS)
-    radioLock = xSemaphoreCreateMutex();
-    if( radioLock == NULL ) {
-        LOG_ERROR("Couldn't create semaphore.");
-    }
-#endif
 
     // Initialize driver timeout timers
 #if defined(FSL_RTOS_FREE_RTOS) || defined(USE_FREE_RTOS)
@@ -235,23 +211,6 @@ void SX1276Init( RadioEvents_t *events )
     TimerInit(&RxTimeoutTimer, SX1276OnTimeoutIrq);
     TimerInit(&RxTimeoutSyncWord, SX1276OnTimeoutIrq);
 #endif
-
-    SX1276Reset();
-
-    RxChainCalibration();
-
-    SX1276SetOpMode (RF_OPMODE_SLEEP);
-
-    SX1276IoIrqInit(DioIrq);
-
-    for ( i = 0; i < sizeof(RadioRegsInit) / sizeof(RadioRegisters_t); i++ ) {
-        SX1276SetModem(RadioRegsInit[i].Modem);
-        SX1276Write(RadioRegsInit[i].Addr, RadioRegsInit[i].Value);
-    }
-
-    SX1276SetModem (MODEM_FSK);
-
-    SX1276.Settings.State = RF_IDLE;
 }
 
 RadioState_t SX1276GetStatus( void )
@@ -876,7 +835,7 @@ void SX1276Send( uint8_t *buffer, uint8_t size )
             break;
     }
 
-    SX1276SetTx(txTimeout);
+//    SX1276SetTx(txTimeout);
 }
 
 void SX1276SetSleep( void )
@@ -1203,17 +1162,32 @@ int16_t SX1276ReadRssi( RadioModems_t modem )
 
 void SX1276Reset( void )
 {
-// Set RESET pin to 0
+    // Set RESET pin to 0
     GpioInit(&SX1276.Reset, RADIO_RESET, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
 
-// Wait 1 ms
+    // Wait 1 ms
     DelayMs(1);
 
-// Configure RESET as input
+    // Configure RESET as input
     GpioInit(&SX1276.Reset, RADIO_RESET, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
-// Wait 6 ms
+    // Wait 6 ms
     DelayMs(6);
+
+    RxChainCalibration();
+
+    SX1276SetOpMode (RF_OPMODE_SLEEP);
+
+    SX1276IoIrqInit(DioIrq);
+
+    for ( uint32_t i = 0; i < sizeof(RadioRegsInit) / sizeof(RadioRegisters_t); i++ ) {
+        SX1276SetModem(RadioRegsInit[i].Modem);
+        SX1276Write(RadioRegsInit[i].Addr, RadioRegsInit[i].Value);
+    }
+
+    SX1276SetModem (MODEM_FSK);
+
+    SX1276.Settings.State = RF_IDLE;
 }
 
 void SX1276SetOpMode( uint8_t opMode )
@@ -1294,10 +1268,7 @@ uint8_t SX1276Read( uint8_t addr )
 void SX1276WriteBuffer( uint8_t addr, uint8_t *buffer, uint8_t size )
 {
     uint8_t i;
-#if defined(FSL_RTOS_FREE_RTOS)
-    OSA_MutexLock(&radioLock, OSA_WAIT_FOREVER);
-#elif defined(USE_FREE_RTOS)
-#endif
+
     //NSS = 0;
     GpioWrite(&SX1276.Spi.Nss, 0);
 
@@ -1308,19 +1279,12 @@ void SX1276WriteBuffer( uint8_t addr, uint8_t *buffer, uint8_t size )
 
     //NSS = 1;
     GpioWrite(&SX1276.Spi.Nss, 1);
-#if defined(FSL_RTOS_FREE_RTOS)
-    OSA_MutexUnlock (&radioLock);
-#elif defined(USE_FREE_RTOS)
-#endif
 }
 
 void SX1276ReadBuffer( uint8_t addr, uint8_t *buffer, uint8_t size )
 {
     uint8_t i;
-#if defined(FSL_RTOS_FREE_RTOS)
-    OSA_MutexLock(&radioLock, OSA_WAIT_FOREVER);
-#elif defined(USE_FREE_RTOS)
-#endif
+
     //NSS = 0;
     GpioWrite(&SX1276.Spi.Nss, 0);
 
@@ -1332,10 +1296,6 @@ void SX1276ReadBuffer( uint8_t addr, uint8_t *buffer, uint8_t size )
 
     //NSS = 1;
     GpioWrite(&SX1276.Spi.Nss, 1);
-#if defined(FSL_RTOS_FREE_RTOS)
-    OSA_MutexUnlock (&radioLock);
-#elif defined(USE_FREE_RTOS)
-#endif
 }
 
 void SX1276WriteFifo( uint8_t *buffer, uint8_t size )

@@ -24,7 +24,7 @@ typedef struct {
     uint32_t instance;
     i2c_device_t slave;
     i2c_master_state_t state;
-} I2C_TypeDef;
+}I2C_TypeDef;
 #else
 typedef uint32_t ADC_TypeDef;
 typedef uint32_t I2C_TypeDef;
@@ -61,7 +61,7 @@ typedef uint32_t I2C_TypeDef;
  *
  * \param [IN] seed Pseudo ramdom generator initial value
  */
-void srand1(uint32_t seed);
+void srand1( uint32_t seed );
 
 /*!
  * \brief Computes a random number between min and max
@@ -70,7 +70,7 @@ void srand1(uint32_t seed);
  * \param [IN] max range maximum value
  * \retval random random value in range min..max
  */
-int32_t randr(int32_t min, int32_t max);
+int32_t randr( int32_t min, int32_t max );
 
 /*!
  * \brief Copies size elements of src array to dst array
@@ -81,7 +81,7 @@ int32_t randr(int32_t min, int32_t max);
  * \param [IN]  src  Source array
  * \param [IN]  size Number of bytes to be copied
  */
-void memcpy1(uint8_t *dst, const uint8_t *src, uint16_t size);
+void memcpy1( uint8_t *dst, const uint8_t *src, uint16_t size );
 
 /*!
  * \brief Set size elements of dst array with value
@@ -92,7 +92,7 @@ void memcpy1(uint8_t *dst, const uint8_t *src, uint16_t size);
  * \param [IN]  value Default value
  * \param [IN]  size  Number of bytes to be copied
  */
-void memset1(uint8_t *dst, uint8_t value, uint16_t size);
+void memset1( uint8_t *dst, uint8_t value, uint16_t size );
 
 /*!
  * \brief Converts a nibble to an hexadecimal character
@@ -100,5 +100,5 @@ void memset1(uint8_t *dst, uint8_t value, uint16_t size);
  * \param [IN] a   Nibble to be converted
  * \retval hexChar Converted hexadecimal character
  */
-int8_t Nibble2HexChar(uint8_t a);
+int8_t Nibble2HexChar( uint8_t a );
 #endif /* __UTILITIES_H__ */

@@ -40,9 +40,15 @@
 void LoRaTest_AppInit( void );
 
 /*!
+ * \brief Add a test regular LoRa join accept message to the rx message queue.
+ */
+void LoRaTest_AddJoinAcc( uint8_t* devEui, uint8_t* appEui, uint8_t appKey, bool addChannelList );
+
+/*!
  * \brief Add a test frame to the rx message queue.
  */
 void LoRaTest_AddFrame( void );
+
 /*******************************************************************************
  * END OF CODE
  ******************************************************************************/

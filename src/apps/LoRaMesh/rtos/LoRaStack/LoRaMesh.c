@@ -31,8 +31,11 @@
 /*! LoRaMesh upper layer event functions */
 static LoRaMeshCallbacks_t *LoRaMeshCallbacks;
 
-/*! */
+/*! LoRaWAN device */
 LoRaDevice_t* pLoRaDevice;
+
+/*! Rx message handlers */
+ListPointer_t pLoRaMsgHandlers;
 
 /*******************************************************************************
  * PRIVATE FUNCTION PROTOTYPES (STATIC)
@@ -91,6 +94,9 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks )
     pLoRaDevice->appKey = NULL;
     pLoRaDevice->childNodes = NULL;
     pLoRaDevice->multicastGroups = NULL;
+    pLoRaDevice->currChannelIndex = 0u;
+    pLoRaDevice->currDataRateIndex = LORAMAC_DEFAULT_DATARATE;
+    pLoRaDevice->currTxPowerIndex = LORAMAC_DEFAULT_TX_POWER;
     for ( i = 0; i < 6; i++ )
         pLoRaDevice->channelsMask[i] = 0U;
     pLoRaDevice->adrAckCounter = 0x00;
@@ -123,6 +129,9 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks )
     /* Debug flags */
     pLoRaDevice->dbgFlags.Value = 0U;
 
+    /* Create a list with rx message handler */
+    pLoRaMsgHandlers = ListCreate();
+
     /* Initialize stack */
     LoRaFrm_Init();
     LoRaMac_Init();
@@ -141,6 +150,53 @@ void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, ui
     memcpy(pLoRaDevice->upLinkSlot.NwkSKey, nwkSKey, 16);
 
     pLoRaDevice->ctrlFlags.Bits.nwkJoined = 1;
+}
+
+uint8_t LoRaMesh_RegisterApplicationPort( RxMsgHandler fHandler, uint8_t fPort )
+{
+    PortHandler_t *tempPortHandler;
+
+    if ( fPort < 1 || fPort > 223 ) return ERR_RANGE;
+
+    tempPortHandler = (PortHandler_t*) malloc(sizeof(PortHandler_t));
+    tempPortHandler->Handler = fHandler;
+    tempPortHandler->Port = fPort;
+
+    if ( pLoRaMsgHandlers->head == NULL ) {
+        /* Add rx message handler */
+        ListPushBack(pLoRaMsgHandlers, tempPortHandler);
+    } else {
+        ListNodePointer_t currNode = pLoRaMsgHandlers->head;
+
+        /* Make sure port is not already registered */
+        while (currNode->next != NULL) {
+            if ( ((PortHandler_t*) currNode->data)->Port == fPort ) {
+                return ERR_NOTAVAIL;
+            }
+        }
+        /* Add rx message handler */
+        ListPushBack(pLoRaMsgHandlers, tempPortHandler);
+    }
+
+    return ERR_OK;
+}
+
+uint8_t LoRaMesh_RemoveApplicationPort( RxMsgHandler fHandler, uint8_t fPort )
+{
+    PortHandler_t *tempPortHandler;
+    ListNodePointer_t currNode;
+
+    currNode = pLoRaMsgHandlers->head;
+
+    while (currNode != NULL) {
+        tempPortHandler = (PortHandler_t*) currNode->data;
+        if ( tempPortHandler->Port == fPort ) {
+            ListRemove(pLoRaMsgHandlers, currNode->data);
+            return ERR_OK;
+        }
+        currNode = currNode->next;
+    }
+    return ERR_FAILED;
 }
 
 uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t fPort,
@@ -169,7 +225,26 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
 
 uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort, LoRaFrmType_t fType )
 {
-    return ERR_OK;
+    switch (fType) {
+        case FRM_TYPE_REGULAR:
+            if ( fPort > 0 ) {
+                ListNodePointer_t currNode = pLoRaMsgHandlers->head;
+                while (currNode != NULL) {
+                    if ( ((PortHandler_t*) currNode->data)->Port == fPort ) {
+                        return ((PortHandler_t*) currNode->data)->Handler(buf, payloadSize, fPort);
+                    }
+                    currNode = currNode->next;
+                }
+            }
+            break;
+        case FRM_TYPE_MULTICAST:
+            break;
+        case FRM_TYPE_ADVERTISING:
+            break;
+        default:
+            break;
+    }
+    return ERR_FAILED;
 }
 
 uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
@@ -193,25 +268,23 @@ uint8_t LoRaMesh_ProcessAdvertising( uint8_t *aPayload, uint8_t aPayloadSize )
 
 uint8_t LoRaMesh_JoinReq( uint8_t * devEui, uint8_t * appEui, uint8_t * appKey )
 {
-    uint8_t fPayloadSize = 0, fPayload[LORAFRM_BUFFER_SIZE];
-    uint16_t devNonce;
+    uint8_t mPayloadSize = 0, mPayload[LORAMAC_BUFFER_SIZE];
 
-    memcpy(&LORAFRM_BUF_PAYLOAD_START(fPayload)[fPayloadSize], appEui, 8);
-    fPayloadSize += 8;
-    memcpy(&LORAFRM_BUF_PAYLOAD_START(fPayload)[fPayloadSize], devEui, 8);
-    fPayloadSize += 8;
+    /* Store values for key generation */
+    pLoRaDevice->devNonce = LoRaPhy_GenerateNonce();
+    pLoRaDevice->appEui = appEui;
+    pLoRaDevice->devEui = devEui;
+    pLoRaDevice->appKey = appKey;
 
-    devNonce = LoRaPhy_GenerateNonce();
-    pLoRaDevice->devNonce = devNonce;
-    /* Save */
-    memcpy(pLoRaDevice->appEui, appEui, 8);
-    memcpy(pLoRaDevice->devEui, devEui, 8);
-    memcpy(pLoRaDevice->appKey, appKey, 16);
+    memcpy(&LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize], appEui, 8);
+    mPayloadSize += 8;
+    memcpy(&LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize], devEui, 8);
+    mPayloadSize += 8;
+    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = pLoRaDevice->devNonce & 0xFF;
+    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devNonce >> 8) & 0xFF;
 
-    LORAFRM_BUF_PAYLOAD_START(fPayload)[fPayloadSize++] = devNonce & 0xFF;
-    LORAFRM_BUF_PAYLOAD_START(fPayload)[fPayloadSize++] = (devNonce >> 8) & 0xFF;
-
-    return ERR_FAILED;
+    return LoRaMac_PutPayload((uint8_t*) &mPayload, sizeof(mPayload), mPayloadSize,
+            MSG_TYPE_JOIN_REQ);
 }
 
 bool LoRaMesh_IsNetworkJoined( void )
@@ -468,7 +541,7 @@ MulticastGroupInfo_t* CreateMulticastGroup( uint32_t grpAddr, uint8_t* nwkSKey, 
  */
 void MulticastGroupAdd( MulticastGroupInfo_t *multicastGrp )
 {
-    // Reset downlink counter
+// Reset downlink counter
     multicastGrp->Connection.DownLinkCounter = 0;
 
     if ( pLoRaDevice->multicastGroups == NULL ) {
@@ -513,7 +586,6 @@ void MulticastGroupPrint( MulticastGroupInfo_t* multicastGrp )
     LOG_DEBUG_BARE("%-15s: %u\r\n", "Periodicity", multicastGrp->Periodicity);
     LOG_DEBUG_BARE("%-15s: %u\r\n", "Duration", multicastGrp->Duration);
 }
-
 /*******************************************************************************
  * END OF CODE
  ******************************************************************************/

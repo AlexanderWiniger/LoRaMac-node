@@ -86,6 +86,10 @@ struct Radio_s {
      */
     void (*Init)( RadioEvents_t *events );
     /*!
+     * \brief Reset the radio
+     */
+    void (*Reset)( void );
+    /*!
      * Return current radio status
      *
      * \param status Radio status.[RF_IDLE, RF_RX_RUNNING, RF_TX_RUNNING]
@@ -112,8 +116,7 @@ struct Radio_s {
      *
      * \retval isFree         [true: Channel is free, false: Channel is not free]
      */
-    bool (*IsChannelFree)( RadioModems_t modem, uint32_t freq,
-            int16_t rssiThresh );
+    bool (*IsChannelFree)( RadioModems_t modem, uint32_t freq, int16_t rssiThresh );
     /*!
      * \brief Generates a 32 bits random value based on the RSSI readings
      *
@@ -164,10 +167,9 @@ struct Radio_s {
      * \param [IN] rxContinuous Sets the reception in continuous mode
      *                          [false: single mode, true: continuous mode]
      */
-    void (*SetRxConfig)( RadioModems_t modem, uint32_t bandwidth,
-            uint32_t datarate, uint8_t coderate, uint32_t bandwidthAfc,
-            uint16_t preambleLen, uint16_t symbTimeout, bool fixLen,
-            uint8_t payloadLen, bool crcOn, bool FreqHopOn, uint8_t HopPeriod,
+    void (*SetRxConfig)( RadioModems_t modem, uint32_t bandwidth, uint32_t datarate,
+            uint8_t coderate, uint32_t bandwidthAfc, uint16_t preambleLen, uint16_t symbTimeout,
+            bool fixLen, uint8_t payloadLen, bool crcOn, bool FreqHopOn, uint8_t HopPeriod,
             bool iqInverted, bool rxContinuous );
     /*!
      * \brief Sets the transmission parameters
@@ -204,10 +206,9 @@ struct Radio_s {
      *                          LoRa: [0: not inverted, 1: inverted]
      * \param [IN] timeout      Transmission timeout [us]
      */
-    void (*SetTxConfig)( RadioModems_t modem, int8_t power, uint32_t fdev,
-            uint32_t bandwidth, uint32_t datarate, uint8_t coderate,
-            uint16_t preambleLen, bool fixLen, bool crcOn, bool FreqHopOn,
-            uint8_t HopPeriod, bool iqInverted, uint32_t timeout );
+    void (*SetTxConfig)( RadioModems_t modem, int8_t power, uint32_t fdev, uint32_t bandwidth,
+            uint32_t datarate, uint8_t coderate, uint16_t preambleLen, bool fixLen, bool crcOn,
+            bool FreqHopOn, uint8_t HopPeriod, bool iqInverted, uint32_t timeout );
     /*!
      * \brief Checks if the given RF frequency is supported by the hardware
      *

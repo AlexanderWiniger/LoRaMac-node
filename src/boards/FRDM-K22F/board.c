@@ -158,7 +158,6 @@ void BoardInitPeriph( void )
 
     /* Init GPS */
 //    GpsInit();
-
     /* Initialize RNGA */
     rnga_user_config_t
     rngaConfig = {
@@ -312,4 +311,9 @@ void BoardGetUniqueId( uint8_t *id )
 static void BoardUnusedIoInit( void )
 {
 // \todo Initialize unused gpio to knwon state
+}
+
+void HardFault_Handler( void )
+{
+    __ASM("BKPT #0\n");
 }

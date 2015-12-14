@@ -11,6 +11,17 @@
 #define __LORAMESH_APPCONFIG_H_
 
 /*!
+ * Activates the LoRa Test application
+ */
+#define LORAMESH_TEST_APP_ACTIVATED         1
+
+/*!
+ * When set to 1 the application uses the Over-the-Air activation procedure
+ * When set to 0 the application uses the Personalization activation procedure
+ */
+#define OVER_THE_AIR_ACTIVATION             0
+
+/*!
  * Indicates if the end-device is to be connected to a private or public network
  */
 #define LORAWAN_PUBLIC_NETWORK              true

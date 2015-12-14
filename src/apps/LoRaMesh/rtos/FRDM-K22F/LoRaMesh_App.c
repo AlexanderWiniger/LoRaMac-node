@@ -22,13 +22,13 @@
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
  ******************************************************************************/
-#define RADIO_PROCESS_INTERVAL      50      /* in [ms] = 10ms */
-#define RADIO_RTOS_TICK_DELAY       (RADIO_PROCESS_INTERVAL/portTICK_RATE_MS)
+#define RADIO_PROCESS_INTERVAL                      100 /* in [ms] = 10ms */
+#define RADIO_RTOS_TICK_DELAY                       (RADIO_PROCESS_INTERVAL/portTICK_RATE_MS)
 
 /*******************************************************************************
  * MACRO DEFINITIONS
  ******************************************************************************/
-#define APP_CNTR_VALUE(interval)    (1000/RADIO_PROCESS_INTERVAL)
+#define APP_CNTR_VALUE(interval)    (LORAMESH_APP_TX_INTERVAL/RADIO_PROCESS_INTERVAL)
 
 /*******************************************************************************
  * PRIVATE TYPE DEFINITIONS
@@ -43,12 +43,20 @@ typedef enum {
 static LoRaMeshApp_State_t appState = LORAMESH_INITIAL;
 
 static LoRaMeshCallbacks_t sLoRaMeshCallbacks;
+#if( OVER_THE_AIR_ACTIVATION != 0 )
+
+static uint8_t DevEui[] = LORAWAN_DEVICE_EUI;
+static uint8_t AppEui[] = LORAWAN_APPLICATION_EUI;
+static uint8_t AppKey[] = LORAWAN_APPLICATION_KEY;
+
+#else
 
 static uint8_t NwkSKey[] = LORAWAN_NWKSKEY;
 static uint8_t AppSKey[] = LORAWAN_APPSKEY;
 
 /*! Device address */
 static uint32_t DevAddr;
+#endif
 
 /*! Application port */
 static uint8_t AppPort = LORAMESH_APP_PORT;
@@ -71,6 +79,8 @@ static void Process( void );
 /* Send frame on configured app port */
 static bool SendFrame( void );
 
+static uint8_t ProcessFrame( uint8_t *buf, uint8_t payloadSize, uint8_t fPort );
+
 /* RTOS task function */
 static portTASK_FUNCTION(LoRaMeshTask, pvParameters);
 
@@ -80,22 +90,31 @@ static portTASK_FUNCTION(LoRaMeshTask, pvParameters);
 void LoRaMesh_AppInit( void )
 {
     LoRaMesh_Init(&sLoRaMeshCallbacks);
-    LoRaTest_AppInit();
+    LoRaMesh_RegisterApplicationPort((RxMsgHandler) & ProcessFrame, AppPort);
 
+#if(LORAMESH_TEST_APP_ACTIVATED == 1)
+    LoRaTest_AppInit();
+#endif /* LORAMESH_TEST_APP_ACTIVATED */
+
+#if( OVER_THE_AIR_ACTIVATION == 0 )
     // NwkAddr
     DevAddr = 0x013D02AB;
 
     LoRaMesh_InitNwkIds(LORAWAN_NETWORK_ID, DevAddr, NwkSKey, AppSKey);
     LOG_DEBUG("LoRaMesh network IDs initialized. Network ID: %u, DevAddr: 0x%08x.",
             LORAWAN_NETWORK_ID, DevAddr);
+#else
+    // Initialize LoRaMac device unique ID
+    BoardGetUniqueId( DevEui );
+#endif /* OVER_THE_AIR_ACTIVATION */
 
     LoRaMesh_SetAdrOn (LORAWAN_ADR_ON);
     LoRaMesh_SetPublicNetwork (LORAWAN_PUBLIC_NETWORK);
 //    LoRaMesh_SetDeviceClass (CLASS_C);
     LoRaMesh_TestSetDutyCycleCtrlOff (LORAWAN_DUTYCYCLE_OFF);
 
-    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", configMINIMAL_STACK_SIZE, (void*) NULL,
-            tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
+    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", 0x200, (void*) NULL, tskIDLE_PRIORITY,
+            (xTaskHandle*) NULL) != pdPASS ) {
         /*lint -e527 */
         for ( ;; ) {
         }; /* error! probably out of memory */
@@ -123,6 +142,18 @@ static void Process( void )
     } /* end for loop */
 }
 
+static uint8_t ProcessFrame( uint8_t *buf, uint8_t payloadSize, uint8_t fPort )
+{
+    LOG_TRACE("Incoming message on port %u", fPort);
+    LOG_TRACE_BARE("\t");
+    for ( uint8_t i = 0; i < payloadSize; i++ ) {
+        LOG_TRACE_BARE("%c", (char) buf[i]);
+    }
+    LOG_TRACE_BARE("\r\n");
+
+    return ERR_OK;
+}
+
 static bool SendFrame( void )
 {
     uint8_t sendFrameStatus = 0;
@@ -148,23 +179,38 @@ static bool SendFrame( void )
 
 static portTASK_FUNCTION(LoRaMeshTask, pvParameters)
 {
-    uint32_t cntr;
+    uint32_t cntr = 0; /* initialize send counter */
+    appState = LORAMESH_INITIAL; /* initialize state machine state */
     (void)pvParameters; /* not used */
 
-    cntr = 0; /* initialize LED counter */
-    appState = LORAMESH_INITIAL; /* initialize state machine state */
+    LOG_DEBUG_BARE("Starting LoRaMesh application...\r\n");
+
     for(;;) {
+        /* Task interval of 100 ms */
+        vTaskDelay(100/portTICK_RATE_MS);
+
         Process(); /* process state machine */
-        cntr++;
-        /* with an RTOS 10 ms/100 Hz tick rate, this is every second */
-        if (cntr==APP_CNTR_VALUE(LORAMESH_APP_TX_INTERVAL)) {
+        if(LoRaMesh_IsNetworkJoined() && cntr > APP_CNTR_VALUE(LORAMESH_APP_TX_INTERVAL)) {
             /* Send data packet */
-//            SendFrame();
-            vTaskDelay(20/portTICK_RATE_MS);
+            SendFrame();
+#if(LORAMESH_TEST_APP_ACTIVATED == 1)
+            vTaskDelay(50/portTICK_RATE_MS);
             LoRaTest_AddFrame();
-            cntr = 0;
+#endif
+#if( OVER_THE_AIR_ACTIVATION != 0 )
+        } else if(cntr > APP_CNTR_VALUE(LORAWAN_OTAA_INTERVAL)) {
+            /* Send join request */
+            LoRaMesh_JoinReq((uint8_t*)&DevEui, (uint8_t*)&AppEui, (uint8_t*)&AppKey);
+#if(LORAMESH_TEST_APP_ACTIVATED == 1)
+            vTaskDelay(500/portTICK_RATE_MS);
+            LoRaTest_AddJoinAcc((uint8_t*)&DevEui, (uint8_t*)&AppEui, (uint8_t*)&AppKey, false);
+#endif /* LORAMESH_TEST_APP_ACTIVATED */
+#endif /* OVER_THE_AIR_ACTIVATION */
+        } else {
+            cntr++;
+            continue;
         }
-        vTaskDelay(10/portTICK_RATE_MS);
+        cntr = 0;
     } /* for */
 }
 /*******************************************************************************

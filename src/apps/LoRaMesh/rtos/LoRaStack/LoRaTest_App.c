@@ -63,6 +63,60 @@ void LoRaTest_AppInit( void )
     }
 }
 
+void LoRaTest_AddJoinAcc( uint8_t* devEui, uint8_t* appEui, uint8_t appKey, bool addChannelList )
+{
+    LoRaMacHdr_t mHdr;
+    uint8_t payload[LORAMESH_BUFFER_SIZE];
+    uint32_t mic, payloadSize = 0;
+    uint32_t netId = 0x00082F1A;
+    uint32_t devAddr = 0x0057193A;
+    uint16_t appNonce = LoRaPhy_GenerateNonce();
+
+    mHdr.Value = 0u;
+    mHdr.Bits.MType = MSG_TYPE_JOIN_ACCEPT;
+
+    /* MAC header */
+    payload[payloadSize++] = mHdr.Value;
+    /* App Nonce */
+    payload[payloadSize++] = appNonce & 0xFF;
+    payload[payloadSize++] = (pLoRaDevice->devNonce >> 8) & 0xFF;
+    /* Net ID*/
+    payload[payloadSize++] = (netId) & 0xFF;
+    payload[payloadSize++] = (netId >> 8) & 0xFF;
+    payload[payloadSize++] = (netId >> 16) & 0xFF;
+    /* Dev address */
+    payload[payloadSize++] = (devAddr) & 0xFF;
+    payload[payloadSize++] = (devAddr >> 8) & 0xFF;
+    payload[payloadSize++] = (devAddr >> 16) & 0xFF;
+    payload[payloadSize++] = (devAddr >> 24) & 0xFF;
+    /* Down link settings */
+    payload[payloadSize++] = (0x05u | 0x00u); /* No Rx1 offset / Rx2 DR: DR5 */
+    /* Rx delay (1s) */
+    payload[payloadSize++] = 0x01u;
+
+    if ( addChannelList ) {
+        payload[payloadSize++] = 0xFF;
+    }
+
+    LoRaMacJoinComputeMic((uint8_t*) &LORAMAC_BUF_HDR(msgBuffer), payloadSize, pLoRaDevice->appKey,
+            &mic);
+
+    /* Message integrity check */
+    payload[payloadSize++] = (mic) & 0xFF;
+    payload[payloadSize++] = (mic >> 8) & 0xFF;
+    payload[payloadSize++] = (mic >> 16) & 0xFF;
+    payload[payloadSize++] = (mic >> 24) & 0xFF;
+
+    LoRaMacJoinEncrypt(payload + 1, payloadSize - 1, pLoRaDevice->appKey,
+            LORAMAC_BUF_PAYLOAD_START(msgBuffer));
+
+    LORAMAC_BUF_HDR(msgBuffer) = mHdr.Value;
+    msgBuffer[LORAPHY_BUF_IDX_FLAGS] = LORAPHY_PACKET_FLAGS_NONE;
+    msgBuffer[LORAPHY_BUF_IDX_SIZE] = payloadSize;
+
+    addMessage = true;
+}
+
 void LoRaTest_AddFrame( void )
 {
     LoRaFrmCtrl_t fCtrl;
@@ -119,6 +173,8 @@ void LoRaTest_AddFrame( void )
 static portTASK_FUNCTION(LoRaTestTask, pvParameters)
 {
     (void)pvParameters; /* not used */
+
+    LOG_DEBUG_BARE("Starting LoRaMesh test application...\r\n");
 
     for(;;) {
         if(addMessage) {

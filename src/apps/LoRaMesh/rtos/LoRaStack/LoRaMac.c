@@ -20,8 +20,6 @@
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
  ******************************************************************************/
-/*! Maximum MAC layer payload size */
-#define LORA_MAC_MAXPAYLOAD                      250
 
 /*******************************************************************************
  * PRIVATE TYPE DEFINITIONS
@@ -233,6 +231,11 @@ uint8_t LoRaMac_PutPayload( uint8_t* buf, size_t bufSize, size_t payloadSize,
     switch (macHdr.Bits.MType) {
         case MSG_TYPE_JOIN_REQ:
             LoRaMacJoinComputeMic(buf, payloadSize & 0xFF, pLoRaDevice->appKey, &mic);
+
+            *LORAMAC_BUF_MIC_START(buf, payloadSize++) = mic & 0xFF;
+            *LORAMAC_BUF_MIC_START(buf, payloadSize++) = (mic >> 8) & 0xFF;
+            *LORAMAC_BUF_MIC_START(buf, payloadSize++) = (mic >> 16) & 0xFF;
+            *LORAMAC_BUF_MIC_START(buf, payloadSize++) = (mic >> 24) & 0xFF;
             break;
         case MSG_TYPE_JOIN_ACCEPT:
             break;

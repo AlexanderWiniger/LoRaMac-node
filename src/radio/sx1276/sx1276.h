@@ -144,6 +144,11 @@ typedef void (DioIrqHandler)( void );
 void SX1276Init( RadioEvents_t *events );
 
 /*!
+ * \brief Resets the SX1276
+ */
+void SX1276Reset( void );
+
+/*!
  * Return current radio status
  *
  * \param status Radio status.[RF_IDLE, RF_RX_RUNNING, RF_TX_RUNNING]
@@ -173,8 +178,7 @@ void SX1276SetChannel( uint32_t freq );
  *
  * \retval isFree         [true: Channel is free, false: Channel is not free]
  */
-bool SX1276IsChannelFree( RadioModems_t modem, uint32_t freq,
-        int16_t rssiThresh );
+bool SX1276IsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThresh );
 
 /*!
  * \brief Generates a 32 bits random value based on the RSSI readings
@@ -229,10 +233,9 @@ uint32_t SX1276Random( void );
  * \param [IN] rxContinuous Sets the reception in continuous mode
  *                          [false: single mode, true: continuous mode]
  */
-void SX1276SetRxConfig( RadioModems_t modem, uint32_t bandwidth,
-        uint32_t datarate, uint8_t coderate, uint32_t bandwidthAfc,
-        uint16_t preambleLen, uint16_t symbTimeout, bool fixLen,
-        uint8_t payloadLen, bool crcOn, bool FreqHopOn, uint8_t HopPeriod,
+void SX1276SetRxConfig( RadioModems_t modem, uint32_t bandwidth, uint32_t datarate,
+        uint8_t coderate, uint32_t bandwidthAfc, uint16_t preambleLen, uint16_t symbTimeout,
+        bool fixLen, uint8_t payloadLen, bool crcOn, bool FreqHopOn, uint8_t HopPeriod,
         bool iqInverted, bool rxContinuous );
 
 /*!
@@ -272,10 +275,9 @@ void SX1276SetRxConfig( RadioModems_t modem, uint32_t bandwidth,
  *                          LoRa: [0: not inverted, 1: inverted]
  * \param [IN] timeout      Transmission timeout [us]
  */
-void SX1276SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
-        uint32_t bandwidth, uint32_t datarate, uint8_t coderate,
-        uint16_t preambleLen, bool fixLen, bool crcOn, bool FreqHopOn,
-        uint8_t HopPeriod, bool iqInverted, uint32_t timeout );
+void SX1276SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev, uint32_t bandwidth,
+        uint32_t datarate, uint8_t coderate, uint16_t preambleLen, bool fixLen, bool crcOn,
+        bool FreqHopOn, uint8_t HopPeriod, bool iqInverted, uint32_t timeout );
 
 /*!
  * \brief Computes the packet time on air in us for the given payload

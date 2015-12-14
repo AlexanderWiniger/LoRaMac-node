@@ -135,9 +135,9 @@ typedef struct {
     AdvertisingSlotInfo_t advertisingSlot; /* Advertising slot information */
     ListPointer_t childNodes; /* List of connected child nodes */
     ListPointer_t multicastGroups; /* List of joined multicast groups */
-    uint8_t curChannelIdx; /* Index of the currently selected channel from the channel list */
-    uint8_t curDatarateIdx; /* Currently selected data rate */
-    uint8_t curTxPowerIdx; /* Currently selected output power */
+    uint8_t currChannelIndex; /* Index of the currently selected channel from the channel list */
+    uint8_t currDataRateIndex; /* Currently selected data rate */
+    uint8_t currTxPowerIndex; /* Currently selected output power */
     uint16_t channelsMask[6]; /* Channel mask to disable channels from the channel list */
     uint32_t adrAckCounter; /* Adaptive data rate acknowledgement counter */
     uint8_t nbRep; /* Configured redundancy [1:15] (automatic uplink message repetition) */
@@ -147,6 +147,13 @@ typedef struct {
     LoRaMeshCtrlFlags_t ctrlFlags; /* Network flags */
     LoRaDbgFlags_t dbgFlags; /* Debug flags */
 } LoRaDevice_t;
+
+typedef uint8_t (*RxMsgHandler)( uint8_t *payload, uint8_t payloadSize, uint8_t fPort );
+
+typedef struct {
+    uint8_t Port;
+    RxMsgHandler Handler;
+} PortHandler_t;
 
 /*******************************************************************************
  * PUBLIC VARIABLES
@@ -170,6 +177,7 @@ extern LoRaDevice_t* pLoRaDevice;
  * API FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/
 /*!
+ * Initializind mesh network.
  *
  * \param [IN] callabcks       Pointer to a structure defining the LoRaMAC
  *                             callback functions.
@@ -194,13 +202,33 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks );
 void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint8_t *appSKey );
 
 /*!
+ * Register an application handler on the specified port.
+ *
+ * \param [IN] handler Message handler to be called if a message is received on the specified port.
+ * \param [IN] fPort Application port to register
+ *
+ * \retval status ERR_OK if port was successfully registered.
+ */
+uint8_t LoRaMesh_RegisterApplicationPort( RxMsgHandler fHandler, uint8_t fPort );
+
+/*!
+ * Remove an application handler from the specified port.
+ *
+ * \param [IN] handler Message handler to be called if a message is received on the specified port.
+ * \param [IN] fPort Application port to register
+ *
+ * \retval status ERR_OK if port was successfully removed.
+ */
+uint8_t LoRaMesh_RemoveApplicationPort( RxMsgHandler fHandler, uint8_t fPort );
+
+/*!
  * LoRaMAC layer send frame
  *
- * \param [IN] fBuffer     MAC data buffer to be sent
- * \param [IN] fBufferSize MAC data buffer size
- * \param [IN] fPort       MAC payload port (must be > 0)
- * \param [IN] confirmed   Confirmed message
- * \param [IN] nofRetries  Number of retries to receive the acknowledgement
+ * \param [IN] fBuffer     Frame data buffer to be sent
+ * \param [IN] fBufferSize Frame data buffer size
+ * \param [IN] fPort       Frame payload port (must be > 0)
+ * \param [IN] isUpLink    Frame direction
+ * \param [IN] isConfirmed Confirmed frame
  *
  * \retval status          [0: OK, 1: Busy, 2: No network joined,
  *                          3: Length or port error, 4: Unknown MAC command
@@ -211,19 +239,37 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
         bool isUpLink, bool isConfirmed );
 
 /*!
+ * Handles received message on the transport layer.
  *
+ * \param [IN] buf Received frame data buffer
+ * \param [IN] payloadSize Received frame payload size
+ * \param [IN] fPort Frame port
+ * \param [IN] fType Frame type
+ *
+ * \retval status ERR_OK if frame was handled successfully
  */
 uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort,
         LoRaFrmType_t fType );
 
 /*!
+ * Handles received message on the transport layer.
  *
+ * \param [IN] buf Frame data buffer
+ * \param [IN] bufSize Frame data buffer size
+ * \param [IN] payloadSize Frame payload size
+ * \param [IN] fPort Frame port
+ * \param [IN] fType Frame type
+ *
+ * \retval status ERR_OK if frame was handled successfully
  */
 uint8_t LoRaMesh_PutPayload( uint8_t *buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
         LoRaFrmType_t fType );
 
 /*!
+ * Process advertising message.
  *
+ * \param [IN] aPayload     Advertising data buffer
+ * \param [IN] aPayloadSize Advertising payload size
  */
 uint8_t LoRaMesh_ProcessAdvertising( uint8_t *aPayload, uint8_t aPayloadSize );
 
@@ -246,7 +292,9 @@ uint8_t LoRaMesh_JoinReq( uint8_t *devEui, uint8_t *appEui, uint8_t *appKey );
 uint8_t LoRaMesh_LinkCheckReq( void );
 
 /*!
+ * Returns whether or not a network is joined.
  *
+ * \retval bool True if network is joined.
  */
 bool LoRaMesh_IsNetworkJoined( void );
 

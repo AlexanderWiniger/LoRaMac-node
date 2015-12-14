@@ -104,6 +104,7 @@ uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
         LoRaFrmType_t fType, LoRaFrmDir_t fDir, bool confirmed, bool encrypted )
 {
     uint8_t pktHdrSize = 0, fBuffer[LORAFRM_BUFFER_SIZE];
+    LoRaMacMsgType_t msgType;
     LoRaFrmCtrl_t fCtrl;
 
     /* Initialize buffer */
@@ -182,24 +183,26 @@ uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
                 pktHdrSize++;
             }
 
+            if ( fDir == UP_LINK ) {
+                msgType = (confirmed ? MSG_TYPE_DATA_CONFIRMED_UP : MSG_TYPE_DATA_UNCONFIRMED_UP);
+            } else {
+                msgType =
+                        (confirmed ? MSG_TYPE_DATA_CONFIRMED_DOWN : MSG_TYPE_DATA_UNCONFIRMED_DOWN);
+            }
+
             payloadSize += pktHdrSize;
         }
             break;
             break;
         case FRM_TYPE_ADVERTISING:
+            msgType = MSG_TYPE_PROPRIETARY;
             break;
         case FRM_TYPE_MULTICAST:
+            msgType = MSG_TYPE_DATA_UNCONFIRMED_DOWN;
             break;
         default:
             return ERR_INVALID_TYPE;
             break;
-    }
-
-    LoRaMacMsgType_t msgType;
-    if ( fDir == UP_LINK ) {
-        msgType = (confirmed ? MSG_TYPE_DATA_CONFIRMED_UP : MSG_TYPE_DATA_UNCONFIRMED_UP);
-    } else {
-        msgType = (confirmed ? MSG_TYPE_DATA_CONFIRMED_DOWN : MSG_TYPE_DATA_UNCONFIRMED_DOWN);
     }
 
     LOG_TRACE("%s - Size %d", __FUNCTION__, payloadSize);
