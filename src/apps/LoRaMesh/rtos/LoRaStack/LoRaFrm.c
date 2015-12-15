@@ -59,7 +59,7 @@ uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr, LoRaFr
         pLoRaDevice->ctrlFlags.Bits.ackRequested = 1;
     }
 
-    switch (fType) {
+    switch ( fType ) {
         case FRM_TYPE_REGULAR:
             if ( fDir == DOWN_LINK ) {
                 fPayloadSize = LORAPHY_BUF_SIZE(packet->phyData) - LORAFRM_HEADER_SIZE_MIN
@@ -91,11 +91,13 @@ uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr, LoRaFr
             break;
     }
 
+#if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
     LOG_TRACE("%s - Size %d", __FUNCTION__, fPayloadSize);
     LOG_TRACE_BARE("\t");
     for ( uint8_t i = 0; i < fPayloadSize; i++ )
-        LOG_TRACE_BARE("0x%02x ", fBuffer[i]);
+    LOG_TRACE_BARE("0x%02x ", fBuffer[i]);
     LOG_TRACE_BARE("\r\n");
+#endif
 
     return LoRaMesh_OnPacketRx((uint8_t*) &fBuffer, fPayloadSize, fPort, fType); /* Pass message up the stack */
 }
@@ -112,7 +114,7 @@ uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
 
     fCtrl.Value = 0;
 
-    switch (fType) {
+    switch ( fType ) {
         case FRM_TYPE_REGULAR:
         {
             fCtrl.Bits.FOptsLen = 0;
@@ -204,13 +206,13 @@ uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
             return ERR_INVALID_TYPE;
             break;
     }
-
+#if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
     LOG_TRACE("%s - Size %d", __FUNCTION__, payloadSize);
     LOG_TRACE_BARE("\t");
     for ( uint8_t i = 0; i < (payloadSize + 3); i++ )
-        LOG_TRACE_BARE("0x%02x ", fBuffer[i]);
+    LOG_TRACE_BARE("0x%02x ", fBuffer[i]);
     LOG_TRACE_BARE("\r\n");
-
+#endif
     return LoRaMac_PutPayload(fBuffer, sizeof(fBuffer), payloadSize, msgType);
 }
 

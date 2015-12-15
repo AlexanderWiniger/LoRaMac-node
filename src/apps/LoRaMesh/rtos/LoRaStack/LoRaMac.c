@@ -65,7 +65,7 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
     /* Check if message version matches*/
     if ( macHdr.Bits.Major != LORAMESH_CONFIG_MAJOR_VERSION ) return ERR_FAILED;
 
-    switch (macHdr.Bits.MType) {
+    switch ( macHdr.Bits.MType ) {
         case MSG_TYPE_JOIN_REQ:
             LOG_TRACE("Received join request.");
             break;
@@ -150,7 +150,8 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
                 if ( curMulticastGrp != NULL ) {
                     frameCntr = curMulticastGrp->Connection.DownLinkCounter;
                     devAddr = curMulticastGrp->Connection.Address;
-                } else return ERR_FAILED;
+                } else
+                    return ERR_FAILED;
             } else {
                 frameCntr = pLoRaDevice->upLinkSlot.DownLinkCounter;
                 devAddr = pLoRaDevice->devAddr;
@@ -194,19 +195,22 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
     sequenceCntr |= (uint16_t) payload[LORAFRM_BUF_IDX_CNTR + 1] << 8;
     sequenceCntrDiff = (sequenceCntr - ((uint16_t)(frameCntr & 0xFFFF)));
 
-    if ( sequenceCntrDiff < (1 << 15) ) frameCntr += sequenceCntrDiff;
-    else frameCntr += 0x10000 + (int16_t) sequenceCntrDiff;
+    if ( sequenceCntrDiff < (1 << 15) )
+        frameCntr += sequenceCntrDiff;
+    else
+        frameCntr += 0x10000 + (int16_t) sequenceCntrDiff;
 
     LoRaMacComputeMic((uint8_t*) &payload[LORAMAC_BUF_IDX_HDR], payloadSize - LORAMAC_MIC_SIZE,
             pLoRaDevice->upLinkSlot.NwkSKey, devAddr, frameDir, frameCntr, &mic);
 
     if ( mic == micRx ) {
+#if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
         LOG_TRACE("%s - Size %d", __FUNCTION__, payloadSize - LORAMAC_MIC_SIZE);
         LOG_TRACE_BARE("\t");
         for ( uint8_t i = 0; i < ((payloadSize - LORAMAC_MIC_SIZE) + 2); i++ )
-            LOG_TRACE_BARE("0x%02x ", payload[i]);
+        LOG_TRACE_BARE("0x%02x ", payload[i]);
         LOG_TRACE_BARE("\r\n");
-
+#endif
         return LoRaFrm_OnPacketRx(packet, devAddr, frameDir, frameCntr);
     }
 
@@ -228,7 +232,7 @@ uint8_t LoRaMac_PutPayload( uint8_t* buf, size_t bufSize, size_t payloadSize,
     buf[LORAMAC_BUF_IDX_HDR] = macHdr.Value;
     payloadSize++;
 
-    switch (macHdr.Bits.MType) {
+    switch ( macHdr.Bits.MType ) {
         case MSG_TYPE_JOIN_REQ:
             LoRaMacJoinComputeMic(buf, payloadSize & 0xFF, pLoRaDevice->appKey, &mic);
 
@@ -264,13 +268,13 @@ uint8_t LoRaMac_PutPayload( uint8_t* buf, size_t bufSize, size_t payloadSize,
         default:
             return ERR_INVALID_TYPE;
     }
-
+#if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
     LOG_TRACE("%s - Size %d", __FUNCTION__, payloadSize);
     LOG_TRACE_BARE("\t");
     for ( uint8_t i = 0; i < (payloadSize + 2); i++ )
-        LOG_TRACE_BARE("0x%02x ", buf[i]);
+    LOG_TRACE_BARE("0x%02x ", buf[i]);
     LOG_TRACE_BARE("\r\n");
-
+#endif
     return LoRaPhy_PutPayload(buf, bufSize, payloadSize, flags);
 }
 
@@ -304,13 +308,13 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
                 datarate = (datarate >> 4) & 0x0F;
 
                 if ( (AdrCtrlOn == false)
-                        && ((ChannelsDatarate != datarate) || (ChannelsTxPower != txPower)) ) { // ADR disabled don't handle ADR requests if server tries to change datarate or txpower
-                                                                                                           // Answer the server with fail status
-                                                                                                           // Power ACK     = 0
-                                                                                                           // Data rate ACK = 0
-                                                                                                           // Channel mask  = 0
+                        && ((ChannelsDatarate != datarate) || (ChannelsTxPower != txPower)) ) {   // ADR disabled don't handle ADR requests if server tries to change datarate or txpower
+                                                                                                             // Answer the server with fail status
+                                                                                                             // Power ACK     = 0
+                                                                                                             // Data rate ACK = 0
+                                                                                                             // Channel mask  = 0
                     AddMacCommand(MOTE_MAC_LINK_ADR_ANS, 0, 0);
-                    macIndex += 3;// Skip over the remaining bytes of the request
+                    macIndex += 3;                                                                           // Skip over the remaining bytes of the request
                     break;
                 }
                 chMask = (uint16_t) payload[macIndex++];
@@ -323,7 +327,7 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
                     nbRep = 1;
                 }
                 if ( (chMaskCntl == 0) && (chMask == 0) ) {
-                    status &= 0xFE; // Channel mask KO
+                    status &= 0xFE;   // Channel mask KO
                 } else if ( (chMaskCntl >= 1) && (chMaskCntl <= 5) ) {
                     // RFU
                     status &= 0xFE;// Channel mask KO
@@ -334,7 +338,7 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
                                 chMask |= 1 << i;
                             }
                         } else {
-                            if ( ((chMask & (1 << i)) != 0) && (Channels[i].Frequency == 0) ) { // Trying to enable an undefined channel
+                            if ( ((chMask & (1 << i)) != 0) && (Channels[i].Frequency == 0) ) {   // Trying to enable an undefined channel
                                 status &= 0xFE;// Channel mask KO
                             }
                         }
@@ -343,7 +347,7 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
                 }
                 if ( ((datarate < LORAMAC_MIN_DATARATE) || (datarate > LORAMAC_MAX_DATARATE))
                         == true ) {
-                    status &= 0xFD; // Datarate KO
+                    status &= 0xFD;   // Datarate KO
                 }
 
                 //
@@ -351,7 +355,7 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
                 //
                 if ( ((LORAMAC_MAX_TX_POWER <= txPower) && (txPower <= LORAMAC_MIN_TX_POWER))
                         == false ) {
-                    status &= 0xFB; // TxPower KO
+                    status &= 0xFB;   // TxPower KO
                 }
                 if ( (status & 0x07) == 0x07 ) {
                     ChannelsDatarate = datarate;
@@ -388,17 +392,17 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
                 freq *= 100;
 
                 if ( Radio.CheckRfFrequency(freq) == false ) {
-                    status &= 0xFE; // Channel frequency KO
+                    status &= 0xFE;   // Channel frequency KO
                 }
 
                 if ( ((datarate < LORAMAC_MIN_DATARATE) || (datarate > LORAMAC_MAX_DATARATE))
                         == true ) {
-                    status &= 0xFD; // Datarate KO
+                    status &= 0xFD;   // Datarate KO
                 }
 
                 if ( ((drOffset < LORAMAC_MIN_RX1_DR_OFFSET)
                                 || (drOffset > LORAMAC_MAX_RX1_DR_OFFSET)) == true ) {
-                    status &= 0xFB; // Rx1DrOffset range KO
+                    status &= 0xFB;   // Rx1DrOffset range KO
                 }
 
                 if ( (status & 0x07) == 0x07 ) {
@@ -432,11 +436,11 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
                 chParam.DrRange.Value = payload[macIndex++];
 
                 if ( (channelIndex < 3) || (channelIndex > LORA_MAX_NB_CHANNELS) ) {
-                    status &= 0xFE; // Channel frequency KO
+                    status &= 0xFE;   // Channel frequency KO
                 }
 
                 if ( Radio.CheckRfFrequency(chParam.Frequency) == false ) {
-                    status &= 0xFE; // Channel frequency KO
+                    status &= 0xFE;   // Channel frequency KO
                 }
 
                 if ( (chParam.DrRange.Fields.Min > chParam.DrRange.Fields.Max)
@@ -444,7 +448,7 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
                                         && (chParam.DrRange.Fields.Min <= LORAMAC_MAX_DATARATE)) == false)
                         || (((LORAMAC_MIN_DATARATE <= chParam.DrRange.Fields.Max)
                                         && (chParam.DrRange.Fields.Max <= LORAMAC_MAX_DATARATE)) == false) ) {
-                    status &= 0xFD; // Datarate range KO
+                    status &= 0xFD;   // Datarate range KO
                 }
                 if ( (status & 0x03) == 0x03 ) {
                     LoRaMacSetChannel(channelIndex, chParam);

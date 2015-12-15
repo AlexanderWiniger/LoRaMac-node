@@ -22,12 +22,14 @@
 static bool LowPowerModeEnable = true;
 
 #if defined(FSL_RTOS_FREE_RTOS) || defined(USE_FREE_RTOS)
-static uint32_t NrOfTimers = 0;
 
-void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t periodInMs, TimerCallbackFunction_t callback, bool autoReload )
+void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t periodInUs, TimerCallbackFunction_t callback, bool autoReload )
 {
-    if(NrOfTimers > configTIMER_QUEUE_LENGTH) {
-        LOG_ERROR("Maximum number of timers created.");
+    uint32_t periodInMs = periodInUs / 1e3;
+
+    if(periodInMs <= 0) {
+        LOG_ERROR("Minimum period of the timer is 1 ms (%s).", name);
+        return;
     }
 
     obj->Handle = xTimerCreate( name,
@@ -42,7 +44,7 @@ void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t perio
         obj->AutoReload = autoReload;
         obj->Callback = callback;
         obj->IsRunning = false;
-        NrOfTimers++;
+        obj->HasChanged = false;
 
         LOG_TRACE("%s created.", name);
     } else {
@@ -52,32 +54,45 @@ void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t perio
 
 void TimerStart( TimerEvent_t *obj )
 {
-    BaseType_t xReturn = pdFAIL;
+    BaseType_t xReturn = pdFAIL, xHigherPriorityTaskWoken = pdFALSE;
 
     if(obj->IsRunning) return;
 
-    if(__get_IPSR()) {
-        xTimerStartFromISR(obj->Handle, &xReturn);
+    if(obj->HasChanged) {
+        /* Period has to be changed - this will start the timer */
+        if(__get_IPSR()) {
+            xReturn = xTimerChangePeriodFromISR(obj->Handle, (obj->PeriodInMs / portTICK_PERIOD_MS), &xHigherPriorityTaskWoken);
+        } else {
+            xReturn = xTimerChangePeriod(obj->Handle, (obj->PeriodInMs / portTICK_PERIOD_MS), 100);
+        }
+        if(xReturn != pdFAIL) {
+            obj->HasChanged = false;
+            LOG_TRACE("%s's period has been successfully changed to %u ms.", pcTimerGetTimerName(obj->Handle), obj->PeriodInMs);
+        }
     } else {
-        xReturn = xTimerStart( obj->Handle, 100 );
+        if(__get_IPSR()) {
+            xReturn = xTimerStartFromISR(obj->Handle, &xHigherPriorityTaskWoken);
+        } else {
+            xReturn = xTimerStart( obj->Handle, 100 );
+        }
     }
 
     if(xReturn != pdFAIL) {
         obj->IsRunning = true;
         LOG_TRACE("%s started.", pcTimerGetTimerName(obj->Handle));
     } else {
-        LOG_ERROR("Failed to start %s timer", pcTimerGetTimerName(obj->Handle));
+        LOG_ERROR("Failed to start %s.", pcTimerGetTimerName(obj->Handle));
     }
 }
 
 void TimerStop( TimerEvent_t *obj )
 {
-    BaseType_t xReturn = pdFAIL;
+    BaseType_t xReturn = pdFAIL, xHigherPriorityTaskWoken = pdFALSE;
 
     if(!obj->IsRunning) return;
 
     if(__get_IPSR()) {
-        xTimerStopFromISR(obj->Handle, &xReturn);
+        xReturn = xTimerStopFromISR(obj->Handle, &xHigherPriorityTaskWoken);
     } else {
         xReturn = xTimerStop( obj->Handle, 100 );
     }
@@ -92,10 +107,10 @@ void TimerStop( TimerEvent_t *obj )
 
 void TimerReset( TimerEvent_t *obj )
 {
-    BaseType_t xReturn = pdFAIL;
+    BaseType_t xReturn = pdFAIL, xHigherPriorityTaskWoken = pdFALSE;
 
     if(__get_IPSR()) {
-        xTimerResetFromISR(obj->Handle, &xReturn);
+        xReturn = xTimerResetFromISR(obj->Handle, &xHigherPriorityTaskWoken);
     } else {
         xReturn = xTimerReset(obj->Handle, 100);
     }
@@ -108,23 +123,24 @@ void TimerReset( TimerEvent_t *obj )
     }
 }
 
-void TimerSetValue( TimerEvent_t *obj, uint32_t value )
+void TimerSetValue( TimerEvent_t *obj, uint32_t periodInUs )
 {
-    BaseType_t xReturn = pdFAIL;
+    uint32_t periodInMs = periodInUs / 1e3;
 
-    if(__get_IPSR()) {
-        xTimerChangePeriodFromISR(obj->Handle, (value / portTICK_PERIOD_MS), &xReturn);
-    } else {
-        xReturn = xTimerChangePeriod(obj->Handle, (value / portTICK_PERIOD_MS), 100);
+    if(periodInMs <= 0) {
+        LOG_ERROR("Minimum period of the timer is 1 ms.");
+        return;
     }
 
-    if (xReturn != pdFAIL) {
-        obj->PeriodInMs = value;
-        LOG_TRACE("%s period changed from %u to %u.", pcTimerGetTimerName(obj->Handle), obj->PeriodInMs, value);
+    if(periodInMs != obj->PeriodInMs ) {
+        /* Value has changed */
+        obj->PeriodInMs = periodInMs;
+        obj->HasChanged = true;
+        LOG_TRACE("%s period changed from %u ms to %u ms.", pcTimerGetTimerName(obj->Handle), obj->PeriodInMs, periodInMs);
     } else {
-        LOG_ERROR("Failed to change %s timers value from %u to %u", pcTimerGetTimerName(obj->Handle), obj->PeriodInMs, (value / portTICK_PERIOD_MS));
+        /* Value has NOT changed so simply start timer. */
+        LOG_TRACE("%s period is already set to the specified period of %u ms.", pcTimerGetTimerName(obj->Handle), obj->PeriodInMs);
     }
-
 }
 
 TimerTime_t TimerGetCurrentTime( void )
@@ -227,7 +243,7 @@ void TimerStart( TimerEvent_t *obj )
         if ( TimerListHead->IsRunning == true ) {
             elapsedTime = TimerGetValue();
             if ( elapsedTime > TimerListHead->Timestamp ) {
-                elapsedTime = TimerListHead->Timestamp; // security but should never occur
+                elapsedTime = TimerListHead->Timestamp;   // security but should never occur
             }
             remainingTime = TimerListHead->Timestamp - elapsedTime;
         } else {
@@ -246,7 +262,7 @@ void TimerStart( TimerEvent_t *obj )
 static void TimerInsertTimer( TimerEvent_t *obj, uint32_t remainingTime )
 {
     uint32_t aggregatedTimestamp = 0;      // hold the sum of timestamps 
-    uint32_t aggregatedTimestampNext = 0; // hold the sum of timestamps up to the next event
+    uint32_t aggregatedTimestampNext = 0;   // hold the sum of timestamps up to the next event
 
     TimerEvent_t* prev = TimerListHead;
     TimerEvent_t* cur = TimerListHead->Next;
@@ -259,7 +275,7 @@ static void TimerInsertTimer( TimerEvent_t *obj, uint32_t remainingTime )
         aggregatedTimestamp = remainingTime;
         aggregatedTimestampNext = remainingTime + cur->Timestamp;
 
-        while (prev != NULL) {
+        while ( prev != NULL ) {
             if ( aggregatedTimestampNext > obj->Timestamp ) {
                 obj->Timestamp -= aggregatedTimestamp;
                 if ( cur != NULL ) {
@@ -307,7 +323,7 @@ void TimerIrqHandler( void )
 
     if ( LowPowerModeEnable == false ) {
         if ( TimerListHead == NULL ) {
-            return; // Only necessary when the standard timer is used as a time base
+            return;   // Only necessary when the standard timer is used as a time base
         }
     }
 
@@ -325,7 +341,7 @@ void TimerIrqHandler( void )
     elapsedTimer = TimerListHead;
 
     // remove all the expired object from the list
-    while ((TimerListHead != NULL) && (TimerListHead->Timestamp == 0)) {
+    while ( (TimerListHead != NULL) && (TimerListHead->Timestamp == 0) ) {
         if ( TimerListHead->Next != NULL ) {
             TimerListHead = TimerListHead->Next;
         } else {
@@ -335,7 +351,7 @@ void TimerIrqHandler( void )
 
     // execute the callbacks of all the expired objects
     // this is to avoid potential issues between the callback and the object list
-    while ((elapsedTimer != NULL) && (elapsedTimer->Timestamp == 0)) {
+    while ( (elapsedTimer != NULL) && (elapsedTimer->Timestamp == 0) ) {
         if ( elapsedTimer->Callback != NULL ) {
             elapsedTimer->Callback();
         }
@@ -365,9 +381,9 @@ void TimerStop( TimerEvent_t *obj )
         return;
     }
 
-    if ( TimerListHead == obj ) // Stop the Head                                    
+    if ( TimerListHead == obj )   // Stop the Head                                    
             {
-        if ( TimerListHead->IsRunning == true )  // The head is already running 
+        if ( TimerListHead->IsRunning == true )   // The head is already running 
                 {
             elapsedTime = TimerGetValue();
             if ( elapsedTime > obj->Timestamp ) {
@@ -399,7 +415,7 @@ void TimerStop( TimerEvent_t *obj )
     {
         remainingTime = obj->Timestamp;
 
-        while (cur != NULL) {
+        while ( cur != NULL ) {
             if ( cur == obj ) {
                 if ( cur->Next != NULL ) {
                     cur = cur->Next;
@@ -423,7 +439,7 @@ static bool TimerExists( TimerEvent_t *obj )
 {
     TimerEvent_t* cur = TimerListHead;
 
-    while (cur != NULL) {
+    while ( cur != NULL ) {
         if ( cur == obj ) {
             return true;
         }

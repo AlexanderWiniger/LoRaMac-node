@@ -169,7 +169,7 @@ uint8_t LoRaMesh_RegisterApplicationPort( RxMsgHandler fHandler, uint8_t fPort )
         ListNodePointer_t currNode = pLoRaMsgHandlers->head;
 
         /* Make sure port is not already registered */
-        while (currNode->next != NULL) {
+        while ( currNode->next != NULL ) {
             if ( ((PortHandler_t*) currNode->data)->Port == fPort ) {
                 return ERR_NOTAVAIL;
             }
@@ -188,7 +188,7 @@ uint8_t LoRaMesh_RemoveApplicationPort( RxMsgHandler fHandler, uint8_t fPort )
 
     currNode = pLoRaMsgHandlers->head;
 
-    while (currNode != NULL) {
+    while ( currNode != NULL ) {
         tempPortHandler = (PortHandler_t*) currNode->data;
         if ( tempPortHandler->Port == fPort ) {
             ListRemove(pLoRaMsgHandlers, currNode->data);
@@ -205,7 +205,7 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
     uint8_t i, buf[LORAMESH_BUFFER_SIZE];
 
     if ( !LoRaMesh_IsNetworkJoined() ) {
-        return ERR_NOTAVAIL; // No network has been joined yet
+        return ERR_NOTAVAIL;   // No network has been joined yet
     }
 
     if ( appPayloadSize > LORAMESH_PAYLOAD_SIZE ) {
@@ -213,7 +213,7 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
     }
 
     i = 0;
-    while (i < appPayloadSize) {
+    while ( i < appPayloadSize ) {
         buf[LORAMESH_BUF_PAYLOAD_START(buf) + i] = *appPayload;
         appPayload++;
         i++;
@@ -225,11 +225,11 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
 
 uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort, LoRaFrmType_t fType )
 {
-    switch (fType) {
+    switch ( fType ) {
         case FRM_TYPE_REGULAR:
             if ( fPort > 0 ) {
                 ListNodePointer_t currNode = pLoRaMsgHandlers->head;
-                while (currNode != NULL) {
+                while ( currNode != NULL ) {
                     if ( ((PortHandler_t*) currNode->data)->Port == fPort ) {
                         return ((PortHandler_t*) currNode->data)->Handler(buf, payloadSize, fPort);
                     }
@@ -251,13 +251,13 @@ uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize
         LoRaFrmType_t fType )
 {
     /* Add app information */
-
+#if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
     LOG_TRACE("%s - Size %d", __FUNCTION__, payloadSize);
     LOG_TRACE_BARE("\t");
     for ( uint8_t i = 0; i < payloadSize; i++ )
-        LOG_TRACE_BARE("0x%02x ", buf[i]);
+    LOG_TRACE_BARE("0x%02x ", buf[i]);
     LOG_TRACE_BARE("\r\n");
-
+#endif
     return LoRaFrm_PutPayload(buf, bufSize, payloadSize, fPort, fType, UP_LINK, false, false);
 }
 
@@ -304,7 +304,7 @@ ChildNodeInfo_t* LoRaMesh_FindChildNode( uint32_t devAddr )
     if ( pLoRaDevice->childNodes != NULL ) {
         listNode = pLoRaDevice->childNodes->head;
 
-        while (listNode != NULL) {
+        while ( listNode != NULL ) {
             tempNode = (ChildNodeInfo_t*) listNode->data;
             if ( tempNode->Connection.Address == devAddr ) return tempNode;
             listNode = listNode->next;
@@ -322,7 +322,7 @@ MulticastGroupInfo_t* LoRaMesh_FindMulticastGroup( uint32_t grpAddr )
     if ( pLoRaDevice->multicastGroups != NULL ) {
         listNode = pLoRaDevice->multicastGroups->head;
 
-        while (listNode != NULL) {
+        while ( listNode != NULL ) {
             tempGrp = (MulticastGroupInfo_t*) listNode->data;
             if ( tempGrp->Connection.Address == grpAddr ) return tempGrp;
             listNode = listNode->next;
@@ -355,14 +355,18 @@ void LoRaMesh_PrintChildNodes( bool reverseOrder )
 {
     ListNodePointer_t tempNode;
     uint8_t i;
-    if ( reverseOrder ) tempNode = (ListNodePointer_t) pLoRaDevice->childNodes->tail;
-    else tempNode = (ListNodePointer_t) pLoRaDevice->childNodes->head;
+    if ( reverseOrder )
+        tempNode = (ListNodePointer_t) pLoRaDevice->childNodes->tail;
+    else
+        tempNode = (ListNodePointer_t) pLoRaDevice->childNodes->head;
 
     for ( i = 0; i < pLoRaDevice->childNodes->count; i++ ) {
         LOG_DEBUG_BARE("%u. ---------------------------------------------\r\n", (i + 1));
         ChildNodePrint((ChildNodeInfo_t*) tempNode->data);
-        if ( reverseOrder ) tempNode = (ListNodePointer_t) tempNode->prev;
-        else tempNode = (ListNodePointer_t) tempNode->next;
+        if ( reverseOrder )
+            tempNode = (ListNodePointer_t) tempNode->prev;
+        else
+            tempNode = (ListNodePointer_t) tempNode->next;
     }
 }
 
@@ -370,14 +374,18 @@ void LoRaMesh_PrintMulticastGroups( bool reverseOrder )
 {
     ListNodePointer_t tempGrp;
     uint8_t i;
-    if ( reverseOrder ) tempGrp = (ListNodePointer_t) pLoRaDevice->multicastGroups->tail;
-    else tempGrp = (ListNodePointer_t) pLoRaDevice->multicastGroups->head;
+    if ( reverseOrder )
+        tempGrp = (ListNodePointer_t) pLoRaDevice->multicastGroups->tail;
+    else
+        tempGrp = (ListNodePointer_t) pLoRaDevice->multicastGroups->head;
 
     for ( i = 0; i < pLoRaDevice->multicastGroups->count; i++ ) {
         LOG_DEBUG_BARE("%u. ---------------------------------------------\r\n", (i + 1));
         MulticastGroupPrint((MulticastGroupInfo_t*) tempGrp->data);
-        if ( reverseOrder ) tempGrp = (ListNodePointer_t) tempGrp->prev;
-        else tempGrp = (ListNodePointer_t) tempGrp->next;
+        if ( reverseOrder )
+            tempGrp = (ListNodePointer_t) tempGrp->prev;
+        else
+            tempGrp = (ListNodePointer_t) tempGrp->next;
     }
 }
 /*******************************************************************************

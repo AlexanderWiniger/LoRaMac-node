@@ -33,6 +33,7 @@ typedef uint64_t TimerTime_t;
 typedef struct TimerEvent_s {
     TimerHandle_t Handle;
     uint32_t PeriodInMs;   //! Timer period value
+    bool HasChanged;//! Period of the timer has changed
     bool AutoReload;//! Is auto reload enabled
     bool IsRunning;//! Is Timer running
     TimerCallbackFunction_t Callback;//! Timer callback function
@@ -47,7 +48,7 @@ typedef struct TimerEvent_s {
  * \param [IN] obj          Structure containing the timer object parameters
  * \param [IN] callback     Function callback called at the end of the timeout
  */
-void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t periodInMs, TimerCallbackFunction_t callback, bool autoReload);
+void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t periodInUs, TimerCallbackFunction_t callback, bool autoReload);
 
 #else
 /*!
@@ -106,7 +107,7 @@ void TimerReset( TimerEvent_t *obj );
  * \param [IN] obj   Structure containing the timer object parameters
  * \param [IN] value New timer timeout value
  */
-void TimerSetValue( TimerEvent_t *obj, uint32_t value );
+void TimerSetValue( TimerEvent_t *obj, uint32_t periodInUs );
 
 /*!
  * \brief Read the current time

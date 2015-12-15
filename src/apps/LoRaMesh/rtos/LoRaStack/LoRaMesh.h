@@ -164,9 +164,6 @@ const uint8_t Datarates[] = { 12, 11, 10, 9, 8, 7, 7, 50 };
 /*! Maximum payload with respect to the datarate index. Cannot operate with repeater. */
 const uint8_t MaxPayloadByDatarate[] = { 51, 51, 51, 115, 242, 242, 242, 242 };
 
-/*! Maximum payload with respect to the datarate index. Can operate with repeater. */
-const uint8_t MaxPayloadByDatarateRepeater[] = { 51, 51, 51, 115, 222, 222, 222, 222 };
-
 /*! Tx output powers table definition */
 const uint8_t TxPowers[] = { 20, 14, 11, 8, 5, 2 };
 

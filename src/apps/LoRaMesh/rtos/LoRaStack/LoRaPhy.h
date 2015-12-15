@@ -60,7 +60,14 @@
  * TYPE DEFINITIONS
  ******************************************************************************/
 typedef enum {
-    PHY_INITIAL_STATE, PHY_IDLE, PHY_RECEIVING, PHY_POWER_DOWN, PHY_WAIT_FOR_TXDONE, PHY_TIMEOUT
+    PHY_INITIAL_STATE,
+    PHY_POWER_DOWN,
+    PHY_IDLE,
+    PHY_WAIT_FOR_TXDONE,
+    PHY_RECEIVING,
+    PHY_ADVERTISING,
+    PHY_TIMEOUT,
+    PHY_ERROR
 } LoRaPhy_AppStatus_t;
 
 /*! LoRaPhy channels parameters definition */
@@ -81,29 +88,21 @@ typedef struct {
 
 typedef struct {
     uint32_t Frequency;   // Hz
-    DrRange_t DrRange; // Max datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
-                       // Min datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+    DrRange_t DrRange;   // Max datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+                         // Min datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
     uint8_t Band;        // Band index
 } ChannelParams_t;
 
+/*! Rx channel parameter structure */
 typedef struct {
-    uint32_t Frequency;   // Hz
-    uint8_t Datarate; // [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
-} Rx2ChannelParams_t;
+    uint32_t freq;      // Hz
+    uint8_t datarate;   // [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+} RxChannelParams_t;
 
 /*! Rx reception window type */
 typedef enum {
-    RX_TYPE_ADV, RX_TYPE_WINDOW1, RX_TYPE_WINDOW2, RX_TYPE_NORMAL
+    RX_TYPE_ADVERTISING, RX_TYPE_REGULAR
 } RxWindowType_t;
-
-/*! Rx config structure */
-typedef struct {
-    uint32_t freq;
-    int8_t datarate;
-    uint32_t bandwidth;
-    uint16_t timeout;
-    bool rxContinuous;
-} RadioRxConfig_t;
 
 /*! Tx config structure */
 typedef struct {
@@ -120,7 +119,7 @@ typedef struct {
     uint8_t HopPeriod;
     bool iqInverted;
     uint32_t timeout;
-} RadioTxConfig_t;
+} TxChannelParams_t;
 
 typedef struct {
     uint8_t flags;/*!< flags, see LORAPHY_PACKET_FLAGS_XXXX above */
