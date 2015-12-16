@@ -113,7 +113,7 @@ void LoRaMesh_AppInit( void )
 //    LoRaMesh_SetDeviceClass (CLASS_C);
     LoRaMesh_TestSetDutyCycleCtrlOff (LORAWAN_DUTYCYCLE_OFF);
 
-    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", 0x200, (void*) NULL, tskIDLE_PRIORITY,
+    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", 0x800, (void*) NULL, tskIDLE_PRIORITY,
             (xTaskHandle*) NULL) != pdPASS ) {
         /*lint -e527 */
         for ( ;; ) {
@@ -171,7 +171,8 @@ static bool SendFrame( void )
     AppData[10] = 'd';
     AppData[11] = '\0';
 
-    sendFrameStatus = LoRaMesh_SendFrame(AppData, AppDataSize, AppPort, true, IsTxConfirmed);
+    sendFrameStatus = LoRaMesh_SendFrame(AppData, AppDataSize, AppPort, true,
+            IsTxConfirmed);
 
     if ( sendFrameStatus == ERR_NOTAVAIL ) return true;
     else return false;

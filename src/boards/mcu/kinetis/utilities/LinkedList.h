@@ -9,6 +9,9 @@
 #ifndef __LINKEDLIST_H__
 #define __LINKEDLIST_H__
 
+/*******************************************************************************
+ * TYPE DEFINITIONS
+ ******************************************************************************/
 /*!
  * List node element definition.
  */
@@ -37,6 +40,9 @@ typedef struct List_s {
  */
 typedef LinkedList_t* ListPointer_t;
 
+/*******************************************************************************
+ * MODULE FUNCTION PROTOTYPES (PUBLIC)
+ ******************************************************************************/
 /*!
  * \brief Create empty list.
  *
@@ -106,18 +112,18 @@ ListNodePointer_t ListInsert( ListPointer_t list, void* data, uint32_t position 
 /*!
  * \brief Remove element with specific value.
  *
- * \param list Pointer to the list the element will be insert.
+ * \param list Pointer to the list the element will be removed from.
+ * \param data
  */
 void ListRemove( ListPointer_t list, void* data );
 
 /*!
- * \brief Find element in the list.
+ * \brief Remove element at specific position.
  *
- * \param list Pointer to the list the element will be insert.
- * \param data Data pointer that will be added to the element.
- * \return ListNodePointer_t Pointer to the list node element if found, else NULL.
+ * \param list Pointer to the list the element will be removed from.
+ * \param position
  */
-ListNodePointer_t ListFind( ListPointer_t list, void* data );
+void ListRemoveAt( ListPointer_t list, uint32_t position );
 
 /*!
  * \brief Clear list.
@@ -125,5 +131,8 @@ ListNodePointer_t ListFind( ListPointer_t list, void* data );
  * \param list Pointer to the list the element will be insert.
  */
 void ListClear( ListPointer_t list );
+/*******************************************************************************
+ * END OF CODE
+ ******************************************************************************/
 
 #endif /* __LINKEDLIST_H__ */

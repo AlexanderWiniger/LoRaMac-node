@@ -5,43 +5,33 @@
  * \brief Doubly linked list implementation
  *
  */
+/*******************************************************************************
+ * INCLUDE FILES
+ ******************************************************************************/
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "LinkedList.h"
+#include "utilities.h"
 
-/*!
- * \brief Create new list node element.
- *
- * \param data Data pointer to be added to new element.
- * \return ListNodePointer_t Pointer to created list node element.
- */
-ListNodePointer_t CreateListNode( void* data )
-{
-    ListNodePointer_t newNode = (ListNodePointer_t) malloc(sizeof(ListNode_t));
-    newNode->data = data;
-    newNode->prev = NULL;
-    newNode->next = NULL;
+/*******************************************************************************
+ * PRIVATE FUNCTION PROTOTYPES (STATIC)
+ ******************************************************************************/
+/*! \brief Create new list node element. */
+ListNodePointer_t CreateListNode( void* data );
 
-    return newNode;
-}
+/*! \brief Find list node element. */
+ListNodePointer_t FindListNode( ListPointer_t list, void* data );
 
-/*!
- * \brief Delete list node element.
- *
- * \param node Pointer to the node to be deleted.
- * \return void* Pointer to data of the deleted element.
- */
-void* DeleteListNode( ListNodePointer_t node )
-{
-    void* tempData = node->data;
-    free(node);
-    return tempData;
-}
+/*! \brief Delete list node element. */
+void* DeleteListNode( ListNodePointer_t node );
 
+/*******************************************************************************
+ * MODULE FUNCTIONS (PUBLIC)
+ ******************************************************************************/
 ListPointer_t ListCreate( void )
 {
-    ListPointer_t newList = (ListPointer_t) malloc(sizeof(LinkedList_t));
+    ListPointer_t newList = (ListPointer_t) custom_malloc(sizeof(LinkedList_t));
     newList->count = 0;
     newList->head = NULL;
     newList->tail = NULL;
@@ -65,12 +55,14 @@ void ListDelete( ListPointer_t list )
     /* Delete all remaining elements */
     ListClear(list);
     /* De-allocated list */
-    free(list);
+    custom_free(list);
 }
 
 ListNodePointer_t ListPushFront( ListPointer_t list, void* data )
 {
     ListNodePointer_t tempNode = CreateListNode(data);
+
+    if ( tempNode == NULL ) return NULL;
 
     if ( list->count == 0 ) {
         /* List is empty */
@@ -152,23 +144,100 @@ void* ListPopBack( ListPointer_t list )
 
 ListNodePointer_t ListInsert( ListPointer_t list, void* data, uint32_t position )
 {
+    ListNodePointer_t tempNode, newNode;
+    uint32_t cnt;
+
     if ( position > list->count ) {
         return NULL;
     }
 
     if ( position == 0 ) {
         /* Add to head */
-        ListPushFront(list, data);
+        return ListPushFront(list, data);
     }
 
-    if ( position == (list->count - 1) ) {
+    if ( position == (list->count) ) {
         /* Add to tail */
-        ListPushBack(list, data);
+        return ListPushBack(list, data);
     }
 
-    uint32_t cnt;
+    newNode = CreateListNode(data);
+
+    if ( position < (list->count / 2) ) {
+        /* Start at the head */
+        cnt = 0;
+        tempNode = list->head;
+
+        while (cnt < position) {
+            tempNode = tempNode->next;
+            cnt++;
+        }
+
+        newNode->next = tempNode;
+        newNode->prev = tempNode->prev;
+        tempNode->prev->next = newNode;
+        tempNode->prev = newNode;
+    } else {
+        /* Start at the tail */
+        cnt = position;
+        tempNode = list->tail;
+
+        while (cnt > 0) {
+            tempNode = tempNode->prev;
+            cnt--;
+        }
+
+        newNode->prev = tempNode;
+        newNode->next = tempNode->next;
+        tempNode->next->prev = newNode;
+        tempNode->next = newNode;
+    }
+
+    list->count++;
+
+    return newNode;
+}
+
+void ListRemove( ListPointer_t list, void* data )
+{
+    if ( list->count == 0 ) return;
+
+    ListNodePointer_t tempNode = FindListNode(list, data);
+
+    if ( tempNode == NULL ) return;
+
+    if ( tempNode == list->tail ) {
+        /* Check if found node is tail */
+        (void*) ListPopBack(list);
+    } else if ( tempNode == list->head ) {
+        /* Check if found node is head */
+        (void*) ListPopFront(list);
+    } else {
+        tempNode->next->prev = tempNode->prev;
+        tempNode->prev->next = tempNode->next;
+        DeleteListNode(tempNode);
+    }
+    list->count--;
+}
+
+void ListRemoveAt( ListPointer_t list, uint32_t position )
+{
     ListNodePointer_t tempNode;
-    ListNodePointer_t newNode = CreateListNode(data);
+    uint32_t cnt;
+
+    if ( position > list->count ) {
+        return;
+    }
+
+    if ( position == 0 ) {
+        /* Add to head */
+        (void*) ListPopFront(list);
+    }
+
+    if ( position == (list->count) ) {
+        /* Add to tail */
+        (void*) ListPopBack(list);
+    }
 
     if ( position < (list->count / 2) ) {
         /* Start at the head */
@@ -189,48 +258,11 @@ ListNodePointer_t ListInsert( ListPointer_t list, void* data, uint32_t position 
             cnt--;
         }
     }
-    newNode->next = tempNode;
-    newNode->prev = tempNode->prev;
-    tempNode->prev = newNode;
-    list->count++;
-
-    return newNode;
-}
-
-void ListRemove( ListPointer_t list, void* data )
-{
-    if ( list->count == 0 ) return;
-
-    ListNodePointer_t tempNode = ListFind(list, data);
-
-    if ( tempNode == NULL ) return;
-
-    if ( tempNode == list->tail ) {
-        /* Check if found node is tail */
-        ListPopBack(list);
-    } else if ( tempNode == list->head ) {
-        /* Check if found node is head */
-        ListPopFront(list);
-    } else {
-        tempNode->next->prev = tempNode->prev;
-        tempNode->prev->next = tempNode->next;
-        DeleteListNode(tempNode);
-    }
+    /* Plug hole in list */
+    tempNode->prev->next = tempNode->next;
+    tempNode->next->prev = tempNode->prev;
+    DeleteListNode(tempNode);
     list->count--;
-}
-
-ListNodePointer_t ListFind( ListPointer_t list, void* data )
-{
-    ListNodePointer_t tempNode = list->head;
-    uint32_t cnt = 0;
-
-    while (cnt < list->count) {
-        if ( tempNode->data == data ) return tempNode;
-        if ( tempNode->next == NULL ) break;
-        tempNode = tempNode->next;
-        cnt++;
-    }
-    return NULL;
 }
 
 void ListClear( ListPointer_t list )
@@ -248,3 +280,56 @@ void ListClear( ListPointer_t list )
     list->tail = NULL;
     list->count = 0;
 }
+/*******************************************************************************
+ * PRIVATE FUNCTIONS (STATIC)
+ ******************************************************************************/
+/*!
+ * Create new list node element.
+ *
+ * \param data Data pointer to be added to new element.
+ * \return ListNodePointer_t Pointer to created list node element.
+ */
+ListNodePointer_t CreateListNode( void* data )
+{
+    ListNodePointer_t newNode = (ListNodePointer_t) custom_malloc(sizeof(ListNode_t));
+    if ( newNode != NULL ) {
+        newNode->data = data;
+        newNode->prev = NULL;
+        newNode->next = NULL;
+    }
+    return newNode;
+}
+
+/*!
+ * \brief Find element in the list.
+ *
+ * \param list Pointer to the list the element will be insert.
+ * \param data Data pointer that will be added to the element.
+ * \return ListNodePointer_t Pointer to the list node element if found, else NULL.
+ */
+ListNodePointer_t FindListNode( ListPointer_t list, void* data )
+{
+    ListNodePointer_t tempNode = list->head;
+
+    while (tempNode != NULL) {
+        if ( tempNode->data == data ) return tempNode;
+        tempNode = tempNode->next;
+    }
+    return NULL;
+}
+
+/*!
+ * Delete list node element.
+ *
+ * \param node Pointer to the node to be deleted.
+ * \return void* Pointer to data of the deleted element.
+ */
+void* DeleteListNode( ListNodePointer_t node )
+{
+    void* tempData = node->data;
+    custom_free(node);
+    return tempData;
+}
+/*******************************************************************************
+ * END OF CODE
+ ******************************************************************************/

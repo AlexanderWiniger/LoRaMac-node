@@ -45,7 +45,9 @@
 /*!< advertising received */
 #define LORAPHY_PACKET_FLAGS_FRM_MULTICAST      (2<<0)
 /*!< multicast received */
-#define LORAPHY_PACKET_FLAGS_ACK_REQ            (1<<3)
+#define LORAPHY_PACKET_FLAGS_JOIN_REQ           (1<<3)
+/*!< join request message */
+#define LORAPHY_PACKET_FLAGS_ACK_REQ            (1<<4)
 /*!< acknowledge requested */
 
 #define LORAPHY_PACKET_FLAGS_FRM_MASK           (0x3)
@@ -88,8 +90,8 @@ typedef struct {
 
 typedef struct {
     uint32_t Frequency;   // Hz
-    DrRange_t DrRange;   // Max datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
-                         // Min datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+    DrRange_t DrRange; // Max datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+                       // Min datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
     uint8_t Band;        // Band index
 } ChannelParams_t;
 
@@ -157,17 +159,6 @@ uint8_t LoRaPhy_OnPacketRx( LoRaPhy_PacketDesc *packet );
  * \return Error code, ERR_OK for everything fine.
  */
 uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, size_t payloadSize, uint8_t flags );
-
-/*!
- * Initializes and opens the reception window
- *
- * \param [IN] freq window channel frequency
- * \param [IN] datarate window channel datarate
- * \param [IN] bandwidth window channel bandwidth
- * \param [IN] timeout window channel timeout
- */
-void LoRaPhy_OpenRxWindow( uint32_t freq, uint8_t datarate, uint32_t bandwidth, uint16_t timeout,
-        bool rxContinuous );
 
 /*!
  * Returns a radomly generated 16-bit value called nonce to generate session keys

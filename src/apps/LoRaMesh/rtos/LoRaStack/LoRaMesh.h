@@ -140,6 +140,8 @@ typedef struct {
     uint8_t currTxPowerIndex; /* Currently selected output power */
     uint16_t channelsMask[6]; /* Channel mask to disable channels from the channel list */
     uint32_t adrAckCounter; /* Adaptive data rate acknowledgement counter */
+    uint32_t rxWindow1Delay; /* Reception window 2 delay */
+    uint32_t rxWindow2Delay; /* Reception window 1 delay */
     uint8_t nbRep; /* Configured redundancy [1:15] (automatic uplink message repetition) */
     uint8_t nbRepCounter; /* Automatic repetition counter */
     uint8_t macCmdBuffer[15]; /* MAC command buffer of commands to be added to FOpts field */
@@ -171,7 +173,7 @@ const uint8_t TxPowers[] = { 20, 14, 11, 8, 5, 2 };
 extern LoRaDevice_t* pLoRaDevice;
 
 /*******************************************************************************
- * API FUNCTION PROTOTYPES (PUBLIC)
+ * MODULE FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/
 /*!
  * Initializind mesh network.
@@ -196,7 +198,8 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks );
  * \param [IN] appSKey Pointer to the application session AES128 key array
  *                     ( 16 bytes )
  */
-void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint8_t *appSKey );
+void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey,
+        uint8_t *appSKey );
 
 /*!
  * Register an application handler on the specified port.
@@ -259,8 +262,8 @@ uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort,
  *
  * \retval status ERR_OK if frame was handled successfully
  */
-uint8_t LoRaMesh_PutPayload( uint8_t *buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
-        LoRaFrmType_t fType );
+uint8_t LoRaMesh_PutPayload( uint8_t *buf, uint16_t bufSize, uint8_t payloadSize,
+        uint8_t fPort, LoRaFrmType_t fType );
 
 /*!
  * Process advertising message.

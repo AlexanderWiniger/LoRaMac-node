@@ -40,6 +40,11 @@
 #define LORAMESH_CONFIG_MAX_RX_WINDOW                   (3000000)
 #endif
 
+/*! Transmission timeout */
+#ifndef LORAMESH_CONFIG_TX_TIMEOUT
+#define LORAMESH_CONFIG_TX_TIMEOUT                      (1000000)
+#endif
+
 /*! Maximum allowed gap for the FCNT field */
 #ifndef LORAMESH_CONFIG_MAX_FCNT_GAP
 #define LORAMESH_CONFIG_MAX_FCNT_GAP                    (16384)

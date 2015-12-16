@@ -10,8 +10,14 @@
 #define __UTILITIES_H__
 
 #if defined(CPU_MKL26Z128VLH4) || defined(CPU_MK22FN512VLH12)
+/*******************************************************************************
+ * INCLUDE FILES
+ ******************************************************************************/
 #include "fsl_i2c_master_driver.h"
 
+/*******************************************************************************
+ * TYPE DEFINITIONS
+ ******************************************************************************/
 /*!
  * LoRaMac specific ADC typedef
  */
@@ -26,10 +32,16 @@ typedef struct {
     i2c_master_state_t state;
 }I2C_TypeDef;
 #else
+/*******************************************************************************
+ * TYPE DEFINITIONS
+ ******************************************************************************/
 typedef uint32_t ADC_TypeDef;
 typedef uint32_t I2C_TypeDef;
 #endif
 
+/*******************************************************************************
+ * MODULE FUNCTION PROTOTYPES (PUBLIC)
+ ******************************************************************************/
 /*!
  * \brief Returns the minimum value betwen a and b
  *
@@ -71,6 +83,16 @@ void srand1( uint32_t seed );
  * \retval random random value in range min..max
  */
 int32_t randr( int32_t min, int32_t max );
+
+/*!
+ *
+ */
+void *custom_malloc( size_t size );
+
+/*!
+ *
+ */
+void custom_free( void *p );
 
 /*!
  * \brief Copies size elements of src array to dst array
