@@ -216,8 +216,8 @@ void ListRemove( ListPointer_t list, void* data )
         tempNode->next->prev = tempNode->prev;
         tempNode->prev->next = tempNode->next;
         DeleteListNode(tempNode);
+        list->count--;
     }
-    list->count--;
 }
 
 void ListRemoveAt( ListPointer_t list, uint32_t position )

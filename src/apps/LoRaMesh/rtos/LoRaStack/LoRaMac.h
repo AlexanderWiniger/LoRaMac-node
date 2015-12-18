@@ -47,7 +47,35 @@ typedef enum {
     MSG_TYPE_DATA_CONFIRMED_DOWN = 0x05,
     MSG_TYPE_RFU = 0x06,
     MSG_TYPE_PROPRIETARY = 0x07,
-} LoRaMacMsgType_t;
+} LoRaMac_MsgType_t;
+
+typedef enum {
+    MAC_COMMAND_LINK_CHECK = 0x02,
+    MAC_COMMAND_LINK_ADR,
+    MAC_COMMAND_DUTY_CYCLE,
+    MAC_COMMAND_RX_PARAM_SETUP,
+    MAC_COMMAND_DEV_STATUS,
+    MAC_COMMAND_NEW_CHANNEL,
+    MAC_COMMAND_RX_TIMING_SETUP,
+    /* 0x09 to 0x7F reserved for RFU */
+    MAC_COMMAND_UP_LINK_SLOT_INFO = 0x80,
+    MAC_COMMAND_MULTICAST_GROUP_INFO,
+    MAC_COMMAND_ROUTE_DISCOVER,
+    MAC_COMMAND_ADDR_CONF_RES,
+} LoRaMac_Command_t;
+
+/*! LoRaMAC Battery level indicator */
+typedef enum {
+    BAT_LEVEL_EXT_SRC = 0x00,
+    BAT_LEVEL_EMPTY = 0x01,
+    BAT_LEVEL_FULL = 0xFE,
+    BAT_LEVEL_NO_MEASURE = 0xFF,
+} LoRaMacBatteryLevel_t;
+
+typedef struct {
+    uint8_t Margin;
+    uint8_t GwCnt;
+} LoRaMac_LinkCheck_t;
 
 /*! LoRaMAC header field definition */
 typedef union {
@@ -57,7 +85,15 @@ typedef union {
         uint8_t RFU :3;
         uint8_t MType :3;
     } Bits;
-} LoRaMacHdr_t;
+} LoRaMac_Header_t;
+
+/*!
+ * Function callback to get the current battery level needed for status
+ * request command
+ *
+ * \retval batteryLevel Current battery level
+ */
+typedef uint8_t (*LoRaMac_BatteryLevelCallback_t)( void );
 
 /*******************************************************************************
  * API FUNCTION PROTOTYPES (PUBLIC)
@@ -65,7 +101,7 @@ typedef union {
 /*!
  * LoRa medium access layer initialization.
  */
-void LoRaMac_Init( void );
+void LoRaMac_Init( LoRaMac_BatteryLevelCallback_t callback );
 
 /*!
  * \brief
@@ -77,6 +113,7 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet );
 
 /*!
  * \brief Puts a payload into the buffer queue to be sent asynchronously.
+ *
  * \param fBuffer Message buffer with payload.
  * \param fBufferSize Size of message buffer, must be of LORAMAC_BUFFER_SIZE.
  * \param payloadSize Size of the payload in bytes.
@@ -85,7 +122,16 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet );
  * \return Error code, ERR_OK if everything is ok, ERR_OVERFLOW if buffer is too small.
  */
 uint8_t LoRaMac_PutPayload( uint8_t* bif, size_t bufSize, size_t payloadSize,
-        LoRaMacMsgType_t type );
+        LoRaMac_MsgType_t type );
+
+/*!
+ * \brief
+ *
+ * \param [IN] cmd
+ * \param [IN] args
+ * \param [IN] argsSize
+ */
+uint8_t LoRaMac_AddCommand( uint8_t cmd, uint8_t *args, size_t argsSize );
 
 /*!
  * Processes received MAC commands.

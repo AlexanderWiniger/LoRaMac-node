@@ -89,7 +89,7 @@ static portTASK_FUNCTION(LoRaMeshTask, pvParameters);
  ******************************************************************************/
 void LoRaMesh_AppInit( void )
 {
-    LoRaMesh_Init(&sLoRaMeshCallbacks);
+    LoRaMesh_Init(&sLoRaMeshCallbacks, &BoardGetBatteryLevel);
     LoRaMesh_RegisterApplicationPort((RxMsgHandler) & ProcessFrame, AppPort);
 
 #if(LORAMESH_TEST_APP_ACTIVATED == 1)

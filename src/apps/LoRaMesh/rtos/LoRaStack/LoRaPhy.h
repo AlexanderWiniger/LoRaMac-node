@@ -72,6 +72,12 @@ typedef enum {
     PHY_ERROR
 } LoRaPhy_AppStatus_t;
 
+/*! */
+typedef struct {
+    int16_t Rssi;
+    int8_t Snr;
+} LoRaPhy_LastConnection_t;
+
 /*! LoRaPhy channels parameters definition */
 typedef union {
     int8_t Value;
@@ -79,32 +85,32 @@ typedef union {
         int8_t Min :4;
         int8_t Max :4;
     } Fields;
-} DrRange_t;
+} LoRaPhy_DrRange_t;
 
 typedef struct {
     uint16_t DCycle;
     int8_t TxMaxPower;
     uint64_t LastTxDoneTime;
     uint64_t TimeOff;
-} Band_t;
+} LoRaPhy_Band_t;
 
 typedef struct {
     uint32_t Frequency;   // Hz
-    DrRange_t DrRange; // Max datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
-                       // Min datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+    LoRaPhy_DrRange_t DrRange; // Max datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+    // Min datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
     uint8_t Band;        // Band index
-} ChannelParams_t;
+} LoRaPhy_ChannelParams_t;
 
 /*! Rx channel parameter structure */
 typedef struct {
     uint32_t freq;      // Hz
-    uint8_t datarate;   // [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
-} RxChannelParams_t;
+    uint8_t datarate; // [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+} LoRaPhy_RxChannelParams_t;
 
 /*! Rx reception window type */
 typedef enum {
     RX_TYPE_ADVERTISING, RX_TYPE_REGULAR
-} RxWindowType_t;
+} LoRaPhy_RxWindowType_t;
 
 /*! Tx config structure */
 typedef struct {
@@ -121,7 +127,7 @@ typedef struct {
     uint8_t HopPeriod;
     bool iqInverted;
     uint32_t timeout;
-} TxChannelParams_t;
+} LoRaPhy_TxChannelParams_t;
 
 typedef struct {
     uint8_t flags;/*!< flags, see LORAPHY_PACKET_FLAGS_XXXX above */
@@ -158,7 +164,8 @@ uint8_t LoRaPhy_OnPacketRx( LoRaPhy_PacketDesc *packet );
  * \param payloadSize Size of payload data.
  * \return Error code, ERR_OK for everything fine.
  */
-uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, size_t payloadSize, uint8_t flags );
+uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, size_t payloadSize,
+        uint8_t flags );
 
 /*!
  * Returns a radomly generated 16-bit value called nonce to generate session keys
@@ -169,12 +176,17 @@ uint16_t LoRaPhy_GenerateNonce( void );
  * SETUP FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/
 /*!
+ *
+ */
+void LoRaPhy_GetChannels( LoRaPhy_ChannelParams_t* channels );
+
+/*!
  * \brief
  *
  * \param id
  * \param params
  */
-void LoRaPhy_SetChannel( uint8_t id, ChannelParams_t params );
+void LoRaPhy_SetChannel( uint8_t id, LoRaPhy_ChannelParams_t params );
 
 /*!
  * \brief
@@ -215,12 +227,19 @@ void LoRaPhy_SetReceiveDelay2( uint32_t delay );
 void LoRaPhy_SetJoinAcceptDelay1( uint32_t delay );
 
 /*
- * \brief Set the delay of the second reception window after Tx
+ * \brief Sets the delay of the second reception window after Tx
  * of a join request message
  *
  * \param delay Delay in ms
  */
 void LoRaPhy_SetJoinAcceptDelay2( uint32_t delay );
+
+/*!
+ * \brief Sets maximum aggregated transmit duty cycle of the end-device
+ *
+ * \param [IN] maxDCycle Maximum aggregated duty cycle
+ */
+void LoRaPhy_SetMaxDutyCycle( uint8_t maxDCycle );
 
 /*!
  * \brief Set the delay of the second reception window after Tx
@@ -230,10 +249,20 @@ void LoRaPhy_SetJoinAcceptDelay2( uint32_t delay );
  */
 void LoRaPhy_SetDownLinkSettings( uint8_t rx1DrOffset, uint8_t rx2Dr );
 
+/*!
+ * \brief Set the delay of the second reception window after Tx
+ *
+ * \param rx1DrOffset Offset between up and down link
+ * \param rx2Dr Data rate of second reception window
+ * \param rx2Freq
+ */
+void LoRaPhy_SetRxParameters( uint8_t rx1DrOffset, uint8_t rx2Dr, uint32_t rx2Freq );
+
 /*******************************************************************************
  * TEST FUNCTION PROTOTYPES (PUBLIC) (FOR DEBUG PURPOSES ONLY)
  ******************************************************************************/
-uint8_t LoRaPhy_QueueRxMessage( uint8_t *payload, size_t payloadSize, bool toBack, uint8_t flags );
+uint8_t LoRaPhy_QueueRxMessage( uint8_t *payload, size_t payloadSize, bool toBack,
+        uint8_t flags );
 
 /*******************************************************************************
  * END OF CODE

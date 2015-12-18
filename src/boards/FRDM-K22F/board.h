@@ -87,6 +87,7 @@
 #define ERR_FAILED                      0x11U /*!< Requested functionality or process failed. */
 #define ERR_QFULL                       0x12U /*!< Queue is full. */
 #define ERR_INVALID_TYPE                0x13U /*!< Invalid type. */
+#define ERR_UNKNOWN                     0x14U /*!< */
 
 /*!
  * Unique Devices IDs register set

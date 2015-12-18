@@ -81,7 +81,7 @@
 /*! Advertising interval in us */
 #endif
 #ifndef LORAMESH_CONFIG_ADV_SLOT_DURATION
-#define LORAMESH_CONFIG_ADV_SLOT_DURATION               (3000000)
+#define LORAMESH_CONFIG_ADV_SLOT_DURATION               (2000000)
 /*! Advertising reception window in us */
 #endif
 #ifndef LORAMESH_CONFIG_ADV_EXPLICIT_HDR_OFF

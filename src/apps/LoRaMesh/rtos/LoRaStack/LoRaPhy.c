@@ -78,13 +78,7 @@ typedef union {
          */
         uint8_t reserved :2;
     } Bits;
-} LoRaPhyFlags_t;
-
-typedef struct {
-    uint8_t Priority;
-    TickType_t Time;
-    TimerEvent_t* EventTimer;
-} LoRaPhyEvent_t;
+} LoRaPhy_Flags_t;
 
 /*******************************************************************************
  * PRIVATE VARIABLES (STATIC)
@@ -102,7 +96,7 @@ static xQueueHandle msgTxQueue;
 static LoRaPhy_AppStatus_t phyStatus = PHY_INITIAL_STATE;
 
 /*! LoRaPhy flags structure */
-static LoRaPhyFlags_t phyFlags;
+static LoRaPhy_Flags_t phyFlags;
 
 /* Incoming packet descriptor */
 static LoRaPhy_PacketDesc rxPacket;
@@ -136,11 +130,11 @@ static TimerTime_t AggregatedLastTxDoneTime;
 static TimerTime_t AggregatedTimeOff;
 
 /*! LoRaPhy bands */
-static Band_t Bands[LORA_MAX_NB_BANDS] = { BAND0, BAND1, BAND2, BAND3, BAND4, };
+static LoRaPhy_Band_t Bands[LORA_MAX_NB_BANDS] = { BAND0, BAND1, BAND2, BAND3, BAND4, };
 
 /*! LoRaPhy channels */
-static ChannelParams_t Channels[LORA_MAX_NB_CHANNELS] = { LC1, LC2, LC3, LC4, LC5, LC6,
-        LC7, LC8, LC9, };
+static LoRaPhy_ChannelParams_t Channels[LORA_MAX_NB_CHANNELS] = { LC1, LC2, LC3, LC4, LC5,
+        LC6, LC7, LC8, LC9, };
 
 /*! Last transmission time on air */
 static TimerTime_t TxTimeOnAir = 0;
@@ -149,10 +143,10 @@ static TimerTime_t TxTimeOnAir = 0;
 static TimerEvent_t RxWindowTimers[configTIMER_QUEUE_LENGTH];
 
 /* LoRaPhy reception window configurations */
-static RxChannelParams_t RxChannelParams[LORA_MAX_NB_CHANNELS];
+static LoRaPhy_RxChannelParams_t RxChannelParams[LORA_MAX_NB_CHANNELS];
 
 /* LoRaPhy transmission configurations */
-static TxChannelParams_t TxChannelParams[LORA_MAX_NB_CHANNELS];
+static LoRaPhy_TxChannelParams_t TxChannelParams[LORA_MAX_NB_CHANNELS];
 
 /*******************************************************************************
  * PRIVATE FUNCTION PROTOTYPES (STATIC)
@@ -175,7 +169,7 @@ static uint8_t CheckTx( void );
 
 /*! \brief Sets up and opens a reception window with the specified settings */
 static void OpenReceptionWindow( uint32_t freq, int8_t datarate, uint32_t bandwidth,
-        uint16_t timeout, bool rxContinuous, RxWindowType_t windowType );
+        uint16_t timeout, bool rxContinuous, LoRaPhy_RxWindowType_t windowType );
 
 /*! \brief Sets next transmission channel */
 static uint8_t SetNextChannel( void );
@@ -199,7 +193,7 @@ static void OnRadioRxError( void );
 static void OnRadioRxTimeout( void );
 
 /*! Function executed on second Rx window timer event */
-static void OnRxWindowTimerEvent( TimerHandle_t xTimer );
+static void OnRxWindowTimerEvent( void *param );
 
 /*******************************************************************************
  * API FUNCTIONS (PUBLIC)
@@ -229,7 +223,7 @@ void LoRaPhy_Init( void )
     RxChannelParams[LORAPHY_RXSLOT_RX1WINDOW].freq = 868300000;
     RxChannelParams[LORAPHY_RXSLOT_RX1WINDOW].datarate = DR_0;   // DR offset
     /* Rx2 window */
-    RxChannelParams_t rx2 = RX_WND_2_CHANNEL;
+    LoRaPhy_RxChannelParams_t rx2 = RX_WND_2_CHANNEL;
     RxChannelParams[LORAPHY_RXSLOT_RX2WINDOW].freq = rx2.freq;
     RxChannelParams[LORAPHY_RXSLOT_RX2WINDOW].datarate = rx2.datarate;
 
@@ -265,7 +259,11 @@ void LoRaPhy_Init( void )
     RxWindow2Delay = RECEIVE_DELAY2 - RADIO_WAKEUP_TIME;
 
     /* Initialize advertising guard time */
-    AdvertisingGuardTime = TX_TIMEOUT + RECEIVE_DELAY2 + MAX_RX_WINDOW;
+    AdvertisingGuardTime = ((TX_TIMEOUT + RECEIVE_DELAY2 + MAX_RX_WINDOW) / 1e3)
+            / portTICK_PERIOD_MS;
+    pLoRaDevice->advertisingSlot.Duration = ADV_SLOT_DURATION;
+    pLoRaDevice->advertisingSlot.Interval = ADV_INTERVAL;
+    pLoRaDevice->advertisingSlot.Time = 100;
 
     /* Initialize duty cycle variables */
     MaxDCycle = 0;
@@ -286,16 +284,16 @@ void LoRaPhy_Init( void )
      */
     /* Advertising delay timer & config */
     TimerInit(&RxWindowTimers[LORAPHY_RXSLOT_ADVERTISING], "AdvRxWindowTimer",
-    LORAPHY_RXSLOT_ADVERTISING, ADV_INTERVAL, TIMER_PRIORITY_HIGH, OnRxWindowTimerEvent,
-            true);
+            pLoRaDevice->advertisingSlot.Interval, TIMER_PRIORITY_HIGH,
+            OnRxWindowTimerEvent, (void*) LORAPHY_RXSLOT_ADVERTISING, true);
     TimerStart(&RxWindowTimers[LORAPHY_RXSLOT_ADVERTISING]);
     /* RX1 delay timer & config */
-    TimerInit(&RxWindowTimers[LORAPHY_RXSLOT_RX1WINDOW], "RxWindowTimer1",
-    LORAPHY_RXSLOT_RX1WINDOW, RxWindow1Delay, TIMER_PRIORITY_LOW, OnRxWindowTimerEvent,
+    TimerInit(&RxWindowTimers[LORAPHY_RXSLOT_RX1WINDOW], "RxWindowTimer1", RxWindow1Delay,
+            TIMER_PRIORITY_LOW, OnRxWindowTimerEvent, (void*) LORAPHY_RXSLOT_RX1WINDOW,
             false);
     /* RX2 delay timer & config */
-    TimerInit(&RxWindowTimers[LORAPHY_RXSLOT_RX2WINDOW], "RxWindowTimer2",
-    LORAPHY_RXSLOT_RX2WINDOW, RxWindow2Delay, TIMER_PRIORITY_LOW, OnRxWindowTimerEvent,
+    TimerInit(&RxWindowTimers[LORAPHY_RXSLOT_RX2WINDOW], "RxWindowTimer2", RxWindow2Delay,
+            TIMER_PRIORITY_LOW, OnRxWindowTimerEvent, (void*) LORAPHY_RXSLOT_RX2WINDOW,
             false);
 
     /* Initialize Radio driver */
@@ -351,7 +349,13 @@ uint16_t LoRaPhy_GenerateNonce( void )
 /*******************************************************************************
  * SETUP FUNCTIONS (PUBLIC)
  ******************************************************************************/
-void LoRaPhy_SetChannel( uint8_t id, ChannelParams_t params )
+void LoRaPhy_GetChannels( LoRaPhy_ChannelParams_t* channels )
+{
+    for ( uint8_t i = 0; i < LORA_MAX_NB_CHANNELS; i++ ) {
+        channels[i] = Channels[i];
+    }
+}
+void LoRaPhy_SetChannel( uint8_t id, LoRaPhy_ChannelParams_t params )
 {
     params.Band = 0;
     Channels[id] = params;
@@ -453,10 +457,24 @@ void LoRaPhy_SetJoinAcceptDelay2( uint32_t delay )
     JoinAcceptDelay2 = delay;
 }
 
+void LoRaPhy_SetMaxDutyCycle( uint8_t maxDCycle )
+{
+    if ( maxDCycle >= 0 && maxDCycle < 16 ) {
+        MaxDCycle = maxDCycle;
+        AggregatedDCycle = 1 << maxDCycle;
+    }
+}
+
 void LoRaPhy_SetDownLinkSettings( uint8_t rx1DrOffset, uint8_t rx2Dr )
 {
     RxChannelParams[LORAPHY_RXSLOT_RX1WINDOW].datarate = rx1DrOffset;
     RxChannelParams[LORAPHY_RXSLOT_RX2WINDOW].datarate = rx2Dr;
+}
+
+void LoRaPhy_SetRxParameters( uint8_t rx1DrOffset, uint8_t rx2Dr, uint32_t rx2Freq )
+{
+    LoRaPhy_SetDownLinkSettings(rx1DrOffset, rx2Dr);
+    RxChannelParams[LORAPHY_RXSLOT_RX2WINDOW].freq = rx2Freq;
 }
 
 /*******************************************************************************
@@ -648,9 +666,15 @@ static uint8_t QueuePut( uint8_t *buf, size_t bufSize, size_t payloadSize, bool 
  */
 static uint8_t CheckTx( void )
 {
-    ChannelParams_t channel;
+    LoRaPhy_ChannelParams_t channel;
+    TimerTime_t currTime, nextEvtTime;
     uint8_t flags;
     uint8_t TxDataBuffer[LORAPHY_BUFFER_SIZE];
+
+    nextEvtTime = TimerGetNextEventTime();
+    currTime = TimerGetCurrentTime();
+
+    if ( (nextEvtTime - currTime) < AdvertisingGuardTime ) return ERR_NOTAVAIL;
 
     if ( GetTxMsg(TxDataBuffer, sizeof(TxDataBuffer)) == ERR_OK ) {
         if ( SetNextChannel() != ERR_OK ) {
@@ -742,7 +766,7 @@ static uint8_t CheckTx( void )
  * \param [IN] windowType Type of reception window (Advertising or Regular)
  */
 static void OpenReceptionWindow( uint32_t freq, int8_t datarate, uint32_t bandwidth,
-        uint16_t timeout, bool rxContinuous, RxWindowType_t windowType )
+        uint16_t timeout, bool rxContinuous, LoRaPhy_RxWindowType_t windowType )
 {
     uint8_t downlinkDatarate = Datarates[datarate];
     RadioModems_t modem;
@@ -763,6 +787,8 @@ static void OpenReceptionWindow( uint32_t freq, int8_t datarate, uint32_t bandwi
 
         if ( rxContinuous == false ) {
             Radio.Rx(MaxRxWindow);
+        } else if ( rxContinuous && windowType == RX_TYPE_ADVERTISING ) {
+            Radio.Rx(pLoRaDevice->advertisingSlot.Duration);
         } else {
             Radio.Rx(0);   // Continuous mode
         }
@@ -942,17 +968,17 @@ static void OnRadioRxError( void )
     }
 }
 
-static void OnRxWindowTimerEvent( TimerHandle_t xTimer )
+static void OnRxWindowTimerEvent( void *param )
 {
     uint32_t bandwidth, rxSlot, freq;
     uint16_t symbTimeout;
     uint8_t datarate;
     bool rxContinuous;
-    RxWindowType_t rxType;
+    LoRaPhy_RxWindowType_t rxType;
 
-    rxSlot = (uint32_t) pvTimerGetTimerID(xTimer);
-    if ( rxSlot > sizeof(RxChannelParams) / sizeof(RxChannelParams_t) ) return;
-    TimerStop(&RxWindowTimers[rxSlot]);
+    rxSlot = (uint32_t) param;
+    if ( rxSlot > sizeof(RxChannelParams) / sizeof(LoRaPhy_RxChannelParams_t) ) return;
+    if ( rxSlot != LORAPHY_RXSLOT_ADVERTISING ) TimerStop(&RxWindowTimers[rxSlot]);
 
     symbTimeout = 5;        // DR_2, DR_1, DR_0
     bandwidth = 0;          // 125 kHz

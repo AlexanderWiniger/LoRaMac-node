@@ -25,7 +25,8 @@
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
  ******************************************************************************/
-const uint8_t frmPayload[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '\0' };
+const uint8_t frmPayload[] =
+        { 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '\0' };
 /*******************************************************************************
  * PRIVATE TYPE DEFINITIONS
  ******************************************************************************/
@@ -63,9 +64,10 @@ void LoRaTest_AppInit( void )
     }
 }
 
-void LoRaTest_AddJoinAcc( uint8_t* devEui, uint8_t* appEui, uint8_t appKey, bool addChannelList )
+void LoRaTest_AddJoinAcc( uint8_t* devEui, uint8_t* appEui, uint8_t appKey,
+        bool addChannelList )
 {
-    LoRaMacHdr_t mHdr;
+    LoRaMac_Header_t mHdr;
     uint8_t payload[LORAMESH_BUFFER_SIZE];
     uint32_t mic, payloadSize = 0;
     uint32_t netId = 0x00082F1A;
@@ -98,8 +100,8 @@ void LoRaTest_AddJoinAcc( uint8_t* devEui, uint8_t* appEui, uint8_t appKey, bool
         payload[payloadSize++] = 0xFF;
     }
 
-    LoRaMacJoinComputeMic((uint8_t*) &LORAMAC_BUF_HDR(msgBuffer), payloadSize, pLoRaDevice->appKey,
-            &mic);
+    LoRaMacJoinComputeMic((uint8_t*) &LORAMAC_BUF_HDR(msgBuffer), payloadSize,
+            pLoRaDevice->appKey, &mic);
 
     /* Message integrity check */
     payload[payloadSize++] = (mic) & 0xFF;
@@ -119,8 +121,8 @@ void LoRaTest_AddJoinAcc( uint8_t* devEui, uint8_t* appEui, uint8_t appKey, bool
 
 void LoRaTest_AddFrame( void )
 {
-    LoRaFrmCtrl_t fCtrl;
-    LoRaMacHdr_t mHdr;
+    LoRaFrm_Ctrl_t fCtrl;
+    LoRaMac_Header_t mHdr;
     uint32_t mic, payloadSize;
 
     mHdr.Value = 0u;
@@ -148,7 +150,8 @@ void LoRaTest_AddFrame( void )
     msgBuffer[LORAFRM_BUF_IDX_DEVADDR + 3] = (pLoRaDevice->devAddr >> 24) & 0xFF;
     msgBuffer[LORAFRM_BUF_IDX_CTRL] = fCtrl.Value;
     msgBuffer[LORAFRM_BUF_IDX_CNTR] = pLoRaDevice->upLinkSlot.DownLinkCounter & 0xFF;
-    msgBuffer[LORAFRM_BUF_IDX_CNTR + 1] = (pLoRaDevice->upLinkSlot.DownLinkCounter >> 8) & 0xFF;
+    msgBuffer[LORAFRM_BUF_IDX_CNTR + 1] = (pLoRaDevice->upLinkSlot.DownLinkCounter >> 8)
+            & 0xFF;
     msgBuffer[LORAFRM_BUF_IDX_PORT(0)] = 2;
 
     payloadSize = sizeof(frmPayload) + LORAFRM_HEADER_SIZE_MIN + LORAFRM_PORT_SIZE

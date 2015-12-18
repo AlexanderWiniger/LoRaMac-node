@@ -66,8 +66,8 @@ typedef ConnectionSlotInfo_t ChildNodeInfo_t;
 /*! LoRaMesh advertising info structure. */
 typedef struct AdvertisingSlotInfo_s {
     uint32_t Time;
-    uint8_t Interval; /* In seconds */
-    uint8_t Duration; /* In milliseconds */
+    uint32_t Interval; /* In microseconds */
+    uint32_t Duration; /* In microseconds */
 } AdvertisingSlotInfo_t;
 
 typedef union {
@@ -85,6 +85,7 @@ typedef union {
     struct {
         uint8_t nwkPublic :1; /* 1: Network is public */
         uint8_t nwkJoined :1; /* 1: Network joined successfully */
+        uint8_t linkCheck :1; /* 1: Link check answer received */
         uint8_t adrCtrlOn :1; /* 1: Adaptive data rate control active */
         uint8_t ackPending :1; /* 1: Node has sent a confirmed packet */
         uint8_t ackRequested :1; /* 1: Node has received a confirmed packet */
@@ -145,7 +146,7 @@ typedef struct {
     uint8_t nbRep; /* Configured redundancy [1:15] (automatic uplink message repetition) */
     uint8_t nbRepCounter; /* Automatic repetition counter */
     uint8_t macCmdBuffer[15]; /* MAC command buffer of commands to be added to FOpts field */
-    uint8_t macCmdBufferSize; /* MAC command buffer size */
+    uint8_t macCmdBufferIndex; /* MAC command buffer index */
     LoRaMeshCtrlFlags_t ctrlFlags; /* Network flags */
     LoRaDbgFlags_t dbgFlags; /* Debug flags */
 } LoRaDevice_t;
@@ -181,7 +182,8 @@ extern LoRaDevice_t* pLoRaDevice;
  * \param [IN] callabcks       Pointer to a structure defining the LoRaMAC
  *                             callback functions.
  */
-void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks );
+void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks,
+        LoRaMac_BatteryLevelCallback_t batteryLevelCb );
 
 /*!
  * Initializes the network IDs. Device address,
@@ -249,7 +251,7 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
  * \retval status ERR_OK if frame was handled successfully
  */
 uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort,
-        LoRaFrmType_t fType );
+        LoRaFrm_Type_t fType );
 
 /*!
  * Handles received message on the transport layer.
@@ -263,7 +265,7 @@ uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort,
  * \retval status ERR_OK if frame was handled successfully
  */
 uint8_t LoRaMesh_PutPayload( uint8_t *buf, uint16_t bufSize, uint8_t payloadSize,
-        uint8_t fPort, LoRaFrmType_t fType );
+        uint8_t fPort, LoRaFrm_Type_t fType );
 
 /*!
  * Process advertising message.

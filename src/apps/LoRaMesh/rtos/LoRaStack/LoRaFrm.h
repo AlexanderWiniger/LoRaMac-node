@@ -57,16 +57,16 @@ typedef union {
         uint8_t AdrAckReq :1;
         uint8_t Adr :1;
     } Bits;
-} LoRaFrmCtrl_t;
+} LoRaFrm_Ctrl_t;
 
 typedef enum LoRaFrmType_e {
     FRM_TYPE_REGULAR = 0, FRM_TYPE_ADVERTISING, FRM_TYPE_MULTICAST
-} LoRaFrmType_t;
+} LoRaFrm_Type_t;
 
 /*! Frame direction definition */
-typedef enum LoRaFrmDir_e {
+typedef enum LoRaFrm_Dir_e {
     UP_LINK = 0, DOWN_LINK
-} LoRaFrmDir_t;
+} LoRaFrm_Direction_t;
 
 /*******************************************************************************
  * API FUNCTION PROTOTYPES (PUBLIC)
@@ -82,8 +82,8 @@ void LoRaFrm_Init( void );
  * \param packet Pointer to the packet descriptor
  * \return Error code, ERR_OK if everything is ok, ERR_OVERFLOW if buffer is too small.
  */
-uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr, LoRaFrmDir_t fDir,
-        uint32_t fCnt );
+uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr,
+        LoRaFrm_Direction_t fDir, uint32_t fCnt );
 
 /*!
  * \brief Puts a payload into the buffer queue to be sent asynchronously.
@@ -98,8 +98,9 @@ uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr, LoRaFr
  *
  * \return Error code, ERR_OK if everything is ok, ERR_OVERFLOW if buffer is too small.
  */
-uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
-        LoRaFrmType_t fType, LoRaFrmDir_t fDir, bool confirmed, bool encrypted );
+uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
+        uint8_t fPort, LoRaFrm_Type_t fType, LoRaFrm_Direction_t fDir, bool confirmed,
+        bool encrypted );
 
 /*******************************************************************************
  * END OF CODE

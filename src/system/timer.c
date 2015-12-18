@@ -34,6 +34,9 @@ static ListPointer_t pTimerEventList = NULL;
  * PRIVATE FUNCTION PROTOTYPES (STATIC)
  ******************************************************************************/
 /*!  */
+static void OnTimerEvent( TimerHandle_t xTimer );
+
+/*!  */
 static void InsertTimerEvent(TimerEvent_t *evt, uint32_t time);
 
 /*! */
@@ -41,8 +44,8 @@ static void RemoveTimerEvent(TimerEvent_t *evt);
 /*******************************************************************************
  * MODULE FUNCTIONS (PUBLIC)
  ******************************************************************************/
-void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t periodInUs,
-        uint8_t priority, TimerCallbackFunction_t callback, bool autoReload )
+void TimerInit( TimerEvent_t *obj, const char* name, uint32_t periodInUs, uint8_t priority,
+        LoRaTimerCallbackFunction_t callback, void* param, bool autoReload )
 {
     uint32_t periodInMs = periodInUs / 1e3;
 
@@ -54,8 +57,8 @@ void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t perio
     obj->Handle = xTimerCreate( name,
             (periodInMs / portTICK_PERIOD_MS),
             autoReload,
-            ( void * ) (id),
-            callback
+            ( void * ) (obj),
+            &OnTimerEvent
     );
 
     if(obj->Handle != NULL) {
@@ -64,6 +67,7 @@ void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t perio
         obj->NextScheduledEvent = 0;
         obj->AutoReload = autoReload;
         obj->Callback = callback;
+        obj->param = param;
         obj->IsRunning = false;
         obj->HasChanged = false;
 
@@ -100,7 +104,7 @@ void TimerStart( TimerEvent_t *obj )
 
     if(xReturn != pdFAIL) {
         obj->IsRunning = true;
-        InsertTimerEvent(obj, (time + obj->PeriodInMs));
+        InsertTimerEvent(obj, (time + (obj->PeriodInMs / portTICK_PERIOD_MS)));
         LOG_TRACE("%s started at %u.", pcTimerGetTimerName(obj->Handle), time);
     } else {
         LOG_ERROR("Failed to start %s.", pcTimerGetTimerName(obj->Handle));
@@ -160,18 +164,24 @@ void TimerSetValue( TimerEvent_t *obj, uint32_t periodInUs )
 
     if(periodInMs != obj->PeriodInMs ) {
         /* Value has changed */
+        LOG_TRACE("%s period changed from %u ms to %u ms.", pcTimerGetTimerName(obj->Handle), obj->PeriodInMs, periodInMs);
         obj->PeriodInMs = periodInMs;
         obj->HasChanged = true;
-        LOG_TRACE("%s period changed from %u ms to %u ms.", pcTimerGetTimerName(obj->Handle), obj->PeriodInMs, periodInMs);
-    } else {
-        /* Value has NOT changed so simply start timer. */
-        LOG_TRACE("%s period is already set to the specified period of %u ms.", pcTimerGetTimerName(obj->Handle), obj->PeriodInMs);
     }
+}
+
+TimerTime_t TimerGetNextEventTime(void)
+{
+    return (TimerTime_t)((TimerEvent_t*)pTimerEventList->head->data)->NextScheduledEvent;
 }
 
 TimerTime_t TimerGetCurrentTime( void )
 {
-    return (TimerTime_t)xTaskGetTickCount();
+    if(__get_IPSR()) {
+        return (TimerTime_t)xTaskGetTickCountFromISR();
+    } else {
+        return (TimerTime_t)xTaskGetTickCount();
+    }
 }
 
 void TimerLowPowerHandler( void )
@@ -181,6 +191,28 @@ void TimerLowPowerHandler( void )
 /*******************************************************************************
  * PRIVATE FUNCTIONS (STATIC)
  ******************************************************************************/
+static void OnTimerEvent( TimerHandle_t xTimer )
+{
+    TimerEvent_t *evt = (TimerEvent_t*)pvTimerGetTimerID(xTimer);
+    TickType_t time;
+
+    if(__get_IPSR()) {
+        time = xTaskGetTickCountFromISR();
+    } else {
+        time = xTaskGetTickCount();
+    }
+    LOG_TRACE("%s stopped at %u. Scheduled at %u", pcTimerGetTimerName(evt->Handle), time, evt->NextScheduledEvent);
+    RemoveTimerEvent(evt);
+
+    if(evt->AutoReload) {
+        InsertTimerEvent(evt, (time + (evt->PeriodInMs / portTICK_PERIOD_MS)));
+    } else {
+        evt->IsRunning = false;
+    }
+
+    evt->Callback(evt->param);
+}
+
 static void InsertTimerEvent(TimerEvent_t *evt, uint32_t time)
 {
     if(pTimerEventList == NULL) {
@@ -194,7 +226,7 @@ static void InsertTimerEvent(TimerEvent_t *evt, uint32_t time)
         ListNodePointer_t node = pTimerEventList->head;
         while(node != NULL) {
             TimerEvent_t *currEvt = (TimerEvent_t*)node->data;
-            if(evt->NextScheduledEvent < currEvt->NextScheduledEvent) {
+            if(time < currEvt->NextScheduledEvent) {
                 ListInsert(pTimerEventList, (void*)evt, index);
                 break;
             }

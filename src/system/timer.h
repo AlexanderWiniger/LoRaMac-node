@@ -35,6 +35,9 @@
 typedef uint64_t TimerTime_t;
 #endif
 
+/* Defines the prototype to which timer callback functions must conform. */
+typedef void (*LoRaTimerCallbackFunction_t)( void *param );
+
 /*! \brief Timer object description */
 typedef struct TimerEvent_s {
     TimerHandle_t Handle;               //! Timer handle
@@ -44,7 +47,8 @@ typedef struct TimerEvent_s {
     bool HasChanged;//! Period of the timer has changed
     bool AutoReload;//! Is auto reload enabled
     bool IsRunning;//! Is Timer running
-    TimerCallbackFunction_t Callback;//! Timer callback function
+    LoRaTimerCallbackFunction_t Callback;//! Timer callback function
+    void *param;
 }TimerEvent_t;
 /*******************************************************************************
  * MODULE FUNCTION PROTOTYPES (PUBLIC)
@@ -58,8 +62,8 @@ typedef struct TimerEvent_s {
  * \param [IN] obj          Structure containing the timer object parameters
  * \param [IN] callback     Function callback called at the end of the timeout
  */
-void TimerInit( TimerEvent_t *obj, const char* name, uint32_t id, uint32_t periodInUs,
-        uint8_t priority, TimerCallbackFunction_t callback, bool autoReload );
+void TimerInit( TimerEvent_t *obj, const char* name, uint32_t periodInUs, uint8_t priority,
+        LoRaTimerCallbackFunction_t callback, void* param, bool autoReload );
 
 /*!
  * \brief Starts and adds the timer object to the list of timer events
@@ -89,6 +93,11 @@ void TimerReset( TimerEvent_t *obj );
  * \param [IN] value New timer timeout value
  */
 void TimerSetValue( TimerEvent_t *obj, uint32_t periodInUs );
+
+/*!
+ * \brief Get time of the next scheduled event.
+ */
+TimerTime_t TimerGetNextEventTime(void);
 
 /*!
  * \brief Read the current time
