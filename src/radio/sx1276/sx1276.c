@@ -19,7 +19,7 @@
 #include "sx1276.h"
 #include "sx1276-board.h"
 
-#if defined(FSL_RTOS_FREE_RTOS) || defined(USE_FREE_RTOS)
+#if (defined(FSL_RTOS_FREE_RTOS) || defined(USE_FREE_RTOS)) && defined(USE_LORA_MESH)
 #include "LoRaPhy.h"
 #endif
 

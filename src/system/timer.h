@@ -50,6 +50,7 @@ typedef struct TimerEvent_s {
     LoRaTimerCallbackFunction_t Callback;//! Timer callback function
     void *param;
 }TimerEvent_t;
+
 /*******************************************************************************
  * MODULE FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/
@@ -129,6 +130,14 @@ bool TimerGetLowPowerEnable( void );
  * END OF CODE
  ******************************************************************************/
 #else
+/*******************************************************************************
+ * TYPE DEFINITIONS
+ ******************************************************************************/
+/*! \brief Timer time variable definition */
+#ifndef TimerTime_t
+typedef uint64_t TimerTime_t;
+#endif
+
 /*!
  * \brief Timer object description
  */
@@ -140,6 +149,9 @@ typedef struct TimerEvent_s {
     struct TimerEvent_s *Next;   //! Pointer to the next Timer object.
 } TimerEvent_t;
 
+/*******************************************************************************
+ * MODULE FUNCTION PROTOTYPES (PUBLIC)
+ ******************************************************************************/
 /*!
  * \brief Initializes the timer object
  *
@@ -211,5 +223,8 @@ void TimerSetLowPowerEnable( bool enable );
  */
 bool TimerGetLowPowerEnable( void );
 
+/*******************************************************************************
+ * END OF CODE
+ ******************************************************************************/
 #endif /* FSL_RTOS_FREE_RTOS */
 #endif  // __TIMER_H__

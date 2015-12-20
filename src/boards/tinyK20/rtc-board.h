@@ -8,15 +8,9 @@
 #ifndef __RTC_BOARD_H__
 #define __RTC_BOARD_H__
 
-#if !defined(USE_FREE_RTOS)
-/*!
- * \brief This function block the MCU from going into Low Power mode
- *
- * \param [IN] Status enable or disable
- */
-void BlockLowPowerDuringTask( bool Status );
-#else
-/*---------------------------- Definitions ------------------------------*/
+/*******************************************************************************
+ * TYPE DEFINITIONS
+ ******************************************************************************/
 /*!
  * \brief Timer time variable definition
  */
@@ -24,24 +18,27 @@ void BlockLowPowerDuringTask( bool Status );
 typedef uint64_t TimerTime_t;
 #endif
 
+/*******************************************************************************
+ * MODULE FUNCTION PROTOTYPES (PUBLIC)
+ ******************************************************************************/
 /*!
  * \brief Initializes the RTC timer
  *
  * \remark The timer is based on the RTC
  */
-void RtcInit(void);
+void RtcInit( void );
 
 /*!
  * \brief Stop the RTC Timer
  */
-void RtcStopTimer(void);
+void RtcStopTimer( void );
 
 /*!
  * \brief Return the minimum timeout the RTC is able to handle
  *
  * \retval minimum value for a timeout
  */
-uint32_t RtcGetMinimumTimeout(void);
+uint32_t RtcGetMinimumTimeout( void );
 
 /*!
  * \brief Start the RTC timer
@@ -50,45 +47,47 @@ uint32_t RtcGetMinimumTimeout(void);
  *
  * \param[IN] timeout       Duration of the Timer
  */
-void RtcSetTimeout(uint32_t timeout);
+void RtcSetTimeout( uint32_t timeout );
 
 /*!
  * \brief Get the RTC timer value
  *
  * \retval RTC Timer value
  */
-TimerTime_t RtcGetTimerValue(void);
+TimerTime_t RtcGetTimerValue( void );
 
 /*!
  * \brief Get the RTC timer elapsed time since the last Alarm was set
  *
  * \retval RTC Elapsed time since the last alarm
  */
-uint32_t RtcGetTimerElapsedTime(void);
+uint32_t RtcGetTimerElapsedTime( void );
 
 /*!
  * \brief This function block the MCU from going into Low Power mode
  *
  * \param [IN] Status enable or disable
  */
-void BlockLowPowerDuringTask(bool Status);
+void BlockLowPowerDuringTask( bool Status );
 
 /*!
  * \brief Sets the MCU in low power STOP mode
  */
-void RtcEnterLowPowerStopMode(void);
+void RtcEnterLowPowerStopMode( void );
 
 /*!
  * \brief Restore the MCU to its normal operation mode
  */
-void RtcRecoverMcuStatus(void);
+void RtcRecoverMcuStatus( void );
 
 /*!
  * \brief Perfoms a standard blocking delay in the code execution
  *
  * \param [IN] delay Delay value in ms
  */
-void RtcDelayMs(uint32_t delay);
+void RtcDelayMs( uint32_t delay );
 
-#endif /* USE_FREE_RTOS */
+/*******************************************************************************
+ * END OF CODE
+ ******************************************************************************/
 #endif // __RTC_BOARD_H__

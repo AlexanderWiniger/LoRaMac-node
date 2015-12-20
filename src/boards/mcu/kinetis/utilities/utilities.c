@@ -9,10 +9,12 @@
 /*******************************************************************************
  * INCLUDE FILES
  ******************************************************************************/
-#include <stdlib.h>
 #include <stdio.h>
 #include "board.h"
 #include "utilities.h"
+#if !defined(FSL_RTOS_FREE_RTOS) && !defined(USE_FREE_RTOS)
+#include <stdlib.h>
+#endif
 
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS

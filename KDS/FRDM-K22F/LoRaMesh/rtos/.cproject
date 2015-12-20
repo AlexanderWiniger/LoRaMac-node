@@ -81,6 +81,7 @@
 									<listOptionValue builtIn="false" value="USE_MODEM_LORA"/>
 									<listOptionValue builtIn="false" value="USE_LORA_MESH"/>
 									<listOptionValue builtIn="false" value="USE_DEBUGGER"/>
+									<listOptionValue builtIn="false" value="USE_KINETIS_SDK"/>
 									<listOptionValue builtIn="false" value="DEBUG"/>
 									<listOptionValue builtIn="false" value="FREEDOM"/>
 									<listOptionValue builtIn="false" value="FRDM_K22F"/>
@@ -130,9 +131,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.1075752200.1712765580" name="LoRaMesh.c" rcbsApplicability="disable" resourcePath="src/apps/LoRaMesh/rtos/LoRaStack/LoRaMesh.c" toolsToInvoke="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.2003619582.1494396379">
-						<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.2003619582.1494396379" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.2003619582"/>
-					</fileInfo>
 					<sourceEntries>
 						<entry excluding="src/boards/mcu/kinetis/k20d|src/boards/mcu/kinetis/kl26z|src/radio/sx1272" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>

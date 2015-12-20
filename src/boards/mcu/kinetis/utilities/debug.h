@@ -5,7 +5,6 @@
  * \brief Debug output helper
  *
  */
-
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
@@ -87,7 +86,7 @@
 /**
  * Define log functions.
  */
-#if defined(LOG_TRACE_IS_ENABLED)
+#if defined(LOG_TRACE_IS_ENABLED) && defined(DEBUG)
 #if defined(USE_SEGGER_RTT)
 #define LOG_TRACE(fmt, ...)                 SEGGER_RTT_printf(0, "TRACE: " fmt "\r\n", ##__VA_ARGS__)
 #define LOG_TRACE_BARE(fmt, ...)            SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__)
@@ -107,7 +106,7 @@
 #define LOG_TRACE_BARE_IF(cond, fmt, ...)
 #endif
 
-#if defined(LOG_DEBUG_IS_ENABLED)
+#if defined(LOG_DEBUG_IS_ENABLED) && defined(DEBUG)
 #if defined(USE_SEGGER_RTT)
 #define LOG_DEBUG(fmt, ...)                 SEGGER_RTT_printf(0, "DEBUG: " fmt "\r\n", ##__VA_ARGS__)
 #define LOG_DEBUG_BARE(fmt, ...)            SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__)
@@ -126,7 +125,7 @@
 #define LOG_DEBUG_BARE_IF(cond, fmt, ...)
 #endif
 
-#if defined(LOG_ERROR_IS_ENABLED)
+#if defined(LOG_ERROR_IS_ENABLED) && defined(DEBUG)
 #if defined(USE_SEGGER_RTT)
 #define LOG_ERROR(fmt, ...)                 SEGGER_RTT_printf(0, KRED "ERROR: " fmt "\x1b[0m\r\n", ##__VA_ARGS__)
 #define LOG_ERROR_BARE(fmt, ...)            SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__)

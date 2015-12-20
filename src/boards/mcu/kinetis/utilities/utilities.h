@@ -9,7 +9,7 @@
 #ifndef __UTILITIES_H__
 #define __UTILITIES_H__
 
-#if defined(CPU_MKL26Z128VLH4) || defined(CPU_MK22FN512VLH12)
+#if defined(USE_KINETIS_SDK)
 /*******************************************************************************
  * INCLUDE FILES
  ******************************************************************************/
@@ -33,6 +33,10 @@ typedef struct {
 }I2C_TypeDef;
 #else
 /*******************************************************************************
+ * INCLUDE FILES
+ ******************************************************************************/
+#include <stddef.h>
+/*******************************************************************************
  * TYPE DEFINITIONS
  ******************************************************************************/
 typedef uint32_t ADC_TypeDef;
@@ -42,6 +46,22 @@ typedef uint32_t I2C_TypeDef;
 /*******************************************************************************
  * MODULE FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/
+#if !defined(USE_KINETIS_SDK)
+/** \brief  Get IPSR Register
+
+ This function returns the content of the IPSR Register.
+
+ \return               IPSR Register value
+ */
+__attribute__( ( always_inline ))  static inline uint32_t __get_IPSR( void )
+{
+    uint32_t result;
+
+    __asm volatile ("MRS %0, ipsr" : "=r" (result) );
+    return (result);
+}
+#endif
+
 /*!
  * \brief Returns the minimum value betwen a and b
  *

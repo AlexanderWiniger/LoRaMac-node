@@ -55,7 +55,7 @@
 									<listOptionValue builtIn="false" value="../../../../src/system"/>
 									<listOptionValue builtIn="false" value="../../../../src/system/crypto"/>
 									<listOptionValue builtIn="false" value="../../../../src/radio"/>
-									<listOptionValue builtIn="false" value="../../../../src/free-rtos/config"/>
+									<listOptionValue builtIn="false" value="../../../../src/free-rtos/config/tinyK20"/>
 									<listOptionValue builtIn="false" value="../../../../src/free-rtos/include"/>
 									<listOptionValue builtIn="false" value="../../../../src/free-rtos/port"/>
 									<listOptionValue builtIn="false" value="../../../../src/radio/sx1276"/>
@@ -70,12 +70,10 @@
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs.81202299" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="USE_BAND_868"/>
-									<listOptionValue builtIn="false" value="USE_LORA_MESH"/>
 									<listOptionValue builtIn="false" value="USE_MODEM_LORA"/>
 									<listOptionValue builtIn="false" value="USE_DEBUGGER"/>
 									<listOptionValue builtIn="false" value="USE_SEGGER_RTT"/>
 									<listOptionValue builtIn="false" value="USE_FREE_RTOS"/>
-									<listOptionValue builtIn="false" value="SX1276_BOARD_EMBED"/>
 									<listOptionValue builtIn="false" value="DEBUG"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std.1612097839" name="Language standard" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std.gnu99" valueType="enumerated"/>

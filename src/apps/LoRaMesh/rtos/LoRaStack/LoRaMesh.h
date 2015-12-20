@@ -151,6 +151,12 @@ typedef struct {
     LoRaDbgFlags_t dbgFlags; /* Debug flags */
 } LoRaDevice_t;
 
+typedef enum {
+    EVENT_TYPE_ADVERTISING, EVENT_TYPE_UPLINK, EVENT_TYPE_MULTICAST, EVENT_TYPE_RECEPTION
+} LoRaSchedulerEventType_t;
+
+typedef void (*LoRaSchedulerEventCallback_t)( void *param );
+
 typedef uint8_t (*RxMsgHandler)( uint8_t *payload, uint8_t payloadSize, uint8_t fPort );
 
 typedef struct {
@@ -162,13 +168,13 @@ typedef struct {
  * PUBLIC VARIABLES
  ******************************************************************************/
 /*! Data rates table definition */
-const uint8_t Datarates[] = { 12, 11, 10, 9, 8, 7, 7, 50 };
+extern const uint8_t Datarates[8];
 
 /*! Maximum payload with respect to the datarate index. Cannot operate with repeater. */
-const uint8_t MaxPayloadByDatarate[] = { 51, 51, 51, 115, 242, 242, 242, 242 };
+extern const uint8_t MaxPayloadByDatarate[8];
 
 /*! Tx output powers table definition */
-const uint8_t TxPowers[] = { 20, 14, 11, 8, 5, 2 };
+extern const uint8_t TxPowers[6];
 
 /*! LoRa device used throughout the stack */
 extern LoRaDevice_t* pLoRaDevice;
@@ -285,6 +291,11 @@ uint8_t LoRaMesh_ProcessAdvertising( uint8_t *aPayload, uint8_t aPayloadSize );
  * \retval status [0: OK, 1: Tx error, 2: Already joined a network]
  */
 uint8_t LoRaMesh_JoinReq( uint8_t *devEui, uint8_t *appEui, uint8_t *appKey );
+
+/*!
+ *
+ */
+uint8_t LoRaMesh_JoinReqAdHoc( int32_t binLat, int32_t binLong, bool isRebind );
 
 /*!
  * Sends a LinkCheckReq MAC command on the next uplink frame

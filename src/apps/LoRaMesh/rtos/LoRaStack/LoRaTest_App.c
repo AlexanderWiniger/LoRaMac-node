@@ -20,13 +20,14 @@
 #include "LoRaMacCrypto.h"
 #include "LoRaTest_App.h"
 
+#if LORAMESH_TEST_APP_ACTIVATED
 #define LOG_LEVEL_TRACE
 #include "debug.h"
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
  ******************************************************************************/
 const uint8_t frmPayload[] =
-        { 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '\0' };
+{   'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '\0'};
 /*******************************************************************************
  * PRIVATE TYPE DEFINITIONS
  ******************************************************************************/
@@ -56,9 +57,9 @@ void LoRaTest_AppInit( void )
     addMessage = false;
 
     if ( xTaskCreate(LoRaTestTask, "LoRaTest", configMINIMAL_STACK_SIZE, (void*) NULL,
-            tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
+                    tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
         /*lint -e527 */
-        for ( ;; ) {
+        for (;; ) {
         }; /* error! probably out of memory */
         /*lint +e527 */
     }
@@ -134,7 +135,7 @@ void LoRaTest_AddFrame( void )
     LOG_TRACE("%s - Size %d", __FUNCTION__, sizeof(frmPayload));
     LOG_TRACE_BARE("\t");
     for ( uint8_t i = 0; i < sizeof(frmPayload); i++ )
-        LOG_TRACE_BARE("0x%02x ", frmPayload[i]);
+    LOG_TRACE_BARE("0x%02x ", frmPayload[i]);
     LOG_TRACE_BARE("\r\n");
 
     /* Encrypt with decrypt */
@@ -151,11 +152,11 @@ void LoRaTest_AddFrame( void )
     msgBuffer[LORAFRM_BUF_IDX_CTRL] = fCtrl.Value;
     msgBuffer[LORAFRM_BUF_IDX_CNTR] = pLoRaDevice->upLinkSlot.DownLinkCounter & 0xFF;
     msgBuffer[LORAFRM_BUF_IDX_CNTR + 1] = (pLoRaDevice->upLinkSlot.DownLinkCounter >> 8)
-            & 0xFF;
+    & 0xFF;
     msgBuffer[LORAFRM_BUF_IDX_PORT(0)] = 2;
 
     payloadSize = sizeof(frmPayload) + LORAFRM_HEADER_SIZE_MIN + LORAFRM_PORT_SIZE
-            + LORAMAC_HEADER_SIZE;
+    + LORAMAC_HEADER_SIZE;
 
     LoRaMacComputeMic((uint8_t*) &msgBuffer[LORAMAC_BUF_IDX_HDR], payloadSize,
             pLoRaDevice->upLinkSlot.NwkSKey, pLoRaDevice->devAddr, DOWN_LINK,
@@ -191,3 +192,4 @@ static portTASK_FUNCTION(LoRaTestTask, pvParameters)
 /*******************************************************************************
  * END OF CODE
  ******************************************************************************/
+#endif /* LORAMESH_TEST_APP_ACTIVATED */

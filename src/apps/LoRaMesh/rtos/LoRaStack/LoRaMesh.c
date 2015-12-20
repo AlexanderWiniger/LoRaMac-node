@@ -24,6 +24,13 @@
 /*******************************************************************************
  * PRIVATE TYPE DEFINITIONS
  ******************************************************************************/
+typedef struct {
+    TimerEvent_t *timer;
+    TimerTime_t reservedTime;
+    TimerTime_t nextEventTime;
+    LoRaSchedulerEventCallback_t callback;
+    void *param;
+} LoRaMeshEvent_t;
 
 /*******************************************************************************
  * PRIVATE VARIABLES (STATIC)
@@ -77,8 +84,11 @@ static LoRaDevice_t LoRaDevice = {
     .dbgFlags.Value = 0u /* Debug flags */
 };
 
+/*! Scheduler */
+static ListPointer_t pEventScheduler;
+
 /*! Rx message handlers */
-static ListPointer_t pLoRaMsgHandlers;
+static ListPointer_t pRxMsgHandlers;
 
 /*******************************************************************************
  * PRIVATE FUNCTION PROTOTYPES (STATIC)
@@ -88,6 +98,13 @@ static bool EvaluateNominationProbability( uint8_t nodeRank );
 
 /*! \brief Calculate the nodes rank. */
 static uint8_t CalculateNodeRank( void );
+
+/*!  */
+static void ScheduleEvent( LoRaSchedulerEventType_t type,
+        LoRaSchedulerEventCallback_t callback, void* param );
+
+/*!  */
+static void RemoveEvent( void );
 
 /*! \brief Create new child node with given data. */
 ChildNodeInfo_t* CreateChildNode( uint32_t devAddr, uint8_t* nwkSKey, uint8_t* appSKey,
@@ -121,6 +138,18 @@ void MulticastGroupPrint( MulticastGroupInfo_t* multicastGrp );
 /*! LoRaWAN device pointer */
 LoRaDevice_t* pLoRaDevice;
 
+/*! Data rates table definition */
+const uint8_t Datarates[] = { 12, 11, 10, 9, 8, 7, 7, 50 };
+
+/*! Maximum payload with respect to the datarate index. Cannot operate with repeater. */
+const uint8_t MaxPayloadByDatarate[] = { 51, 51, 51, 115, 242, 242, 242, 242 };
+
+/*! Tx output powers table definition */
+const uint8_t TxPowers[] = { 20, 14, 11, 8, 5, 2 };
+
+/*! LoRa device used throughout the stack */
+extern LoRaDevice_t* pLoRaDevice;
+
 /*******************************************************************************
  * MODULE FUNCTIONS (PUBLIC)
  ******************************************************************************/
@@ -133,7 +162,10 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks,
     pLoRaDevice = (LoRaDevice_t*) &LoRaDevice;
 
     /* Create a list with rx message handler */
-    pLoRaMsgHandlers = ListCreate();
+    pRxMsgHandlers = ListCreate();
+
+    /* Create scheduler list */
+    pEventScheduler = ListCreate();
 
     /* Initialize stack */
     LoRaFrm_Init();
@@ -165,11 +197,11 @@ uint8_t LoRaMesh_RegisterApplicationPort( RxMsgHandler fHandler, uint8_t fPort )
     tempPortHandler->Handler = fHandler;
     tempPortHandler->Port = fPort;
 
-    if ( pLoRaMsgHandlers->head == NULL ) {
+    if ( pRxMsgHandlers->head == NULL ) {
         /* Add rx message handler */
-        ListPushBack(pLoRaMsgHandlers, tempPortHandler);
+        ListPushBack(pRxMsgHandlers, tempPortHandler);
     } else {
-        ListNodePointer_t currNode = pLoRaMsgHandlers->head;
+        ListNodePointer_t currNode = pRxMsgHandlers->head;
 
         /* Make sure port is not already registered */
         while (currNode->next != NULL) {
@@ -178,7 +210,7 @@ uint8_t LoRaMesh_RegisterApplicationPort( RxMsgHandler fHandler, uint8_t fPort )
             }
         }
         /* Add rx message handler */
-        ListPushBack(pLoRaMsgHandlers, tempPortHandler);
+        ListPushBack(pRxMsgHandlers, tempPortHandler);
     }
 
     return ERR_OK;
@@ -189,12 +221,12 @@ uint8_t LoRaMesh_RemoveApplicationPort( RxMsgHandler fHandler, uint8_t fPort )
     PortHandler_t *tempPortHandler;
     ListNodePointer_t currNode;
 
-    currNode = pLoRaMsgHandlers->head;
+    currNode = pRxMsgHandlers->head;
 
     while (currNode != NULL) {
         tempPortHandler = (PortHandler_t*) currNode->data;
         if ( tempPortHandler->Port == fPort ) {
-            ListRemove(pLoRaMsgHandlers, currNode->data);
+            ListRemove(pRxMsgHandlers, currNode->data);
             return ERR_OK;
         }
         currNode = currNode->next;
@@ -232,7 +264,7 @@ uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort,
     switch (fType) {
         case FRM_TYPE_REGULAR:
             if ( fPort > 0 ) {
-                ListNodePointer_t currNode = pLoRaMsgHandlers->head;
+                ListNodePointer_t currNode = pRxMsgHandlers->head;
                 while (currNode != NULL) {
                     if ( ((PortHandler_t*) currNode->data)->Port == fPort ) {
                         return ((PortHandler_t*) currNode->data)->Handler(buf,
@@ -292,6 +324,11 @@ uint8_t LoRaMesh_JoinReq( uint8_t * devEui, uint8_t * appEui, uint8_t * appKey )
 
     return LoRaMac_PutPayload((uint8_t*) &mPayload, sizeof(mPayload), mPayloadSize,
             MSG_TYPE_JOIN_REQ);
+}
+
+uint8_t LoRaMesh_JoinReqAdHoc( int32_t binLat, int32_t binLong, bool isRebind )
+{
+    return ERR_OK;
 }
 
 bool LoRaMesh_IsNetworkJoined( void )
@@ -415,6 +452,23 @@ void LoRaMesh_TestSetMic( uint16_t upLinkCounter )
  * PRIVATE FUNCTIONS (STATIC)
  ******************************************************************************/
 /*!
+ *
+ */
+static void ScheduleEvent( LoRaSchedulerEventType_t type,
+        LoRaSchedulerEventCallback_t callback, void* param )
+{
+
+}
+
+/*!
+ *
+ */
+static void RemoveEvent( void )
+{
+
+}
+
+/*!
  * \brief Evaluates probability of a node to nominate itself as coordinator and
  * returns true, if the calculated probability is bigger then a hardcoded threshold.
  *
@@ -489,7 +543,7 @@ void ChildNodeRemove( ChildNodeInfo_t* childNode )
 {
     if ( pLoRaDevice->childNodes != NULL ) {
         ListRemove(pLoRaDevice->childNodes, (void*) childNode);
-        free(childNode);
+        custom_free(childNode);
     }
 }
 
@@ -569,7 +623,7 @@ void MulticastGroupRemove( MulticastGroupInfo_t *multicastGrp )
 {
     if ( pLoRaDevice->multicastGroups != NULL ) {
         ListRemove(pLoRaDevice->multicastGroups, (void*) multicastGrp);
-        free(multicastGrp);
+        custom_free(multicastGrp);
     }
 }
 

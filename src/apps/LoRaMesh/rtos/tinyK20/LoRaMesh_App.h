@@ -1,26 +1,19 @@
 /**
- * \file LoRaTest_App.h
- * \author Alexander Winiger alexander.winiger@hslu.ch
- * \date Dec 11, 2015
+ * \file LoRaMesh_App.h
+ * \author Alexander Winiger (alexander.winiger@hslu.ch)
+ * \date 03.12.2015
  * \version 1.0
  *
- * \brief
- *
- *******************************************************************************
- *  Change log:
- *      [1.0]   Dec 11, 2015      	Alexander Winiger
- *          - created
- *******************************************************************************
+ * \brief LoRa mesh application
  */
-#ifndef __LORATEST_APP_H_
-#define __LORATEST_APP_H_
+
+#ifndef __LORAMESH_H_
+#define __LORAMESH_H_
 
 /*******************************************************************************
  * INCLUDE FILES
  ******************************************************************************/
-#include "LoRaMesh_AppConfig.h"
 
-#if LORAMESH_TEST_APP_ACTIVATED
 /*******************************************************************************
  * CONSTANT DEFINITIONS
  ******************************************************************************/
@@ -37,23 +30,11 @@
  * MODULE FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/
 /*!
- * \brief Initialize LoRa stack test application.
+ * Initializes the LoRa mesh application
  */
-void LoRaTest_AppInit( void );
-
-/*!
- * \brief Add a test regular LoRa join accept message to the rx message queue.
- */
-void LoRaTest_AddJoinAcc( uint8_t* devEui, uint8_t* appEui, uint8_t appKey,
-        bool addChannelList );
-
-/*!
- * \brief Add a test frame to the rx message queue.
- */
-void LoRaTest_AddFrame( void );
-
+void LoRaMesh_AppInit( void );
 /*******************************************************************************
  * END OF CODE
  ******************************************************************************/
-#endif /* LORAMESH_TEST_APP_ACTIVATED */
-#endif /* __LORATEST_APP_H_ */
+
+#endif /* __LORAMESH_H_ */

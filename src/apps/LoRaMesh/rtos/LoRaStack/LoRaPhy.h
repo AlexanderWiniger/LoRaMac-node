@@ -168,6 +168,11 @@ uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, size_t payloadSize,
         uint8_t flags );
 
 /*!
+ *
+ */
+uint8_t LoRaPhy_ScheduleRxWindow();
+
+/*!
  * Returns a radomly generated 16-bit value called nonce to generate session keys
  */
 uint16_t LoRaPhy_GenerateNonce( void );

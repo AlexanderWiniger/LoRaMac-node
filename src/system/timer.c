@@ -28,8 +28,10 @@
  ******************************************************************************/
 /*! Low power mode enabled */
 static bool LowPowerModeEnable = true;
+
 /*! List of upcoming timer events */
 static ListPointer_t pTimerEventList = NULL;
+
 /*******************************************************************************
  * PRIVATE FUNCTION PROTOTYPES (STATIC)
  ******************************************************************************/
@@ -246,11 +248,32 @@ static void RemoveTimerEvent(TimerEvent_t *evt)
     ListRemove(pTimerEventList, evt);
     evt->NextScheduledEvent = 0;
 }
+
+void TimerSetLowPowerEnable( bool enable )
+{
+    LowPowerModeEnable = enable;
+}
+
+bool TimerGetLowPowerEnable( void )
+{
+    return LowPowerModeEnable;
+}
 /*******************************************************************************
  * END OF CODE
  ******************************************************************************/
 
 #else
+/*******************************************************************************
+ * INCLUDE FILES
+ ******************************************************************************/
+#include "board.h"
+
+/*******************************************************************************
+ * PRIVATE VARIABLES (STATIC)
+ ******************************************************************************/
+/*! Low power mode enabled */
+static bool LowPowerModeEnable = true;
+
 /*!
  * This flag is used to make sure we have looped through the main several time to avoid race issues
  */
@@ -261,6 +284,9 @@ volatile uint8_t HasLoopedThroughMain = 0;
  */
 static TimerEvent_t *TimerListHead = NULL;
 
+/*******************************************************************************
+ * PRIVATE FUNCTION PROTOTYPES (STATIC)
+ ******************************************************************************/
 /*!
  * \brief Adds or replace the head timer of the list.
  *
@@ -305,6 +331,9 @@ static bool TimerExists( TimerEvent_t *obj );
  */
 uint32_t TimerGetValue( void );
 
+/*******************************************************************************
+ * MODULE FUNCTIONS (PUBLIC)
+ ******************************************************************************/
 void TimerInit( TimerEvent_t *obj, void (*callback)( void ) )
 {
     obj->Timestamp = 0;
@@ -611,7 +640,6 @@ void TimerLowPowerHandler( void )
         }
     }
 }
-#endif
 
 void TimerSetLowPowerEnable( bool enable )
 {
@@ -622,3 +650,4 @@ bool TimerGetLowPowerEnable( void )
 {
     return LowPowerModeEnable;
 }
+#endif
