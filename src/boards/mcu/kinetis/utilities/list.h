@@ -1,14 +1,14 @@
 /**
  * \file list.h
- * \author tawinige
+ * \author Alexander Winiger (alexander.winiger@hslu.ch)
  * \date 21.12.2015
  * \version 1.0
  *
- * \brief
+ * \brief Implementation of singly and doubly linked lists.
  *
  *******************************************************************************
  *  Change log:
- *      [1.0]   21.12.2015      	tawinige
+ *      [1.0]   21.12.2015      Alexander Winiger (alexander.winiger@hslu.ch)
  *          - created
  *******************************************************************************
  */
@@ -30,6 +30,7 @@ typedef struct ListNode_s {
     void *data;
     struct ListNode_s *next;
 } ListNode_t;
+
 /*******************************************************************************
  * SINGLY LINKED LIST FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/

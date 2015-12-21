@@ -1,14 +1,14 @@
 /**
  * \file list.c
- * \author tawinige
+ * \author Alexander Winiger (alexander.winiger@hslu.ch)
  * \date 21.12.2015
  * \version 1.0
  *
- * \brief
+ * \brief Implementation of singly and doubly linked lists.
  *
  *******************************************************************************
  *  Change log:
- *      [1.0]   21.12.2015      	tawinige
+ *      [1.0]   21.12.2015      Alexander Winiger (alexander.winiger@hslu.ch)
  *          - created
  *******************************************************************************
  */
