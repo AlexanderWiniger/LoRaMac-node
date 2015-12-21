@@ -23,8 +23,17 @@
  * MODULE FUNCTIONS (PUBLIC)
  ******************************************************************************/
 /*! Main application entry point. */
-int main( void )
+void main( void )
 {
+#if 1
+    ForwardListNode_t* forwardList = forward_list_create((void*) 0);
+
+    forward_list_push_front(forwardList, (void*) 1);
+    forward_list_push_front(forwardList, (void*) 2);
+    forward_list_push_front(forwardList, (void*) 3);
+    forward_list_push_front(forwardList, (void*) 4);
+
+#else
     BoardInitMcu();
     LOG_DEBUG("Mcu initialized.");
     OSA_Init();
@@ -36,9 +45,10 @@ int main( void )
 
     vTaskStartScheduler();
 
-    for ( ;; ) {
+    for (;; ) {
         /* Should not be reached */
     }
+#endif
 }
 
 /*******************************************************************************

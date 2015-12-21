@@ -1,5 +1,5 @@
 /**
- * \file list.c
+ * \file custom_list.c
  * \author Alexander Winiger (alexander.winiger@hslu.ch)
  * \date 21.12.2015
  * \version 1.0
@@ -17,7 +17,7 @@
  * INCLUDE FILES
  ******************************************************************************/
 #include "utilities.h"
-#include "list.h"
+#include "custom_list.h"
 
 /*******************************************************************************
  * SINGLY LINKED LIST FUNCTIONS (PUBLIC)
@@ -86,7 +86,7 @@ uint8_t forward_list_remove( ForwardListNode_t *list, ForwardListNode_t *node )
         return ERR_FAILED;
 }
 
-uint8_t forward_list_foreach( ForwardListNode_t *node, int (*func)( void* ) )
+uint8_t forward_list_foreach( ForwardListNode_t *node, uint8_t (*func)( void* ) )
 {
     while ( node ) {
         if ( func(node->data) != ERR_OK ) return ERR_FAILED;
@@ -95,11 +95,11 @@ uint8_t forward_list_foreach( ForwardListNode_t *node, int (*func)( void* ) )
     return ERR_OK;
 }
 
-ForwardListNode_t *forward_list_find( ForwardListNode_t *node, int (*func)( void*, void* ),
+ForwardListNode_t *forward_list_find( ForwardListNode_t *node, uint8_t (*func)( void*, void* ),
         void *data )
 {
     while ( node ) {
-        if ( func(node->data, data) > 0 ) return node;
+        if ( func(node->data, data) == ERR_OK ) return node;
         node = node->next;
     }
     return NULL;
@@ -217,7 +217,7 @@ uint8_t list_remove( ListNode_t *list, ListNode_t *node )
         return ERR_FAILED;
 }
 
-uint8_t list_foreach( ListNode_t *node, int (*func)( void* ) )
+uint8_t list_foreach( ListNode_t *node, uint8_t (*func)( void* ) )
 {
     while ( node ) {
         if ( func(node->data) != ERR_OK ) return ERR_FAILED;
@@ -226,7 +226,7 @@ uint8_t list_foreach( ListNode_t *node, int (*func)( void* ) )
     return ERR_OK;
 }
 
-ListNode_t *list_find( ListNode_t *node, int (*func)( void*, void* ), void *data )
+ListNode_t *list_find( ListNode_t *node, uint8_t (*func)( void*, void* ), void *data )
 {
     while ( node ) {
         if ( func(node->data, data) > 0 ) return node;

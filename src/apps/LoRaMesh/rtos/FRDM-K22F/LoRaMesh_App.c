@@ -90,7 +90,7 @@ static portTASK_FUNCTION(LoRaMeshTask, pvParameters);
 void LoRaMesh_AppInit( void )
 {
     LoRaMesh_Init(&sLoRaMeshCallbacks, &BoardGetBatteryLevel);
-    LoRaMesh_RegisterApplicationPort((RxMsgHandler) & ProcessFrame, AppPort);
+    LoRaMesh_RegisterApplicationPort((PortHandlerFunction_t) & ProcessFrame, AppPort);
 
 #if(LORAMESH_TEST_APP_ACTIVATED == 1)
     LoRaTest_AppInit();
@@ -128,7 +128,7 @@ void LoRaMesh_AppInit( void )
 static void Process( void )
 {
     for ( ;; ) {
-        switch (appState) {
+        switch ( appState ) {
             case LORAMESH_INITIAL:
                 appState = LORAMESH_TX_RX;
                 continue;
@@ -171,11 +171,12 @@ static bool SendFrame( void )
     AppData[10] = 'd';
     AppData[11] = '\0';
 
-    sendFrameStatus = LoRaMesh_SendFrame(AppData, AppDataSize, AppPort, true,
-            IsTxConfirmed);
+    sendFrameStatus = LoRaMesh_SendFrame(AppData, AppDataSize, AppPort, true, IsTxConfirmed);
 
-    if ( sendFrameStatus == ERR_NOTAVAIL ) return true;
-    else return false;
+    if ( sendFrameStatus == ERR_NOTAVAIL )
+        return true;
+    else
+        return false;
 }
 
 static portTASK_FUNCTION(LoRaMeshTask, pvParameters)

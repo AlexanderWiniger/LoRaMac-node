@@ -1,5 +1,5 @@
 /**
- * \file list.h
+ * \file custom_list.h
  * \author Alexander Winiger (alexander.winiger@hslu.ch)
  * \date 21.12.2015
  * \version 1.0
@@ -12,8 +12,8 @@
  *          - created
  *******************************************************************************
  */
-#ifndef __LIST_H_
-#define __LIST_H_
+#ifndef __CUSTOM_LIST_H_
+#define __CUSTOM_LIST_H_
 
 /*******************************************************************************
  * TYPE DEFINITIONS
@@ -97,7 +97,7 @@ uint8_t forward_list_remove( ForwardListNode_t *list, ForwardListNode_t *node );
  * \retval      ERR_OK      : All elements successfully traversed.
  *              ERR_FAILED  : Some element failed to execute specified function.
  */
-uint8_t forward_list_foreach( ForwardListNode_t *node, int (*func)( void* ) );
+uint8_t forward_list_foreach( ForwardListNode_t *node, uint8_t (*func)( void* ) );
 
 /*!
  * Find a node that fulfills a specified criteria (function pointer) and return pointer to
@@ -107,7 +107,7 @@ uint8_t forward_list_foreach( ForwardListNode_t *node, int (*func)( void* ) );
  * \param [IN] func Function that specifies the search criteria.
  * \param [IN] data Value to be found.
  */
-ForwardListNode_t *forward_list_find( ForwardListNode_t *node, int (*func)( void*, void* ),
+ForwardListNode_t *forward_list_find( ForwardListNode_t *node, uint8_t (*func)( void*, void* ),
         void *data );
 
 /*!
@@ -195,7 +195,7 @@ uint8_t list_remove( ListNode_t *list, ListNode_t *node );
  * \retval      ERR_OK      : All elements successfully traversed.
  *              ERR_FAILED  : Some element failed to execute specified function.
  */
-uint8_t list_foreach( ListNode_t *node, int (*func)( void* ) );
+uint8_t list_foreach( ListNode_t *node, uint8_t (*func)( void* ) );
 
 /*!
  * Find a node that fulfills a specified criteria (function pointer) and return pointer to
@@ -205,7 +205,7 @@ uint8_t list_foreach( ListNode_t *node, int (*func)( void* ) );
  * \param [IN] func Function that specifies the search criteria.
  * \param [IN] data Value to be found.
  */
-ListNode_t *list_find( ListNode_t *node, int (*func)( void*, void* ), void *data );
+ListNode_t *list_find( ListNode_t *node, uint8_t (*func)( void*, void* ), void *data );
 
 /*!
  * Returns the size of the specified list container.
@@ -218,4 +218,4 @@ uint32_t list_size( ListNode_t *list );
  * END OF CODE
  ******************************************************************************/
 
-#endif /* __LIST_H_ */
+#endif /* __CUSTOM_LIST_H_ */

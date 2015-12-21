@@ -134,8 +134,8 @@ typedef struct {
     uint8_t *appKey; /* Application key AES 128-Bit */
     ConnectionInfo_t upLinkSlot; /* Up link slot information */
     AdvertisingSlotInfo_t advertisingSlot; /* Advertising slot information */
-    ListPointer_t childNodes; /* List of connected child nodes */
-    ListPointer_t multicastGroups; /* List of joined multicast groups */
+    ForwardListNode_t *childNodes; /* List of connected child nodes */
+    ForwardListNode_t *multicastGroups; /* List of joined multicast groups */
     uint8_t currChannelIndex; /* Index of the currently selected channel from the channel list */
     uint8_t currDataRateIndex; /* Currently selected data rate */
     uint8_t currTxPowerIndex; /* Currently selected output power */
@@ -157,11 +157,11 @@ typedef enum {
 
 typedef void (*LoRaSchedulerEventCallback_t)( void *param );
 
-typedef uint8_t (*RxMsgHandler)( uint8_t *payload, uint8_t payloadSize, uint8_t fPort );
+typedef uint8_t (*PortHandlerFunction_t)( uint8_t *payload, uint8_t payloadSize, uint8_t fPort );
 
 typedef struct {
     uint8_t Port;
-    RxMsgHandler Handler;
+    PortHandlerFunction_t Handler;
 } PortHandler_t;
 
 /*******************************************************************************
@@ -188,8 +188,7 @@ extern LoRaDevice_t* pLoRaDevice;
  * \param [IN] callabcks       Pointer to a structure defining the LoRaMAC
  *                             callback functions.
  */
-void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks,
-        LoRaMac_BatteryLevelCallback_t batteryLevelCb );
+void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks, LoRaMac_BatteryLevelCallback_t batteryLevelCb );
 
 /*!
  * Initializes the network IDs. Device address,
@@ -206,8 +205,7 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks,
  * \param [IN] appSKey Pointer to the application session AES128 key array
  *                     ( 16 bytes )
  */
-void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey,
-        uint8_t *appSKey );
+void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint8_t *appSKey );
 
 /*!
  * Register an application handler on the specified port.
@@ -217,7 +215,7 @@ void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey,
  *
  * \retval status ERR_OK if port was successfully registered.
  */
-uint8_t LoRaMesh_RegisterApplicationPort( RxMsgHandler fHandler, uint8_t fPort );
+uint8_t LoRaMesh_RegisterApplicationPort( PortHandlerFunction_t fHandler, uint8_t fPort );
 
 /*!
  * Remove an application handler from the specified port.
@@ -227,7 +225,7 @@ uint8_t LoRaMesh_RegisterApplicationPort( RxMsgHandler fHandler, uint8_t fPort )
  *
  * \retval status ERR_OK if port was successfully removed.
  */
-uint8_t LoRaMesh_RemoveApplicationPort( RxMsgHandler fHandler, uint8_t fPort );
+uint8_t LoRaMesh_RemoveApplicationPort( PortHandlerFunction_t fHandler, uint8_t fPort );
 
 /*!
  * LoRaMAC layer send frame
@@ -270,8 +268,8 @@ uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort,
  *
  * \retval status ERR_OK if frame was handled successfully
  */
-uint8_t LoRaMesh_PutPayload( uint8_t *buf, uint16_t bufSize, uint8_t payloadSize,
-        uint8_t fPort, LoRaFrm_Type_t fType );
+uint8_t LoRaMesh_PutPayload( uint8_t *buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
+        LoRaFrm_Type_t fType );
 
 /*!
  * Process advertising message.
@@ -324,7 +322,7 @@ ChildNodeInfo_t* LoRaMesh_FindChildNode( uint32_t devAddr );
  *
  * \param reverseOrder Print out the list in reversed order.
  */
-void LoRaMesh_PrintChildNodes( bool reverseOrder );
+void LoRaMesh_PrintChildNodes( void );
 
 /*!
  * \brief Find multicast group with specified address.
@@ -339,7 +337,7 @@ MulticastGroupInfo_t* LoRaMesh_FindMulticastGroup( uint32_t grpAddr );
  *
  * \param reverseOrder Print out the list in reversed order.
  */
-void LoRaMesh_PrintMulticastGroups( bool reverseOrder );
+void LoRaMesh_PrintMulticastGroups( void );
 
 /*******************************************************************************
  * SETUP FUNCTION PROTOTYPES (PUBLIC)

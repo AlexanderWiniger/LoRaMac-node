@@ -62,6 +62,7 @@ typedef struct {
  * INCLUDE FILES
  ******************************************************************************/
 #include <stddef.h>
+#include <stdint.h>
 
 /*******************************************************************************
  * CONSTANT DEFINITIONS
@@ -106,7 +107,7 @@ typedef uint32_t I2C_TypeDef;
 
  \return               IPSR Register value
  */
-__attribute__( ( always_inline ))    static inline uint32_t __get_IPSR( void )
+__attribute__( ( always_inline ))     static inline uint32_t __get_IPSR( void )
 {
     uint32_t result;
 

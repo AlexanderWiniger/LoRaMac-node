@@ -30,8 +30,7 @@
 static bool LowPowerModeEnable = true;
 
 /*! List of upcoming timer events */
-static ListPointer_t pTimerEventList = NULL;
-
+//static ListPointer_t pTimerEventList = NULL;
 /*******************************************************************************
  * PRIVATE FUNCTION PROTOTYPES (STATIC)
  ******************************************************************************/
@@ -174,7 +173,7 @@ void TimerSetValue( TimerEvent_t *obj, uint32_t periodInUs )
 
 TimerTime_t TimerGetNextEventTime(void)
 {
-    return (TimerTime_t)((TimerEvent_t*)pTimerEventList->head->data)->NextScheduledEvent;
+    return 0;   //(TimerTime_t)((TimerEvent_t*)pTimerEventList->head->data)->NextScheduledEvent;
 }
 
 TimerTime_t TimerGetCurrentTime( void )
@@ -217,36 +216,36 @@ static void OnTimerEvent( TimerHandle_t xTimer )
 
 static void InsertTimerEvent(TimerEvent_t *evt, uint32_t time)
 {
-    if(pTimerEventList == NULL) {
-        pTimerEventList = ListCreate();
-    }
-
-    if(pTimerEventList->head == NULL) {
-        ListPushBack(pTimerEventList, (void*)evt);
-    } else {
-        uint8_t index = 0;
-        ListNodePointer_t node = pTimerEventList->head;
-        while(node != NULL) {
-            TimerEvent_t *currEvt = (TimerEvent_t*)node->data;
-            if(time < currEvt->NextScheduledEvent) {
-                ListInsert(pTimerEventList, (void*)evt, index);
-                break;
-            }
-            node = node->next;
-            index++;
-        }
-    }
-    evt->NextScheduledEvent = time;
+//    if(pTimerEventList == NULL) {
+//        pTimerEventList = ListCreate();
+//    }
+//
+//    if(pTimerEventList->head == NULL) {
+//        ListPushBack(pTimerEventList, (void*)evt);
+//    } else {
+//        uint8_t index = 0;
+//        ListNodePointer_t node = pTimerEventList->head;
+//        while(node != NULL) {
+//            TimerEvent_t *currEvt = (TimerEvent_t*)node->data;
+//            if(time < currEvt->NextScheduledEvent) {
+//                ListInsert(pTimerEventList, (void*)evt, index);
+//                break;
+//            }
+//            node = node->next;
+//            index++;
+//        }
+//    }
+//    evt->NextScheduledEvent = time;
 }
 
 static void RemoveTimerEvent(TimerEvent_t *evt)
 {
-    if(pTimerEventList == NULL) {
-        return;
-    }
-
-    ListRemove(pTimerEventList, evt);
-    evt->NextScheduledEvent = 0;
+//    if(pTimerEventList == NULL) {
+//        return;
+//    }
+//
+//    ListRemove(pTimerEventList, evt);
+//    evt->NextScheduledEvent = 0;
 }
 
 void TimerSetLowPowerEnable( bool enable )
@@ -364,7 +363,7 @@ void TimerStart( TimerEvent_t *obj )
         if ( TimerListHead->IsRunning == true ) {
             elapsedTime = TimerGetValue();
             if ( elapsedTime > TimerListHead->Timestamp ) {
-                elapsedTime = TimerListHead->Timestamp; // security but should never occur
+                elapsedTime = TimerListHead->Timestamp;   // security but should never occur
             }
             remainingTime = TimerListHead->Timestamp - elapsedTime;
         } else {
@@ -383,7 +382,7 @@ void TimerStart( TimerEvent_t *obj )
 static void TimerInsertTimer( TimerEvent_t *obj, uint32_t remainingTime )
 {
     uint32_t aggregatedTimestamp = 0;      // hold the sum of timestamps 
-    uint32_t aggregatedTimestampNext = 0; // hold the sum of timestamps up to the next event
+    uint32_t aggregatedTimestampNext = 0;   // hold the sum of timestamps up to the next event
 
     TimerEvent_t* prev = TimerListHead;
     TimerEvent_t* cur = TimerListHead->Next;
@@ -396,7 +395,7 @@ static void TimerInsertTimer( TimerEvent_t *obj, uint32_t remainingTime )
         aggregatedTimestamp = remainingTime;
         aggregatedTimestampNext = remainingTime + cur->Timestamp;
 
-        while (prev != NULL) {
+        while ( prev != NULL ) {
             if ( aggregatedTimestampNext > obj->Timestamp ) {
                 obj->Timestamp -= aggregatedTimestamp;
                 if ( cur != NULL ) {
@@ -444,7 +443,7 @@ void TimerIrqHandler( void )
 
     if ( LowPowerModeEnable == false ) {
         if ( TimerListHead == NULL ) {
-            return; // Only necessary when the standard timer is used as a time base
+            return;   // Only necessary when the standard timer is used as a time base
         }
     }
 
@@ -462,7 +461,7 @@ void TimerIrqHandler( void )
     elapsedTimer = TimerListHead;
 
     // remove all the expired object from the list
-    while ((TimerListHead != NULL) && (TimerListHead->Timestamp == 0)) {
+    while ( (TimerListHead != NULL) && (TimerListHead->Timestamp == 0) ) {
         if ( TimerListHead->Next != NULL ) {
             TimerListHead = TimerListHead->Next;
         } else {
@@ -472,7 +471,7 @@ void TimerIrqHandler( void )
 
     // execute the callbacks of all the expired objects
     // this is to avoid potential issues between the callback and the object list
-    while ((elapsedTimer != NULL) && (elapsedTimer->Timestamp == 0)) {
+    while ( (elapsedTimer != NULL) && (elapsedTimer->Timestamp == 0) ) {
         if ( elapsedTimer->Callback != NULL ) {
             elapsedTimer->Callback();
         }
@@ -502,9 +501,9 @@ void TimerStop( TimerEvent_t *obj )
         return;
     }
 
-    if ( TimerListHead == obj ) // Stop the Head                                    
+    if ( TimerListHead == obj )   // Stop the Head                                    
             {
-        if ( TimerListHead->IsRunning == true )  // The head is already running 
+        if ( TimerListHead->IsRunning == true )   // The head is already running 
                 {
             elapsedTime = TimerGetValue();
             if ( elapsedTime > obj->Timestamp ) {
@@ -536,7 +535,7 @@ void TimerStop( TimerEvent_t *obj )
     {
         remainingTime = obj->Timestamp;
 
-        while (cur != NULL) {
+        while ( cur != NULL ) {
             if ( cur == obj ) {
                 if ( cur->Next != NULL ) {
                     cur = cur->Next;
@@ -560,7 +559,7 @@ static bool TimerExists( TimerEvent_t *obj )
 {
     TimerEvent_t* cur = TimerListHead;
 
-    while (cur != NULL) {
+    while ( cur != NULL ) {
         if ( cur == obj ) {
             return true;
         }
