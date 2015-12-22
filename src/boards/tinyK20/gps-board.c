@@ -64,7 +64,7 @@ void GpsMcuIrqNotify(UartNotifyId_t id)
             if ((data == '$') || (NmeaStringSize >= 128)) {
                 NmeaStringSize = 0;
             }
-
+            LOG_TRACE_BARE("%c", (char) data);
             NmeaString[NmeaStringSize++] = (int8_t) data;
 
             if (data == '\n') {

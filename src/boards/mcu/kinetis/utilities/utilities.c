@@ -12,9 +12,7 @@
 #include <stdio.h>
 #include "board.h"
 #include "utilities.h"
-#if !defined(FSL_RTOS_FREE_RTOS) && !defined(USE_FREE_RTOS)
 #include <stdlib.h>
-#endif
 
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
@@ -48,20 +46,12 @@ int32_t randr( int32_t min, int32_t max )
 
 void *custom_malloc( size_t size )
 {
-#if defined(FSL_RTOS_FREE_RTOS) || defined(USE_FREE_RTOS)
-    return pvPortMalloc(size);
-#else
     return malloc(size);
-#endif
 }
 
 void custom_free( void *p )
 {
-#if defined(FSL_RTOS_FREE_RTOS) || defined(USE_FREE_RTOS)
-    vPortFree(p);
-#else
     free(p);
-#endif
 }
 
 void memcpy1( uint8_t *dst, const uint8_t *src, uint16_t size )
