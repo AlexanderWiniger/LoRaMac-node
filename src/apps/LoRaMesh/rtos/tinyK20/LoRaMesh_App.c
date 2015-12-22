@@ -113,7 +113,7 @@ void LoRaMesh_AppInit( void )
 //    LoRaMesh_SetDeviceClass (CLASS_C);
     LoRaMesh_TestSetDutyCycleCtrlOff (LORAWAN_DUTYCYCLE_OFF);
 
-    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", 0x800, (void*) NULL, tskIDLE_PRIORITY,
+    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", 0x400, (void*) NULL, tskIDLE_PRIORITY,
             (xTaskHandle*) NULL) != pdPASS ) {
         /*lint -e527 */
         for ( ;; ) {

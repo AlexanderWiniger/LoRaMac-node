@@ -119,10 +119,10 @@
 #define RADIO_SCLK                     PC_5
 #define RADIO_NSS                      PD_0
 
-#define RADIO_DIO_0                    PA_0
-#define RADIO_DIO_1                    PA_1
-#define RADIO_DIO_2                    PA_2
-#define RADIO_DIO_3                    PA_3
+#define RADIO_DIO_0                    PD_1
+#define RADIO_DIO_1                    PA_2
+#define RADIO_DIO_2                    PA_1
+#define RADIO_DIO_3                    PD_5
 #define RADIO_DIO_4_A                  PB_16
 #define RADIO_DIO_4_B                  NC
 #define RADIO_DIO_5                    PB_17

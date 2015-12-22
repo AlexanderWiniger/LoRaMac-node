@@ -23,7 +23,7 @@ static bool AppLedStateOn;
 /*!
  * \brief Function executed on Led 1 Timeout event
  */
-void OnLed1TimerEvent(void)
+void OnLed1TimerEvent( void )
 {
     Led1TimerEvent = true;
 }
@@ -31,7 +31,7 @@ void OnLed1TimerEvent(void)
 /*!
  * \brief Main application entry point.
  */
-int main(void)
+int main( void )
 {
     // Target board initialisation
     BoardInitMcu();
@@ -50,12 +50,12 @@ int main(void)
     // Print the initial banner
     LOG_DEBUG_BARE("\r\nHello World!\r\n\r\n");
 
-    while (1) {
-        if (Led1TimerEvent == true) {
+    while ( 1 ) {
+        if ( Led1TimerEvent == true ) {
             Led1TimerEvent = false;
 
             // Switch LED 1 OFF
-            if (AppLedStateOn)
+            if ( AppLedStateOn )
                 GpioWrite(&Led1, 1);
             else
                 GpioWrite(&Led1, 0);

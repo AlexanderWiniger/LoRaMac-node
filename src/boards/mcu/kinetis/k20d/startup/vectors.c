@@ -33,11 +33,11 @@ __attribute__ ((section (".vectortable"))) const tVectorTable __vect_table = { /
 (tIsrFunc) & Reserved8_IRQHandler,      /* 0x08  0x00000020   -   ivINT_Reserved8                */
 (tIsrFunc) & Reserved9_IRQHandler,      /* 0x09  0x00000024   -   ivINT_Reserved9                */
 (tIsrFunc) & Reserved10_IRQHandler,     /* 0x0A  0x00000028   -   ivINT_Reserved10               */
-(tIsrFunc) & SVC_Handler,               /* 0x0B  0x0000002C   -   ivINT_SVCall                   */
+(tIsrFunc) & vPortSVCHandler,           /* 0x0B  0x0000002C   -   ivINT_SVCall                   */
 (tIsrFunc) & DebugMon_Handler,          /* 0x0C  0x00000030   -   ivINT_DebugMonitor             */
 (tIsrFunc) & Reserved13_IRQHandler,     /* 0x0D  0x00000034   -   ivINT_Reserved13               */
-(tIsrFunc) & PendSV_Handler,            /* 0x0E  0x00000038   -   ivINT_PendableSrvReq           */
-(tIsrFunc) & SysTick_Handler,           /* 0x0F  0x0000003C   -   ivINT_SysTick                  */
+(tIsrFunc) & vPortPendSVHandler,        /* 0x0E  0x00000038   -   ivINT_PendableSrvReq           */
+(tIsrFunc) & vPortTickHandler,           /* 0x0F  0x0000003C   -   ivINT_SysTick                  */
 (tIsrFunc) & DMA0_IRQHandler,           /* 0x10  0x00000040   -   ivINT_DMA0                     */
 (tIsrFunc) & DMA1_IRQHandler,           /* 0x11  0x00000044   -   ivINT_DMA1                     */
 (tIsrFunc) & DMA2_IRQHandler,           /* 0x12  0x00000048   -   ivINT_DMA2                     */

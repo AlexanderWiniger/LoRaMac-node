@@ -24,9 +24,7 @@
 /*******************************************************************************
  * CONSTANT DEFINITIONS
  ******************************************************************************/
-#define TIMER_PRIORITY_LOW          (0)
-#define TIMER_PRIORITY_MEDIUM       (1)
-#define TIMER_PRIORITY_HIGH         (2)
+#define TIMER_DEFAULT_PERIOD        (1000)
 /*******************************************************************************
  * TYPE DEFINITIONS
  ******************************************************************************/
@@ -34,9 +32,6 @@
 #ifndef TimerTime_t
 typedef uint64_t TimerTime_t;
 #endif
-
-/* Defines the prototype to which timer callback functions must conform. */
-typedef void (*LoRaTimerCallbackFunction_t)( void *param );
 
 /*! \brief Timer object description */
 typedef struct TimerEvent_s {
@@ -47,8 +42,6 @@ typedef struct TimerEvent_s {
     bool HasChanged;//! Period of the timer has changed
     bool AutoReload;//! Is auto reload enabled
     bool IsRunning;//! Is Timer running
-    LoRaTimerCallbackFunction_t Callback;//! Timer callback function
-    void *param;
 }TimerEvent_t;
 
 /*******************************************************************************
@@ -63,8 +56,7 @@ typedef struct TimerEvent_s {
  * \param [IN] obj          Structure containing the timer object parameters
  * \param [IN] callback     Function callback called at the end of the timeout
  */
-void TimerInit( TimerEvent_t *obj, const char* name, uint32_t periodInUs, uint8_t priority,
-        LoRaTimerCallbackFunction_t callback, void* param, bool autoReload );
+void TimerInit( TimerEvent_t *obj, const char* name, void *id, void (*callback)( TimerHandle_t xTimer ), bool autoReload );
 
 /*!
  * \brief Starts and adds the timer object to the list of timer events

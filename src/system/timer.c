@@ -29,46 +29,22 @@
 /*! Low power mode enabled */
 static bool LowPowerModeEnable = true;
 
-/*! List of upcoming timer events */
-//static ListPointer_t pTimerEventList = NULL;
-/*******************************************************************************
- * PRIVATE FUNCTION PROTOTYPES (STATIC)
- ******************************************************************************/
-/*!  */
-static void OnTimerEvent( TimerHandle_t xTimer );
-
-/*!  */
-static void InsertTimerEvent(TimerEvent_t *evt, uint32_t time);
-
-/*! */
-static void RemoveTimerEvent(TimerEvent_t *evt);
 /*******************************************************************************
  * MODULE FUNCTIONS (PUBLIC)
  ******************************************************************************/
-void TimerInit( TimerEvent_t *obj, const char* name, uint32_t periodInUs, uint8_t priority,
-        LoRaTimerCallbackFunction_t callback, void* param, bool autoReload )
+void TimerInit( TimerEvent_t *obj, const char* name, void *id, void (*callback)(TimerHandle_t xTimer), bool autoReload )
 {
-    uint32_t periodInMs = periodInUs / 1e3;
-
-    if(periodInMs <= 0) {
-        LOG_ERROR("Minimum period of the timer is 1 ms (%s).", name);
-        return;
-    }
-
     obj->Handle = xTimerCreate( name,
-            (periodInMs / portTICK_PERIOD_MS),
+            (TIMER_DEFAULT_PERIOD / portTICK_PERIOD_MS),
             autoReload,
-            ( void * ) (obj),
-            &OnTimerEvent
+            ( void * ) (id),
+            callback
     );
 
     if(obj->Handle != NULL) {
-        obj->Priority = priority;
-        obj->PeriodInMs = periodInMs;
+        obj->PeriodInMs = TIMER_DEFAULT_PERIOD;
         obj->NextScheduledEvent = 0;
         obj->AutoReload = autoReload;
-        obj->Callback = callback;
-        obj->param = param;
         obj->IsRunning = false;
         obj->HasChanged = false;
 
@@ -105,7 +81,6 @@ void TimerStart( TimerEvent_t *obj )
 
     if(xReturn != pdFAIL) {
         obj->IsRunning = true;
-        InsertTimerEvent(obj, (time + (obj->PeriodInMs / portTICK_PERIOD_MS)));
         LOG_TRACE("%s started at %u.", pcTimerGetTimerName(obj->Handle), time);
     } else {
         LOG_ERROR("Failed to start %s.", pcTimerGetTimerName(obj->Handle));
@@ -130,7 +105,6 @@ void TimerStop( TimerEvent_t *obj )
     if(xReturn != pdFAIL) {
         LOG_TRACE("%s stopped at %u. Scheduled at %u", pcTimerGetTimerName(obj->Handle), time, obj->NextScheduledEvent);
         obj->IsRunning = false;
-        RemoveTimerEvent(obj);
     } else {
         LOG_ERROR("Failed to stop %s timer", pcTimerGetTimerName(obj->Handle));
     }
@@ -192,61 +166,6 @@ void TimerLowPowerHandler( void )
 /*******************************************************************************
  * PRIVATE FUNCTIONS (STATIC)
  ******************************************************************************/
-static void OnTimerEvent( TimerHandle_t xTimer )
-{
-    TimerEvent_t *evt = (TimerEvent_t*)pvTimerGetTimerID(xTimer);
-    TickType_t time;
-
-    if(__get_IPSR()) {
-        time = xTaskGetTickCountFromISR();
-    } else {
-        time = xTaskGetTickCount();
-    }
-    LOG_TRACE("%s stopped at %u. Scheduled at %u", pcTimerGetTimerName(evt->Handle), time, evt->NextScheduledEvent);
-    RemoveTimerEvent(evt);
-
-    if(evt->AutoReload) {
-        InsertTimerEvent(evt, (time + (evt->PeriodInMs / portTICK_PERIOD_MS)));
-    } else {
-        evt->IsRunning = false;
-    }
-
-    evt->Callback(evt->param);
-}
-
-static void InsertTimerEvent(TimerEvent_t *evt, uint32_t time)
-{
-//    if(pTimerEventList == NULL) {
-//        pTimerEventList = ListCreate();
-//    }
-//
-//    if(pTimerEventList->head == NULL) {
-//        ListPushBack(pTimerEventList, (void*)evt);
-//    } else {
-//        uint8_t index = 0;
-//        ListNodePointer_t node = pTimerEventList->head;
-//        while(node != NULL) {
-//            TimerEvent_t *currEvt = (TimerEvent_t*)node->data;
-//            if(time < currEvt->NextScheduledEvent) {
-//                ListInsert(pTimerEventList, (void*)evt, index);
-//                break;
-//            }
-//            node = node->next;
-//            index++;
-//        }
-//    }
-//    evt->NextScheduledEvent = time;
-}
-
-static void RemoveTimerEvent(TimerEvent_t *evt)
-{
-//    if(pTimerEventList == NULL) {
-//        return;
-//    }
-//
-//    ListRemove(pTimerEventList, evt);
-//    evt->NextScheduledEvent = 0;
-}
 
 void TimerSetLowPowerEnable( bool enable )
 {

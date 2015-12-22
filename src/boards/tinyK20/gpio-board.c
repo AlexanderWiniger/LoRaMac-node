@@ -46,8 +46,8 @@ static GpioIrqHandler *GpioCIrq[8];
 static GpioIrqHandler *GpioDIrq[8];
 
 /* Base pointers */
-static PORT_MemMapPtr g_portBase[] = PORT_BASE_PTRS;
-static GPIO_MemMapPtr g_gpioBase[] = GPIO_BASE_PTRS;
+const PORT_MemMapPtr g_portBase[] = PORT_BASE_PTRS;
+const GPIO_MemMapPtr g_gpioBase[] = GPIO_BASE_PTRS;
 
 typedef enum _port_interrupt_config {
     kPortIntDisabled = 0x0U, /*!< Interrupt/DMA request is disabled.*/
@@ -157,8 +157,9 @@ void GpioMcuInit( Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, P
     obj->pin = pin;
     obj->port = (void*) g_portBase[obj->portIndex];
 
-    switch (mode) {
+    switch ( mode ) {
         case PIN_INPUT:
+        {
             /* Set pin muxing to gpio */
             g_portBase[obj->portIndex]->PCR[obj->pinIndex] =
                     (((g_portBase[obj->portIndex]->PCR[obj->pinIndex])
@@ -178,6 +179,7 @@ void GpioMcuInit( Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, P
                                 | (((type == PIN_PULL_UP) ? 1 : 0) << PORT_PCR_PS_SHIFT));
             }
             break;
+        }
         case PIN_OUTPUT:
             /* Set pin muxing to gpio */
             g_portBase[obj->portIndex]->PCR[obj->pinIndex] =
@@ -209,7 +211,7 @@ void GpioMcuInit( Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, P
         case PIN_ALTERNATE_FCT:
         {
             uint8_t i = 0;
-            while (alternateFctCfg[i].pinName != PIN_OUT_OF_RANGE) {
+            while ( alternateFctCfg[i].pinName != PIN_OUT_OF_RANGE ) {
                 if ( alternateFctCfg[i].pinName == pin ) {
                     g_portBase[obj->portIndex]->PCR[obj->pinIndex] =
                             (((g_portBase[obj->portIndex]->PCR[obj->pinIndex])
@@ -255,7 +257,7 @@ void GpioMcuSetInterrupt( Gpio_t *obj, IrqModes irqMode, IrqPriorities irqPriori
     else
         return;
 
-    switch (irqMode) {
+    switch ( irqMode ) {
         case NO_IRQ:
             intConfig = (uint8_t) kPortIntDisabled;
             break;
@@ -311,7 +313,7 @@ void GpioMcuRemoveInterrupt( Gpio_t *obj )
 void GpioMcuWrite( Gpio_t *obj, uint32_t value )
 {
     if ( (obj == NULL) || (obj->port == NULL) ) {
-        while (1)
+        while ( 1 )
             ;
     }
 // Check if pin is not connected
@@ -329,7 +331,7 @@ void GpioMcuWrite( Gpio_t *obj, uint32_t value )
 uint32_t GpioMcuRead( Gpio_t *obj )
 {
     if ( obj == NULL ) {
-        while (1)
+        while ( 1 )
             ;
     }
 // Check if pin is not connected

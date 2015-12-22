@@ -83,6 +83,12 @@ extern volatile uint8_t SR_reg;        /* Current FAULTMASK register */
 /*lint -esym(765,SR_lock) Disable MISRA rule (8.10) checking for symbols (SR_lock). The SR_reg is used in inline assembler. */
 extern volatile uint8_t SR_lock;
 
+
+/* Prototypes for interrupt service handlers */
+void vPortSVCHandler(void);
+void vPortPendSVHandler(void);
+void vPortTickHandler(void);
+
 /*!
  * \brief Cpu initialization.
  */
@@ -103,11 +109,11 @@ Default_ISR(Reserved7_IRQHandler);
 Default_ISR(Reserved8_IRQHandler);
 Default_ISR(Reserved9_IRQHandler);
 Default_ISR(Reserved10_IRQHandler);
-Default_ISR(SVC_Handler);
+Default_ISR(vPortSVCHandler);
 Default_ISR(DebugMon_Handler);
 Default_ISR(Reserved13_IRQHandler);
-Default_ISR(PendSV_Handler);
-Default_ISR(SysTick_Handler);
+Default_ISR(vPortPendSVHandler);
+Default_ISR(vPortTickHandler);
 Default_ISR(DMA0_IRQHandler);
 Default_ISR(DMA1_IRQHandler);
 Default_ISR(DMA2_IRQHandler);

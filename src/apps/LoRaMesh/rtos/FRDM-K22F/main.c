@@ -25,7 +25,7 @@
 /*! Main application entry point. */
 void main( void )
 {
-#if 1
+#if 0
     ForwardListNode_t* forwardList = forward_list_create((void*) 0);
 
     forward_list_push_front(forwardList, (void*) 1);
@@ -35,6 +35,7 @@ void main( void )
 
 #else
     BoardInitMcu();
+
     LOG_DEBUG("Mcu initialized.");
     OSA_Init();
     LOG_DEBUG("OS initialized.");
@@ -45,7 +46,7 @@ void main( void )
 
     vTaskStartScheduler();
 
-    for (;; ) {
+    for ( ;; ) {
         /* Should not be reached */
     }
 #endif

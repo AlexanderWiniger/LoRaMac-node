@@ -100,8 +100,8 @@ static bool EvaluateNominationProbability( uint8_t nodeRank );
 static uint8_t CalculateNodeRank( void );
 
 /*!  */
-static void ScheduleEvent( LoRaSchedulerEventType_t type, LoRaSchedulerEventCallback_t callback,
-        void* param );
+static uint8_t ScheduleEvent( TimerTime_t interval, LoRaSchedulerEventType_t type,
+        LoRaSchedulerEventCallback_t callback, void* param );
 
 /*!  */
 static void RemoveEvent( void );
@@ -421,7 +421,7 @@ void LoRaMesh_TestSetMic( uint16_t upLinkCounter )
 static uint8_t ScheduleEvent( TimerTime_t interval, LoRaSchedulerEventType_t type,
         LoRaSchedulerEventCallback_t callback, void* param )
 {
-    ForwardListNode *node = pEventScheduler;
+    ForwardListNode_t *node = pEventScheduler;
 
     while ( node != NULL ) {
         if ( ((LoRaMeshEvent_t*) node->data)->nextOccurenceTime ) break;
