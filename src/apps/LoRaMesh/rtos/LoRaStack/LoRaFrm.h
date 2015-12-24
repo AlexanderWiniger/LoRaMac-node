@@ -20,6 +20,8 @@
 /*******************************************************************************
  * CONSTANT DEFINITIONS
  ******************************************************************************/
+#define LORAFRM_NOF_USABLE_FPORT                (223)
+
 #define LORAFRM_HEADER_SIZE_MAX                 (22)
 #define LORAFRM_HEADER_SIZE_MIN                 (7)
 #define LORAFRM_OPTSLEN_MAX                     (15)

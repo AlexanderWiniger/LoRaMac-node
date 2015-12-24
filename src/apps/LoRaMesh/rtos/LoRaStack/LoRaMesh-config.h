@@ -97,9 +97,24 @@
 /*! Advertising CRC on */
 #endif
 
+/* Maximal number of multicast groups */
+#ifndef LORAMESH_CONFIG_MAX_NOF_MULTICAST_GROUPS
+#define LORAMESH_CONFIG_MAX_NOF_MULTICAST_GROUPS        (8)
+#endif
+
+/* Maximal number of multicast groups */
+#ifndef LORAMESH_CONFIG_MAX_NOF_CHILD_NODES
+#define LORAMESH_CONFIG_MAX_NOF_CHILD_NODES             (8)
+#endif
+
+/* Maximal number of LoRaMesh scheduler events */
+#ifndef LORAMESH_CONFIG_MAX_NOF_SCHEDULER_EVENTS
+#define LORAMESH_CONFIG_MAX_NOF_SCHEDULER_EVENTS        (16)
+#endif
+
 #ifndef LORAMESH_CONFIG_TRANSCEIVER_PAYLOAD_SIZE
 #define LORAMESH_CONFIG_TRANSCEIVER_PAYLOAD_SIZE        (255)
-/*!< Size of the physical transceiver payload (bytes), max 32 bytes for nRF24L01+, max 128 bytes for MC1320x */
+/*!< Size of the physical transceiver payload (bytes) */
 #endif
 
 /* Configuration for Rx and Tx queues */

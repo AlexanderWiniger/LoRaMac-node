@@ -8,6 +8,9 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
+/*******************************************************************************
+ * INCLUDE FILES
+ ******************************************************************************/
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -18,7 +21,6 @@
 #include "fsl_debug_console.h"
 #include "fsl_port_hal.h"
 #include "utilities.h"
-#include "custom_list.h"
 #include "timer.h"
 #include "delay.h"
 #include "gpio.h"
@@ -40,10 +42,9 @@
 #include "usb-cdc-board.h"
 #endif
 
-#if defined(SX1276_BOARD_FREEDOM) ||  defined(SX1276_BOARD_EMBED)
-#define SX1276_BOARD_AVAILABLE
-#endif
-
+/*******************************************************************************
+ * CONSTANT DEFINITIONS
+ ******************************************************************************/
 #if defined(USE_LOW_POWER_MODE)
 #define LOW_POWER_MODE_ENABLE   1
 #endif
@@ -105,10 +106,8 @@
                                          ( *( uint32_t* )ID3 ) ^ \
                                          ( *( uint32_t* )ID4 ) )
 
-/*!
- * Board MCU pins definitions
- */
-#if !defined(SX1276_BOARD_AVAILABLE)
+/*! Board MCU pins definitions */
+#if !defined(SX1276_BOARD_EMBED)
 #define LED_1                          PA_2
 #define LED_2                          PA_1
 #define LED_3                          PD_5
@@ -118,26 +117,6 @@
 #define SWITCH_B                       PC_1
 
 #if defined(SX1276_BOARD_EMBED)
-
-#define RADIO_RESET                    PB_0
-
-#define RADIO_SPI_INSTANCE             1
-#define RADIO_MOSI                     PD_6
-#define RADIO_MISO                     PD_7
-#define RADIO_SCLK                     PD_5
-#define RADIO_NSS                      PD_4
-
-#define RADIO_DIO_0                    PB_16
-#define RADIO_DIO_1                    PA_2
-#define RADIO_DIO_2                    PA_4
-#define RADIO_DIO_3                    PB_18
-#define RADIO_DIO_4_A                  PB_19
-#define RADIO_DIO_4_B                  PC_2
-#define RADIO_DIO_5                    PA_1
-
-#define RADIO_ANT_SWITCH_RX_TX         PB_3
-
-#elif defined(SX1276_BOARD_FREEDOM)
 
 #define RADIO_RESET                    PB_0
 
@@ -189,59 +168,13 @@
 #define I2C_SCL                        PB_2
 #define I2C_SDA                        PB_3
 
+/* Uart pin definition */
 #define UART0_RX                       PD_6
 #define UART0_TX                       PD_7
 #define UART1_RX                       PE_1
 #define UART1_TX                       PE_0
 
-/*!
- * LED GPIO pin objects
- */
-#if !defined(SX1276_BOARD_EMBED)
-extern Gpio_t Led1;
-extern Gpio_t Led2;
-extern Gpio_t Led3;
-#endif
-
-/*!
- * Button GPIO pin objects
- */
-extern Gpio_t SwitchA;
-extern Gpio_t SwitchB;
-
-/*!
- * External GPS interrupt
- */
-extern Gpio_t GpsPps;
-
-/*!
- * IRQ GPIO pin objects
- */
-#if !defined(SX1276_BOARD_AVAILABLE)
-extern Gpio_t Irq1Fxos8700;
-extern Gpio_t Irq2Fxos8700;
-#endif
-
-/*!
- * MCU objects
- */
-extern Adc_t Adc;
-extern I2c_t I2c;
-#if !defined(SX1276_BOARD_AVAILABLE)
-extern I2C_TypeDef Fxos;
-#endif
-extern Uart_t Lpuart;
-extern Uart_t Uart0;
-extern Uart_t Uart1;
-extern Uart_t Uart2;
-#if defined( USE_USB_CDC )
-extern Uart_t UartUsb;
-#endif
-
-/*!
- * MCU clock configuration
- */
-
+/*! MCU clock configuration */
 #define CLOCK_VLPR 1U
 #define CLOCK_RUN  2U
 #define CLOCK_NUMBER_OF_CONFIGURATIONS 3U
@@ -280,6 +213,46 @@ extern Uart_t UartUsb;
 
 #define BOARD_RTC_CLK_FREQUENCY        32768U;
 
+/*******************************************************************************
+ * PUBLIC VARIABLES
+ ******************************************************************************/
+#if !defined(SX1276_BOARD_EMBED)
+/*! LED GPIO pin objects */
+extern Gpio_t Led1;
+extern Gpio_t Led2;
+extern Gpio_t Led3;
+#endif
+
+/*! Button GPIO pin objects */
+extern Gpio_t SwitchA;
+extern Gpio_t SwitchB;
+
+/*! External GPS interrupt */
+extern Gpio_t GpsPps;
+
+#if !defined(SX1276_BOARD_EMBED)
+/*! IRQ GPIO pin objects */
+extern Gpio_t Irq1Fxos8700;
+extern Gpio_t Irq2Fxos8700;
+#endif
+
+/*! MCU objects  */
+extern Adc_t Adc;
+extern I2c_t I2c;
+#if !defined(SX1276_BOARD_EMBED)
+extern I2C_TypeDef Fxos;
+#endif
+extern Uart_t Lpuart;
+extern Uart_t Uart0;
+extern Uart_t Uart1;
+extern Uart_t Uart2;
+#if defined( USE_USB_CDC )
+extern Uart_t UartUsb;
+#endif
+
+/*******************************************************************************
+ * MODULE FUNCTION PROTOTYPES (PUBLIC)
+ ******************************************************************************/
 /*!
  * \brief Initializes the target board peripherals.
  */

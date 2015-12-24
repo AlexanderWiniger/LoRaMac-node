@@ -54,7 +54,7 @@ ForwardListNode_t *forward_list_insert_after( ForwardListNode_t *list, uint32_t 
     ForwardListNode_t *newNode;
     newNode = forward_list_create(data);
 
-    while ( position > 0 ) {
+    while (position > 0) {
         list = list->next;
         position--;
     }
@@ -66,7 +66,7 @@ ForwardListNode_t *forward_list_insert_after( ForwardListNode_t *list, uint32_t 
 
 void forward_list_erase_after( ForwardListNode_t *list, uint32_t position )
 {
-    while ( position > 0 ) {
+    while (position > 0) {
         list = list->next;
         position--;
     }
@@ -76,29 +76,28 @@ void forward_list_erase_after( ForwardListNode_t *list, uint32_t position )
 
 uint8_t forward_list_remove( ForwardListNode_t *list, ForwardListNode_t *node )
 {
-    while ( list->next && list->next != node )
+    while (list->next && list->next != node)
         list = list->next;
     if ( list->next ) {
         list->next = node->next;
         custom_free(node);
         return ERR_OK;
-    } else
-        return ERR_FAILED;
+    } else return ERR_FAILED;
 }
 
 uint8_t forward_list_foreach( ForwardListNode_t *node, uint8_t (*func)( void* ) )
 {
-    while ( node ) {
+    while (node) {
         if ( func(node->data) != ERR_OK ) return ERR_FAILED;
         node = node->next;
     }
     return ERR_OK;
 }
 
-ForwardListNode_t *forward_list_find( ForwardListNode_t *node, uint8_t (*func)( void*, void* ),
-        void *data )
+ForwardListNode_t *forward_list_find( ForwardListNode_t *node,
+        uint8_t (*func)( void*, void* ), void *data )
 {
-    while ( node ) {
+    while (node) {
         if ( func(node->data, data) == ERR_OK ) return node;
         node = node->next;
     }
@@ -109,7 +108,7 @@ uint32_t forward_list_size( ForwardListNode_t *list )
 {
     uint32_t size = 0;
 
-    while ( list != NULL ) {
+    while (list != NULL) {
         list = list->next;
         size++;
     }
@@ -152,7 +151,7 @@ ListNode_t *list_push_back( ListNode_t *list, void *data )
     ListNode_t *newNode;
     newNode = list_create(data);
 
-    while ( list->next != NULL )
+    while (list->next != NULL)
         list = list->next;
 
     list->next = newNode;
@@ -165,7 +164,7 @@ ListNode_t * list_pop_back( ListNode_t *list )
 {
     ListNode_t *newTail;
 
-    while ( list->next != NULL )
+    while (list->next != NULL)
         list = list->next;
 
     newTail = list->prev;
@@ -180,7 +179,7 @@ ListNode_t *list_insert( ListNode_t *list, uint32_t position, void *data )
     ListNode_t *newNode;
     newNode = list_create(data);
 
-    while ( position > 0 ) {
+    while (position > 0) {
         list = list->next;
         position--;
     }
@@ -194,7 +193,7 @@ ListNode_t *list_insert( ListNode_t *list, uint32_t position, void *data )
 
 void list_erase( ListNode_t *list, uint32_t position )
 {
-    while ( position > 0 ) {
+    while (position > 0) {
         list = list->next;
         position--;
     }
@@ -206,20 +205,19 @@ void list_erase( ListNode_t *list, uint32_t position )
 
 uint8_t list_remove( ListNode_t *list, ListNode_t *node )
 {
-    while ( list != node )
+    while (list != node)
         list = list->next;
     if ( list ) {
         list->prev->next = list->next;
         list->next->prev = list->prev;
         custom_free(node);
         return ERR_OK;
-    } else
-        return ERR_FAILED;
+    } else return ERR_FAILED;
 }
 
 uint8_t list_foreach( ListNode_t *node, uint8_t (*func)( void* ) )
 {
-    while ( node ) {
+    while (node) {
         if ( func(node->data) != ERR_OK ) return ERR_FAILED;
         node = node->next;
     }
@@ -228,7 +226,7 @@ uint8_t list_foreach( ListNode_t *node, uint8_t (*func)( void* ) )
 
 ListNode_t *list_find( ListNode_t *node, uint8_t (*func)( void*, void* ), void *data )
 {
-    while ( node ) {
+    while (node) {
         if ( func(node->data, data) > 0 ) return node;
         node = node->next;
     }
@@ -239,7 +237,7 @@ uint32_t list_size( ListNode_t *list )
 {
     uint32_t size = 0;
 
-    while ( list != NULL ) {
+    while (list != NULL) {
         list = list->next;
         size++;
     }

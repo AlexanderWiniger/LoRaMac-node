@@ -13,6 +13,7 @@
 #include <math.h>
 #include "board.h"
 
+#include "Shell.h"
 #include "LoRaMesh_App.h"
 #include "LoRaMacCrypto.h"
 
@@ -25,15 +26,6 @@
 /*! Main application entry point. */
 void main( void )
 {
-#if 0
-    ForwardListNode_t* forwardList = forward_list_create((void*) 0);
-
-    forward_list_push_front(forwardList, (void*) 1);
-    forward_list_push_front(forwardList, (void*) 2);
-    forward_list_push_front(forwardList, (void*) 3);
-    forward_list_push_front(forwardList, (void*) 4);
-
-#else
     BoardInitMcu();
 
     LOG_DEBUG("Mcu initialized.");
@@ -42,6 +34,14 @@ void main( void )
     BoardInitPeriph();
     LOG_DEBUG("Peripherals initialized.");
 
+#if defined( USE_SHELL )
+#if defined (USE_USB_CDC)
+    Shell_Init (&UartUsb);
+#else
+    Shell_Init (&Uart1);
+#endif /* USE_USB_CDC */
+#endif /* USE_SHELL */
+
     LoRaMesh_AppInit();
 
     vTaskStartScheduler();
@@ -49,7 +49,6 @@ void main( void )
     for ( ;; ) {
         /* Should not be reached */
     }
-#endif
 }
 
 /*******************************************************************************

@@ -6,6 +6,9 @@
  *
  */
 
+/*******************************************************************************
+ * INCLUDE FILES
+ ******************************************************************************/
 #include "board.h"
 #include "fsl_clock_manager.h"
 #include "fsl_os_abstraction.h"
@@ -13,48 +16,13 @@
 #include "fsl_rnga_driver.h"
 #include "fsl_smc_hal.h"
 
-/*!
- * LED GPIO pin objects
- */
-#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
-Gpio_t Led1;
-Gpio_t Led2;
-Gpio_t Led3;
-#endif
-
-/*!
- * Button GPIO pin objects
- */
-Gpio_t SwitchA;
-Gpio_t SwitchB;
-
-/*!
- * External GPS interrupt
- */
-Gpio_t GpsPps;
-
-/*!
- * IRQ GPIO pin objects
- */
-#if !defined(SX1276_BOARD_AVAILABLE)
-Gpio_t Irq1Fxos8700cq;
-Gpio_t Irq2Fxos8700cq;
-#endif
-
-/*!
- * MCU objects
- */
-Adc_t Adc;
-I2c_t I2c;
-#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
-I2C_TypeDef Fxos;
-#endif
-Uart_t Lpuart;
-Uart_t Uart0;
-Uart_t Uart1;
-Uart_t Uart2;
-#if defined( USE_USB_CDC )
-Uart_t UartUsb;
+/*******************************************************************************
+ * PRIVATE COSNTANTS DEFINITIONS
+ ******************************************************************************/
+#if defined( USE_SHELL )
+/*! FIFO buffers size */
+#define FIFO_TX_SIZE                                128
+#define FIFO_RX_SIZE                                128
 #endif
 
 /*!
@@ -128,16 +96,63 @@ const clock_manager_user_config_t g_defaultClockConfigRun =
     }
 };
 
+/*******************************************************************************
+ * PUBLIC VARIABLES
+ ******************************************************************************/
+#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
+/*! LED GPIO pin objects */
+Gpio_t Led1;
+Gpio_t Led2;
+Gpio_t Led3;
+#endif
+
+/*! Button GPIO pin objects */
+Gpio_t SwitchA;
+Gpio_t SwitchB;
+
+/*! External GPS interrupt */
+Gpio_t GpsPps;
+
+#if !defined(SX1276_BOARD_AVAILABLE)
+/*! IRQ GPIO pin objects */
+Gpio_t Irq1Fxos8700cq;
+Gpio_t Irq2Fxos8700cq;
+#endif
+
 /*!
- * Initializes the unused GPIO to a known status
+ * MCU objects
  */
+Adc_t Adc;
+I2c_t I2c;
+#if !defined(SX1276_BOARD_FREEDOM) && !defined(SX1276_BOARD_EMBED)
+I2C_TypeDef Fxos;
+#endif
+Uart_t Lpuart;
+Uart_t Uart0;
+Uart_t Uart1;
+Uart_t Uart2;
+#if defined( USE_USB_CDC )
+Uart_t UartUsb;
+#endif
+
+/*******************************************************************************
+ * PRIVATE VARIABLES (STATIC)
+ ******************************************************************************/
+/*! Initializes the unused GPIO to a known status */
 static void BoardUnusedIoInit( void );
 
-/*!
- * Flag to indicate if the MCU is Initialized
- */
+/*! Flag to indicate if the MCU is Initialized */
 static bool McuInitialized = false;
 
+#if defined( USE_SHELL )
+/*! FIFO buffers */
+uint8_t TxBuffer[FIFO_TX_SIZE];
+uint8_t RxBuffer[FIFO_RX_SIZE];
+#endif
+
+/*******************************************************************************
+ * MODULE FUNCTIONS (PUBLIC)
+ ******************************************************************************/
 void BoardInitPeriph( void )
 {
     /* Init the LED GPIO pins */
@@ -245,9 +260,18 @@ void BoardInitMcu( void )
         SX1276IoInit();
 #endif
 
-#if defined( USE_USB_CDC )
+#if defined( USE_SHELL )
+#if defined (USE_USB_CDC)
         UartInit( &UartUsb, UART_USB_CDC, NC, NC );
         UartConfig( &UartUsb, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL );
+        TimerSetLowPowerEnable(false);
+#else
+        FifoInit(&Uart1.FifoTx, TxBuffer, FIFO_TX_SIZE);
+        FifoInit(&Uart1.FifoRx, RxBuffer, FIFO_RX_SIZE);
+        UartInit(&Uart1, UART_1, UART1_TX, UART1_RX);
+        UartConfig(&Uart1, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY,
+                NO_FLOW_CTRL);
+#endif /* USE_USB_CDC */ 
 #elif defined(DEBUG)
         GpioInit(&Uart1.Tx, UART1_TX, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
         GpioInit(&Uart1.Rx, UART1_RX, PIN_ALTERNATE_FCT, PIN_PUSH_PULL, PIN_PULL_UP, 1);
@@ -255,8 +279,6 @@ void BoardInitMcu( void )
         TimerSetLowPowerEnable(false);
 #elif( LOW_POWER_MODE_ENABLE )
         TimerSetLowPowerEnable( true );
-#else
-        TimerSetLowPowerEnable(false);
 #endif
         BoardUnusedIoInit();
 

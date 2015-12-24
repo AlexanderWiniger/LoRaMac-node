@@ -41,9 +41,8 @@ void BoardInitPeriph( void )
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
     /* Init GPS */
-    GpsInit();
-
-    // Switch LED 1 OFF
+//    GpsInit();
+// Switch LED 1 OFF
     GpioWrite(&Led1, 1);
 }
 

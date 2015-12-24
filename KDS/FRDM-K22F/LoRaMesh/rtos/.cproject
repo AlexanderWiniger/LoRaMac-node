@@ -55,6 +55,7 @@
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.2003619582" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler">
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths.1735550252" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/rtos/FRDM-K22F"/>
+									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/rtos/Shell"/>
 									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/rtos/LoRaStack"/>
 									<listOptionValue builtIn="false" value="../../../../../src/system"/>
 									<listOptionValue builtIn="false" value="../../../../../src/system/crypto"/>
@@ -131,8 +132,12 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.1075752200.453274217" name="custom_list.h" rcbsApplicability="disable" resourcePath="src/boards/mcu/kinetis/utilities/custom_list.h" toolsToInvoke=""/>
+					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.1075752200.1042306224" name="custom_list.c" rcbsApplicability="disable" resourcePath="src/boards/mcu/kinetis/utilities/custom_list.c" toolsToInvoke="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.2003619582.1447371740">
+						<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.2003619582.1447371740" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.2003619582"/>
+					</fileInfo>
 					<sourceEntries>
-						<entry excluding="src/boards/mcu/kinetis/utilities/LinkedList.h|src/boards/mcu/kinetis/utilities/LinkedList.c|src/boards/mcu/kinetis/k20d|src/boards/mcu/kinetis/kl26z|src/radio/sx1272" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/boards/mcu/kinetis/utilities/custom_list.c|src/boards/mcu/kinetis/utilities/custom_list.h|src/boards/mcu/kinetis/utilities/LinkedList.h|src/boards/mcu/kinetis/utilities/LinkedList.c|src/boards/mcu/kinetis/k20d|src/boards/mcu/kinetis/kl26z|src/radio/sx1272" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

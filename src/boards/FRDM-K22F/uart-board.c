@@ -202,9 +202,9 @@ uint8_t UartMcuPutChar(Uart_t *obj, uint8_t data)
         } else {
             UART_HAL_SetIntMode(g_uartBase[obj->UartId], kUartIntTxDataRegEmpty, true);
         }
-        return 0;   // OK
+        return ERR_OK;   // OK
     }
-    return 1;   // Busy
+    return ERR_TXFULL;   // Busy
 }
 
 uint8_t UartMcuGetChar(Uart_t *obj, uint8_t *data)
@@ -213,9 +213,9 @@ uint8_t UartMcuGetChar(Uart_t *obj, uint8_t *data)
         INT_SYS_DisableIRQGlobal();
         *data = FifoPop(&obj->FifoRx);
         INT_SYS_EnableIRQGlobal();
-        return 0;
+        return ERR_OK;
     }
-    return 1;
+    return ERR_RXEMPTY;
 }
 
 void UartInterruptHandler(Uart_t *obj)

@@ -20,17 +20,25 @@
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
  ******************************************************************************/
+#define MAX_NOF_SCHEDULER_EVENTS            LORAMESH_CONFIG_MAX_NOF_SCHEDULER_EVENTS
+#define MAX_NOF_MULTICAST_GROUPS            LORAMESH_CONFIG_MAX_NOF_MULTICAST_GROUPS
+#define MAX_NOF_CHILD_NODES                 LORAMESH_CONFIG_MAX_NOF_CHILD_NODES
 
+#define ADVERTISING_RESERVED_TIME           2000
+#define UPLINK_RESERVED_TIME                1000
+#define MULTICAST_RESERVED_TIME             3000
+#define RECEPTION_RESERVED_TIME             3000
 /*******************************************************************************
  * PRIVATE TYPE DEFINITIONS
  ******************************************************************************/
-typedef struct {
+typedef struct LoRaMeshEvent_s {
     uint32_t slot;
     TimerEvent_t *timer;
     TimerTime_t reservedTime;
     TimerTime_t nextOccurenceTime;
     LoRaSchedulerEventCallback_t callback;
     void *param;
+    struct LoRaMeshEvent_s *nextEvent;
 } LoRaMeshEvent_t;
 
 /*******************************************************************************
@@ -38,12 +46,6 @@ typedef struct {
  ******************************************************************************/
 /*! LoRaMesh upper layer event functions */
 static LoRaMeshCallbacks_t *LoRaMeshCallbacks;
-
-/*! Application Session Key */
-static uint8_t LoRaAppSKey[16] = { 0 };
-
-/*! Network Session Key */
-static uint8_t LoRaNwkSKey[16] = { 0 };
 
 /*! LoRaWAN device pointer */
 static LoRaDevice_t LoRaDevice = {
@@ -68,8 +70,8 @@ static LoRaDevice_t LoRaDevice = {
     .macCmdBufferIndex = 0u,
     .upLinkSlot = {
         .Address = 0x00,
-        .AppSKey = (uint8_t*)&LoRaAppSKey,
-        .NwkSKey = (uint8_t*)&LoRaNwkSKey,
+        .AppSKey = {0},
+        .NwkSKey = {0},
         .UpLinkCounter = 1u,
         .DownLinkCounter = 0u,
         .ChannelIndex = 0u,
@@ -86,10 +88,21 @@ static LoRaDevice_t LoRaDevice = {
 };
 
 /*! Scheduler */
-static ForwardListNode_t *pEventScheduler;
+static LoRaMeshEvent_t eventSchedulerList[MAX_NOF_SCHEDULER_EVENTS];
+static LoRaMeshEvent_t *pEventScheduler;
+static LoRaMeshEvent_t *pNextFreeSchedulerEvent;
+
+/*! Multicast groups */
+static MulticastGroupInfo_t multicastGrpList[MAX_NOF_MULTICAST_GROUPS];
+static MulticastGroupInfo_t *pNextFreeMulticastGrp;
+
+/*! Child nodes */
+static ChildNodeInfo_t childNodeList[MAX_NOF_CHILD_NODES];
+static ChildNodeInfo_t *pNextFreeChildNode;
 
 /*! Rx message handlers */
-static ForwardListNode_t *pPortHandlers;
+static PortHandler_t portHandlers[LORAFRM_NOF_USABLE_FPORT];
+static PortHandler_t *pPortHandlers;
 /*******************************************************************************
  * PRIVATE FUNCTION PROTOTYPES (STATIC)
  ******************************************************************************/
@@ -103,11 +116,11 @@ static uint8_t CalculateNodeRank( void );
 static uint8_t ScheduleEvent( TimerTime_t interval, LoRaSchedulerEventType_t type,
         LoRaSchedulerEventCallback_t callback, void* param );
 
+/*! */
+static TimerTime_t FindFreeSlot( TimerTime_t interval, LoRaSchedulerEventType_t type );
+
 /*!  */
 static void RemoveEvent( void );
-
-/*  */
-ForwardListNode_t *FindPortHandler( uint8_t fPort );
 
 /*! \brief Create new child node with given data. */
 ChildNodeInfo_t* CreateChildNode( uint32_t devAddr, uint8_t* nwkSKey, uint8_t* appSKey,
@@ -120,14 +133,11 @@ void ChildNodeAdd( ChildNodeInfo_t* childNode );
 void ChildNodeRemove( ChildNodeInfo_t* childNode );
 
 /*! \brief Find child node from the list. */
-uint8_t ChildNodeFind( void* firstChildNode, void* secondChildNode );
-
-/*! \brief Print out child node information. */
-uint8_t ChildNodePrint( void* data );
+ChildNodeInfo_t *ChildNodeFind( uint32_t childAddr );
 
 /*! \brief Create new child node with given data. */
-MulticastGroupInfo_t* CreateMulticastGroup( uint32_t grpAddr, uint8_t* nwkSKey, uint8_t* appSKey,
-        uint32_t channel, uint32_t interval );
+MulticastGroupInfo_t* CreateMulticastGroup( uint32_t grpAddr, uint8_t* nwkSKey,
+        uint8_t* appSKey, uint32_t channel, uint32_t interval );
 
 /*! \brief Add mutlicast group. */
 void MulticastGroupAdd( MulticastGroupInfo_t *multicastGrp );
@@ -135,11 +145,20 @@ void MulticastGroupAdd( MulticastGroupInfo_t *multicastGrp );
 /*! \brief Remove multicast group. */
 void MulticastGroupRemove( MulticastGroupInfo_t *multicastGrp );
 
-/*! \brief Find child node from the list. */
-uint8_t MulticastGroupFind( void* firstGrp, void* secondGrp );
+/*! \brief Find multicast group from the list. */
+MulticastGroupInfo_t *MulticastGroupFind( uint32_t grpAddr );
+
+/*!  */
+static uint8_t PrintStatus( Shell_ConstStdIO_t *io );
+
+/*!  */
+static uint8_t PrintHelp( Shell_ConstStdIO_t *io );
+
+/*! \brief Print out child node information. */
+static uint8_t PrintChildNodes( Shell_ConstStdIO_t *io );
 
 /*! \brief Print out multicast group information. */
-uint8_t MulticastGroupPrint( void* data );
+static uint8_t PrintMulticastGroups( Shell_ConstStdIO_t *io );
 
 /*******************************************************************************
  * MODULE VARIABLES (PUBLIC)
@@ -162,30 +181,68 @@ extern LoRaDevice_t* pLoRaDevice;
 /*******************************************************************************
  * MODULE FUNCTIONS (PUBLIC)
  ******************************************************************************/
-void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks, LoRaMac_BatteryLevelCallback_t batteryLevelCb )
+byte LoRaMesh_ParseCommand( const unsigned char *cmd, bool *handled,
+        Shell_ConstStdIO_t *io )
 {
+    if ( strcmp((char*) cmd, SHELL_CMD_HELP) == 0
+            || strcmp((char*) cmd, "LoRaMesh help") == 0 ) {
+        *handled = true;
+        return PrintHelp(io);
+    } else if ( (strcmp((char*) cmd, SHELL_CMD_STATUS) == 0)
+            || (strcmp((char*) cmd, "LoRaMesh status") == 0) ) {
+        *handled = true;
+        return PrintStatus(io);
+    } else if ( (strcmp((char*) cmd, "LoRaMesh childnodes") == 0) ) {
+        *handled = true;
+        return PrintChildNodes(io);
+    } else if ( (strcmp((char*) cmd, "LoRaMesh multicastgroups") == 0) ) {
+        *handled = true;
+        return PrintMulticastGroups(io);
+    }
+    return ERR_OK;
+}
+
+void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks )
+{
+    uint8_t i;
+
     LoRaMeshCallbacks = callbacks;
 
     /* Assign LoRa device structure pointer */
     pLoRaDevice = (LoRaDevice_t*) &LoRaDevice;
 
     /* Create a list with rx message handler */
-    pPortHandlers = NULL;
+    pPortHandlers = portHandlers;
 
-    /* Create scheduler list */
-    LoRaMeshEvent_t *advEvent = (LoRaMeshEvent_t*) custom_malloc(sizeof(LoRaMeshEvent_t));
-    advEvent->slot = 0;
-    advEvent->reservedTime = 2000 / portTICK_PERIOD_MS;
-    advEvent->nextOccurenceTime = 30000 / portTICK_PERIOD_MS;
-    pEventScheduler = forward_list_create((void*) advEvent);
+    /* Init scheduler list */
+    pEventScheduler = NULL;
+    pNextFreeSchedulerEvent = eventSchedulerList;
+    for ( i = 0; i < MAX_NOF_SCHEDULER_EVENTS - 1; i++ ) {
+        eventSchedulerList[i].nextEvent = &eventSchedulerList[i + 1];
+    }
+    /* Schedule advertising */
+    ScheduleEvent(30000, EVENT_TYPE_ADVERTISING, NULL, NULL);
+
+    /* Init child node list */
+    pNextFreeChildNode = childNodeList;
+    for ( i = 0; i < MAX_NOF_CHILD_NODES - 1; i++ ) {
+        childNodeList[i].nextSlot = &childNodeList[i + 1];
+    }
+
+    /* Init multicast group list */
+    pNextFreeMulticastGrp = multicastGrpList;
+    for ( i = 0; i < MAX_NOF_MULTICAST_GROUPS - 1; i++ ) {
+        multicastGrpList[i].nextSlot = &multicastGrpList[i + 1];
+    }
 
     /* Initialize stack */
     LoRaFrm_Init();
-    LoRaMac_Init(batteryLevelCb);
+    LoRaMac_Init(LoRaMeshCallbacks->GetBatteryLevel);
     LoRaPhy_Init();
 }
 
-void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint8_t *appSKey )
+void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey,
+        uint8_t *appSKey )
 {
     pLoRaDevice->netId = netID;
     pLoRaDevice->devAddr = devAddr;
@@ -200,32 +257,23 @@ void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, ui
 
 uint8_t LoRaMesh_RegisterApplicationPort( PortHandlerFunction_t fHandler, uint8_t fPort )
 {
-    PortHandler_t *tempPortHandler;
-
     if ( fPort < 1 || fPort > 223 ) return ERR_RANGE;
 
-    tempPortHandler = (PortHandler_t*) custom_malloc(sizeof(PortHandler_t));
-    tempPortHandler->Handler = fHandler;
-    tempPortHandler->Port = fPort;
-
-    if ( pPortHandlers == NULL ) {
-        /* Create list rx message handler */
-        pPortHandlers = forward_list_create((void*) tempPortHandler);
-    } else {
-        if ( FindPortHandler(fPort) != NULL ) {
-            /* Port is not yet registered */
-            (ForwardListNode_t*) forward_list_push_front(pPortHandlers, (void*) tempPortHandler);
-        }
+    if ( pPortHandlers[fPort - 1].Handler != NULL ) {
+        pPortHandlers[fPort - 1].Handler = fHandler;
+        return ERR_OK;
     }
-
-    return ERR_OK;
+    return ERR_FAILED;
 }
 
 uint8_t LoRaMesh_RemoveApplicationPort( PortHandlerFunction_t fHandler, uint8_t fPort )
 {
-    ForwardListNode_t *node = FindPortHandler(fPort);
+    if ( fPort < 1 || fPort > 223 ) return ERR_RANGE;
 
-    if ( node != NULL ) return forward_list_remove(pPortHandlers, node);
+    if ( pPortHandlers[fPort - 1].Handler == fHandler ) {
+        pPortHandlers[fPort - 1].Handler = NULL;
+        return ERR_OK;
+    }
 
     return ERR_FAILED;
 }
@@ -244,7 +292,7 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
     }
 
     i = 0;
-    while ( i < appPayloadSize ) {
+    while (i < appPayloadSize) {
         buf[LORAMESH_BUF_PAYLOAD_START(buf) + i] = *appPayload;
         appPayload++;
         i++;
@@ -257,12 +305,11 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
 uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort,
         LoRaFrm_Type_t fType )
 {
-    switch ( fType ) {
+    switch (fType) {
         case FRM_TYPE_REGULAR:
             if ( fPort > 0 ) {
-                ForwardListNode_t *node = FindPortHandler(fPort);
-                if ( node != NULL ) {
-                    ((PortHandler_t*) node->data)->Handler(buf, payloadSize, fPort);
+                if ( pPortHandlers[fPort - 1].Handler != NULL ) {
+                    pPortHandlers[fPort - 1].Handler(buf, payloadSize, fPort);
                 }
             }
             break;
@@ -276,8 +323,8 @@ uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort,
     return ERR_FAILED;
 }
 
-uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
-        LoRaFrm_Type_t fType )
+uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
+        uint8_t fPort, LoRaFrm_Type_t fType )
 {
     /* Add app information */
 #if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
@@ -287,7 +334,8 @@ uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize
     LOG_TRACE_BARE("0x%02x ", buf[i]);
     LOG_TRACE_BARE("\r\n");
 #endif
-    return LoRaFrm_PutPayload(buf, bufSize, payloadSize, fPort, fType, UP_LINK, false, false);
+    return LoRaFrm_PutPayload(buf, bufSize, payloadSize, fPort, fType, UP_LINK, false,
+            false);
 }
 
 uint8_t LoRaMesh_ProcessAdvertising( uint8_t *aPayload, uint8_t aPayloadSize )
@@ -310,7 +358,8 @@ uint8_t LoRaMesh_JoinReq( uint8_t * devEui, uint8_t * appEui, uint8_t * appKey )
     memcpy(&LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize], devEui, 8);
     mPayloadSize += 8;
     LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = pLoRaDevice->devNonce & 0xFF;
-    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devNonce >> 8) & 0xFF;
+    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devNonce >> 8)
+            & 0xFF;
 
     return LoRaMac_PutPayload((uint8_t*) &mPayload, sizeof(mPayload), mPayloadSize,
             MSG_TYPE_JOIN_REQ);
@@ -333,12 +382,11 @@ bool LoRaMesh_IsNetworkJoined( void )
 ChildNodeInfo_t* LoRaMesh_FindChildNode( uint32_t devAddr )
 {
     if ( pLoRaDevice->childNodes != NULL ) {
-        ForwardListNode_t *child = pLoRaDevice->childNodes;
+        ChildNodeInfo_t *childNode = pLoRaDevice->childNodes;
 
-        while ( child != NULL ) {
-            if ( ((ChildNodeInfo_t*) child->data)->Connection.Address == devAddr )
-                return (ChildNodeInfo_t*) child->data;
-            child = child->next;
+        while (childNode != NULL) {
+            if ( childNode->Connection.Address == devAddr ) return childNode;
+            childNode = childNode->nextSlot;
         }
     }
 
@@ -348,12 +396,11 @@ ChildNodeInfo_t* LoRaMesh_FindChildNode( uint32_t devAddr )
 MulticastGroupInfo_t* LoRaMesh_FindMulticastGroup( uint32_t grpAddr )
 {
     if ( pLoRaDevice->multicastGroups != NULL ) {
-        ForwardListNode_t *grp = pLoRaDevice->multicastGroups;
+        MulticastGroupInfo_t *grp = pLoRaDevice->multicastGroups;
 
-        while ( grp != NULL ) {
-            if ( ((ChildNodeInfo_t*) grp->data)->Connection.Address == grpAddr )
-                return (ChildNodeInfo_t*) grp->data;
-            grp = grp->next;
+        while (grp != NULL) {
+            if ( grp->Connection.Address == grpAddr ) return grp;
+            grp = grp->nextSlot;
         }
     }
 
@@ -376,18 +423,7 @@ void LoRaMesh_SetAdrOn( bool enable )
         pLoRaDevice->ctrlFlags.Bits.adrCtrlOn = (enable ? 1U : 0U);
     }
 }
-/*******************************************************************************
- * PRINT OUT FUNCTIONS (PUBLIC)
- ******************************************************************************/
-void LoRaMesh_PrintChildNodes( void )
-{
-    forward_list_foreach(pLoRaDevice->childNodes, &ChildNodePrint);
-}
 
-void LoRaMesh_PrintMulticastGroups( void )
-{
-    forward_list_foreach(pLoRaDevice->multicastGroups, &MulticastGroupPrint);
-}
 /*******************************************************************************
  * TEST FUNCTIONS (PUBLIC) (FOR DEBUG PURPOSES ONLY)
  ******************************************************************************/
@@ -421,16 +457,32 @@ void LoRaMesh_TestSetMic( uint16_t upLinkCounter )
 static uint8_t ScheduleEvent( TimerTime_t interval, LoRaSchedulerEventType_t type,
         LoRaSchedulerEventCallback_t callback, void* param )
 {
-    ForwardListNode_t *node = pEventScheduler;
+    TimerTime_t eventTime = FindFreeSlot(interval, type);
 
-    while ( node != NULL ) {
-        if ( ((LoRaMeshEvent_t*) node->data)->nextOccurenceTime ) break;
+    if ( eventTime > 0 ) {
+
     }
 }
 
 static TimerTime_t FindFreeSlot( TimerTime_t interval, LoRaSchedulerEventType_t type )
 {
-
+    TimerTime_t reserved;
+    switch (type) {
+        case EVENT_TYPE_ADVERTISING:
+            reserved = ADVERTISING_RESERVED_TIME;
+            break;
+        case EVENT_TYPE_UPLINK:
+            reserved = UPLINK_RESERVED_TIME;
+            break;
+        case EVENT_TYPE_MULTICAST:
+            reserved = MULTICAST_RESERVED_TIME;
+            break;
+        case EVENT_TYPE_RECEPTION:
+            reserved = RECEPTION_RESERVED_TIME;
+            break;
+        default:
+            break;
+    }
 }
 
 /*!
@@ -465,20 +517,6 @@ uint8_t CalculateNodeRank( void )
 }
 
 /*!
- *
- */
-ForwardListNode_t *FindPortHandler( uint8_t fPort )
-{
-    ForwardListNode_t *node = pPortHandlers;
-
-    while ( node != NULL ) {
-        if ( ((PortHandler_t*) node->data)->Port == fPort ) return node;
-    }
-
-    return NULL;
-}
-
-/*!
  * \brief Create new child node with given data
  *
  * \param devAddr Device address of the child node
@@ -490,18 +528,23 @@ ForwardListNode_t *FindPortHandler( uint8_t fPort )
 ChildNodeInfo_t* CreateChildNode( uint32_t devAddr, uint8_t* nwkSKey, uint8_t* appSKey,
         uint32_t channel, uint32_t interval )
 {
-    ChildNodeInfo_t* newNode = (ChildNodeInfo_t*) custom_malloc(sizeof(ChildNodeInfo_t));
-    newNode->Connection.Address = devAddr;
-    newNode->Connection.NwkSKey = nwkSKey;
-    newNode->Connection.AppSKey = appSKey;
-    newNode->Connection.UpLinkCounter = 0;
-    newNode->Connection.ChannelIndex = channel;
-    newNode->Connection.DataRateIndex = LORAMAC_DEFAULT_DATARATE;
-    newNode->Connection.TxPowerIndex = LORAMAC_DEFAULT_TX_POWER;
-    newNode->Periodicity = interval;
-    newNode->Duration = 0u;
+    ChildNodeInfo_t* newNode = pNextFreeChildNode;
 
-    return newNode;
+    if ( newNode != NULL ) {
+        pNextFreeChildNode = newNode->nextSlot;
+        newNode->Connection.Address = devAddr;
+        memcpy1(newNode->Connection.AppSKey, appSKey, 16);
+        memcpy1(newNode->Connection.NwkSKey, nwkSKey, 16);
+        newNode->Connection.UpLinkCounter = 0;
+        newNode->Connection.ChannelIndex = channel;
+        newNode->Connection.DataRateIndex = LORAMAC_DEFAULT_DATARATE;
+        newNode->Connection.TxPowerIndex = LORAMAC_DEFAULT_TX_POWER;
+        newNode->Periodicity = interval;
+        newNode->Duration = 0u;
+
+        return newNode;
+    }
+    return NULL;
 }
 
 /*!
@@ -515,9 +558,11 @@ void ChildNodeAdd( ChildNodeInfo_t* childNode )
     childNode->Connection.UpLinkCounter = 0;
 
     if ( pLoRaDevice->childNodes == NULL ) {
-        pLoRaDevice->childNodes = forward_list_create((void*) childNode);
+        childNode->nextSlot = NULL;
+        pLoRaDevice->childNodes = childNode;
     } else {
-        forward_list_push_front(pLoRaDevice->childNodes, (void*) childNode);
+        childNode->nextSlot = pLoRaDevice->childNodes;
+        pLoRaDevice->childNodes = childNode;
     }
 }
 
@@ -530,11 +575,15 @@ void ChildNodeAdd( ChildNodeInfo_t* childNode )
 void ChildNodeRemove( ChildNodeInfo_t* childNode )
 {
     if ( pLoRaDevice->childNodes != NULL ) {
-        ForwardListNode_t *node = forward_list_find(pLoRaDevice->childNodes, &ChildNodeFind,
-                (void*) childNode);
-        if ( node != NULL ) {
-            forward_list_remove(pLoRaDevice->childNodes, node);
-            custom_free(childNode);
+        ChildNodeInfo_t* iterNode = pLoRaDevice->childNodes;
+
+        while (iterNode->nextSlot != NULL) {
+            if ( iterNode->nextSlot == childNode ) {
+                iterNode->nextSlot = childNode->nextSlot;
+                childNode->nextSlot = pNextFreeChildNode;
+                pNextFreeChildNode = childNode;
+            }
+            iterNode = iterNode->nextSlot;
         }
     }
 }
@@ -542,37 +591,15 @@ void ChildNodeRemove( ChildNodeInfo_t* childNode )
 /*!
  *
  */
-uint8_t ChildNodeFind( void* firstChildNode, void* secondChildNode )
+ChildNodeInfo_t *ChildNodeFind( uint32_t childAddr )
 {
-    if ( ((ChildNodeInfo_t*) firstChildNode)->Connection.Address
-            == ((ChildNodeInfo_t*) secondChildNode)->Connection.Address ) return ERR_OK;
-    return ERR_FAILED;
-}
+    ChildNodeInfo_t* childNode = pLoRaDevice->childNodes;
 
-/*!
- * \brief Print out child node information.
- *
- * \param childNode Pointer to child node information to print out.
- */
-uint8_t ChildNodePrint( void* data )
-{
-    uint8_t j;
-    ChildNodeInfo_t* childNode = (ChildNodeInfo_t*) data;
-    LOG_DEBUG_BARE("------------------------------------------------\r\n");
-    LOG_DEBUG_BARE("%-15s: 0x%08x\r\n", "Address", childNode->Connection.Address);
-    LOG_DEBUG_BARE("%-15s: ", "NwkSKey");
-    for ( j = 0; j < 16; j++ )
-        LOG_DEBUG_BARE("0x%02x ", childNode->Connection.NwkSKey[j]);
-    LOG_DEBUG_BARE("\r\n%-15s: ", "AppSKey");
-    for ( j = 0; j < 16; j++ )
-        LOG_DEBUG_BARE("0x%02x ", childNode->Connection.AppSKey[j]);
-    LOG_DEBUG_BARE("%-15s: 0x%08x\r\n", "UpLinkCounter", childNode->Connection.UpLinkCounter);
-    LOG_DEBUG_BARE("\r\n---- %-15s ----\r\n", "Uplink Slot Info");
-    LOG_DEBUG_BARE("%-15s: %u\r\n", "Frequency", childNode->Connection.ChannelIndex);
-    LOG_DEBUG_BARE("%-15s: %u\r\n", "Periodicity", childNode->Periodicity);
-    LOG_DEBUG_BARE("%-15s: %u\r\n", "Duration", childNode->Duration);
-
-    return ERR_OK;
+    while (childNode != NULL) {
+        if ( childNode->Connection.Address == childAddr ) return childNode;
+        childNode = childNode->nextSlot;
+    }
+    return NULL;
 }
 
 /*!
@@ -584,22 +611,26 @@ uint8_t ChildNodePrint( void* data )
  * \param channel Channel frequency
  * \param interval Rx window interval
  */
-MulticastGroupInfo_t* CreateMulticastGroup( uint32_t grpAddr, uint8_t* nwkSKey, uint8_t* appSKey,
-        uint32_t channel, uint32_t interval )
+MulticastGroupInfo_t* CreateMulticastGroup( uint32_t grpAddr, uint8_t* nwkSKey,
+        uint8_t* appSKey, uint32_t channel, uint32_t interval )
 {
-    MulticastGroupInfo_t* newGrp = (MulticastGroupInfo_t*) custom_malloc(
-            sizeof(MulticastGroupInfo_t));
-    newGrp->Connection.Address = grpAddr;
-    newGrp->Connection.NwkSKey = nwkSKey;
-    newGrp->Connection.AppSKey = appSKey;
-    newGrp->Connection.DownLinkCounter = 0;
-    newGrp->Connection.ChannelIndex = channel;
-    newGrp->Connection.DataRateIndex = LORAMAC_DEFAULT_DATARATE;
-    newGrp->Connection.TxPowerIndex = LORAMAC_DEFAULT_TX_POWER;
-    newGrp->Periodicity = interval;
-    newGrp->Duration = 0u;
+    MulticastGroupInfo_t* newGrp = pNextFreeMulticastGrp;
 
-    return newGrp;
+    if ( newGrp != NULL ) {
+        pNextFreeMulticastGrp = newGrp->nextSlot;
+        newGrp->Connection.Address = grpAddr;
+        memcpy1(newGrp->Connection.AppSKey, appSKey, 16);
+        memcpy1(newGrp->Connection.NwkSKey, nwkSKey, 16);
+        newGrp->Connection.DownLinkCounter = 0;
+        newGrp->Connection.ChannelIndex = channel;
+        newGrp->Connection.DataRateIndex = LORAMAC_DEFAULT_DATARATE;
+        newGrp->Connection.TxPowerIndex = LORAMAC_DEFAULT_TX_POWER;
+        newGrp->Periodicity = interval;
+        newGrp->Duration = 0u;
+
+        return newGrp;
+    }
+    return NULL;
 }
 
 /*!
@@ -613,9 +644,11 @@ void MulticastGroupAdd( MulticastGroupInfo_t *multicastGrp )
     multicastGrp->Connection.DownLinkCounter = 0;
 
     if ( pLoRaDevice->multicastGroups == NULL ) {
-        pLoRaDevice->multicastGroups = forward_list_create((void*) multicastGrp);
+        multicastGrp->nextSlot = NULL;
+        pLoRaDevice->multicastGroups = multicastGrp;
     } else {
-        forward_list_push_front(pLoRaDevice->multicastGroups, (void*) multicastGrp);
+        multicastGrp->nextSlot = pLoRaDevice->multicastGroups;
+        pLoRaDevice->multicastGroups = multicastGrp;
     }
 }
 
@@ -627,11 +660,15 @@ void MulticastGroupAdd( MulticastGroupInfo_t *multicastGrp )
 void MulticastGroupRemove( MulticastGroupInfo_t *multicastGrp )
 {
     if ( pLoRaDevice->multicastGroups != NULL ) {
-        ForwardListNode_t *node = forward_list_find(pLoRaDevice->multicastGroups,
-                &MulticastGroupFind, (void*) multicastGrp);
-        if ( node != NULL ) {
-            forward_list_remove(pLoRaDevice->multicastGroups, node);
-            custom_free(multicastGrp);
+        ChildNodeInfo_t* iterGrp = pLoRaDevice->childNodes;
+
+        while (iterGrp->nextSlot != NULL) {
+            if ( iterGrp->nextSlot == multicastGrp ) {
+                iterGrp->nextSlot = multicastGrp->nextSlot;
+                multicastGrp->nextSlot = pNextFreeMulticastGrp;
+                pNextFreeMulticastGrp = multicastGrp;
+            }
+            iterGrp = iterGrp->nextSlot;
         }
     }
 }
@@ -639,11 +676,67 @@ void MulticastGroupRemove( MulticastGroupInfo_t *multicastGrp )
 /*!
  *
  */
-uint8_t MulticastGroupFind( void* firstGrp, void* secondGrp )
+MulticastGroupInfo_t *MulticastGroupFind( uint32_t grpAddr )
 {
-    if ( ((MulticastGroupInfo_t*) firstGrp)->Connection.Address
-            == ((MulticastGroupInfo_t*) secondGrp)->Connection.Address ) return ERR_OK;
-    return ERR_FAILED;
+    MulticastGroupInfo_t* grp = pLoRaDevice->childNodes;
+
+    while (grp != NULL) {
+        if ( grp->Connection.Address == grpAddr ) return grp;
+        grp = grp->nextSlot;
+    }
+    return NULL;
+}
+
+/*******************************************************************************
+ * SHELL FUNCTIONS (STATIC)
+ ******************************************************************************/
+static uint8_t PrintStatus( Shell_ConstStdIO_t *io )
+{
+    byte buf[16];
+
+    Shell_SendStatusStr((unsigned char*) "LoRaMesh", (unsigned char*) "\r\n", io->stdOut);
+
+    return ERR_OK;
+}
+
+static uint8_t PrintHelp( Shell_ConstStdIO_t *io )
+{
+    Shell_SendHelpStr((unsigned char*) "LoRaMesh",
+            (unsigned char*) "Group of LoRaMesh commands\r\n", io->stdOut);
+    Shell_SendHelpStr((unsigned char*) "  childnodes",
+            (unsigned char*) "Print child nodes list\r\n", io->stdOut);
+    Shell_SendHelpStr((unsigned char*) "  multicastgroups",
+            (unsigned char*) "Print multicast groups list\r\n", io->stdOut);
+    Shell_SendHelpStr((unsigned char*) "  help|status",
+            (unsigned char*) "Print help or status information\r\n", io->stdOut);
+
+    return ERR_OK;
+}
+
+static uint8_t PrintChildNodes( Shell_ConstStdIO_t *io )
+{
+    uint8_t j;
+    ChildNodeInfo_t* childNode = pLoRaDevice->childNodes;
+
+    while (childNode != NULL) {
+        Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
+        LOG_DEBUG_BARE("%-15s: 0x%08x\r\n", "Address", childNode->Connection.Address);
+        LOG_DEBUG_BARE("%-15s: ", "NwkSKey");
+        for ( j = 0; j < 16; j++ )
+            LOG_DEBUG_BARE("0x%02x ", childNode->Connection.NwkSKey[j]);
+        LOG_DEBUG_BARE("\r\n%-15s: ", "AppSKey");
+        for ( j = 0; j < 16; j++ )
+            LOG_DEBUG_BARE("0x%02x ", childNode->Connection.AppSKey[j]);
+        LOG_DEBUG_BARE("%-15s: 0x%08x\r\n", "UpLinkCounter",
+                childNode->Connection.UpLinkCounter);
+        Shell_SendStr((unsigned char*) "\r\n---- Uplink Slot Info ----\r\n", io->stdOut);
+        LOG_DEBUG_BARE("%-15s: %u\r\n", "Frequency", childNode->Connection.ChannelIndex);
+        LOG_DEBUG_BARE("%-15s: %u\r\n", "Periodicity", childNode->Periodicity);
+        LOG_DEBUG_BARE("%-15s: %u\r\n", "Duration", childNode->Duration);
+
+        childNode = childNode->nextSlot;
+    }
+    return ERR_OK;
 }
 
 /*!
@@ -651,27 +744,33 @@ uint8_t MulticastGroupFind( void* firstGrp, void* secondGrp )
  *
  * \param multicastGrp Pointer to multicast group information to print out.
  */
-uint8_t MulticastGroupPrint( void* data )
+static uint8_t PrintMulticastGroups( Shell_ConstStdIO_t *io )
 {
     uint8_t j;
-    MulticastGroupInfo_t* multicastGrp = (MulticastGroupInfo_t*) data;
-    LOG_DEBUG_BARE("------------------------------------------------\r\n");
-    LOG_DEBUG_BARE("%-15s: 0x%08x\r\n", "Address", multicastGrp->Connection.Address);
-    LOG_DEBUG_BARE("%-15s: ", "NwkSKey");
-    for ( j = 0; j < 16; j++ )
-        LOG_DEBUG_BARE("0x%02x ", multicastGrp->Connection.NwkSKey[j]);
-    LOG_DEBUG_BARE("\r\n%-15s: ", "AppSKey");
-    for ( j = 0; j < 16; j++ )
-        LOG_DEBUG_BARE("0x%02x ", multicastGrp->Connection.AppSKey[j]);
-    LOG_DEBUG_BARE("%-15s: 0x%08x\r\n", "DownLinkCounter",
-            multicastGrp->Connection.DownLinkCounter);
-    LOG_DEBUG_BARE("\r\n---- %-15s ----\r\n", "Downlink Slot Info");
-    LOG_DEBUG_BARE("%-15s: %u\r\n", "Frequency", multicastGrp->Connection.ChannelIndex);
-    LOG_DEBUG_BARE("%-15s: %u\r\n", "Periodicity", multicastGrp->Periodicity);
-    LOG_DEBUG_BARE("%-15s: %u\r\n", "Duration", multicastGrp->Duration);
+    MulticastGroupInfo_t* multicastGrp = pLoRaDevice->multicastGroups;
 
+    while (multicastGrp != NULL) {
+        Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
+        LOG_DEBUG_BARE("%-15s: 0x%08x\r\n", "Address", multicastGrp->Connection.Address);
+        LOG_DEBUG_BARE("%-15s: ", "NwkSKey");
+        for ( j = 0; j < 16; j++ )
+            LOG_DEBUG_BARE("0x%02x ", multicastGrp->Connection.NwkSKey[j]);
+        LOG_DEBUG_BARE("\r\n%-15s: ", "AppSKey");
+        for ( j = 0; j < 16; j++ )
+            LOG_DEBUG_BARE("0x%02x ", multicastGrp->Connection.AppSKey[j]);
+        LOG_DEBUG_BARE("%-15s: 0x%08x\r\n", "DownLinkCounter",
+                multicastGrp->Connection.DownLinkCounter);
+        LOG_DEBUG_BARE("\r\n---- %-15s ----\r\n", "Downlink Slot Info");
+        LOG_DEBUG_BARE("%-15s: %u\r\n", "Frequency",
+                multicastGrp->Connection.ChannelIndex);
+        LOG_DEBUG_BARE("%-15s: %u\r\n", "Periodicity", multicastGrp->Periodicity);
+        LOG_DEBUG_BARE("%-15s: %u\r\n", "Duration", multicastGrp->Duration);
+
+        multicastGrp = multicastGrp->nextSlot;
+    }
     return ERR_OK;
 }
+
 /*******************************************************************************
  * END OF CODE
  ******************************************************************************/

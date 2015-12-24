@@ -38,7 +38,7 @@ void LedTask( void* pvArguments )
     // Switch LED 1 ON
     GpioWrite(&Led1, 0);
 
-    while ( 1 ) {
+    while (1) {
         if ( IsLedActive ) {
             IsLedActive = false;
             // Switch LED 1 OFF
@@ -47,6 +47,19 @@ void LedTask( void* pvArguments )
             IsLedActive = true;
             // Switch LED 1 ON
             GpioWrite(&Led1, 0);
+            UartPutChar(&Uart2, 'H');
+            UartPutChar(&Uart2, 'e');
+            UartPutChar(&Uart2, 'l');
+            UartPutChar(&Uart2, 'l');
+            UartPutChar(&Uart2, 'o');
+            UartPutChar(&Uart2, ' ');
+            UartPutChar(&Uart2, 'W');
+            UartPutChar(&Uart2, 'o');
+            UartPutChar(&Uart2, 'r');
+            UartPutChar(&Uart2, 'l');
+            UartPutChar(&Uart2, 'd');
+            UartPutChar(&Uart2, '\r');
+            UartPutChar(&Uart2, '\n');
         }
 
         vTaskDelay(500 / portTICK_RATE_MS);
@@ -55,6 +68,8 @@ void LedTask( void* pvArguments )
 
 int main( void )
 {
+    uint8_t TxBuffer[128];
+    uint8_t RxBuffer[128];
     TaskHandle_t xHandle = NULL;
 
     // Target board initialisation
@@ -63,7 +78,15 @@ int main( void )
     BoardInitPeriph();
     LOG_DEBUG("Peripherals initialized.");
 
-    xTaskCreate(LedTask, "LedTask", LED_TASK_STACK_SIZE, (void*) NULL, LED_TASK_PRIO, &xHandle);
+    FifoInit(&Uart2.FifoTx, TxBuffer, sizeof(TxBuffer));
+    FifoInit(&Uart2.FifoRx, RxBuffer, sizeof(RxBuffer));
+
+    UartInit(&Uart2, UART_2, UART2_TX, UART2_RX);
+    UartConfig(&Uart2, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY,
+            NO_FLOW_CTRL);
+
+    xTaskCreate(LedTask, "LedTask", LED_TASK_STACK_SIZE, (void*) NULL, LED_TASK_PRIO,
+            &xHandle);
     configASSERT(xHandle);
 
     // Print the initial banner
