@@ -17,7 +17,7 @@
 #include "LoRaFrm.h"
 #include "LoRaMac.h"
 #include "LoRaPhy.h"
-#include "Shell_App.h"
+#include "Shell.h"
 
 /*******************************************************************************
  * CONSTANT DEFINITIONS
@@ -154,10 +154,30 @@ typedef struct {
 } LoRaDevice_t;
 
 typedef enum {
-    EVENT_TYPE_UPLINK, EVENT_TYPE_MULTICAST, EVENT_TYPE_RECEPTION
+    EVENT_TYPE_UPLINK,
+    EVENT_TYPE_MULTICAST,
+    EVENT_TYPE_RECEPTION
 } LoRaSchedulerEventType_t;
 
-typedef void (*LoRaSchedulerEventCallback_t)( void *param );
+struct LoRaMeshSchedulerEvent_s;
+
+typedef void (*LoRaSchedulerEventCallback_t)( struct LoRaMeshSchedulerEvent_s *evt, void *param );
+
+typedef struct LoRaMeshEventHandler_s {
+    LoRaSchedulerEventType_t eventType;
+    LoRaSchedulerEventCallback_t callback;
+    void *param;
+    struct LoRaMeshSchedulerEvent_s *firstScheduledEvent;
+    struct LoRaMeshEventHandler_s *nextEventHandler;
+} LoRaMeshEventHandler_t;
+
+typedef struct LoRaMeshSchedulerEvent_s {
+    uint16_t startSlot;
+    uint16_t endSlot;
+    LoRaMeshEventHandler_t *eventHandler;
+    struct LoRaMeshSchedulerEvent_s *nextRecurringEvent;
+    struct LoRaMeshSchedulerEvent_s *nextSchedulerEvent;
+} LoRaMeshSchedulerEvent_t;
 
 typedef uint8_t (*PortHandlerFunction_t)( uint8_t *payload, uint8_t payloadSize,
         uint8_t fPort );

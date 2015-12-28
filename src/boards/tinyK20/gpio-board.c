@@ -6,10 +6,15 @@
  *
  */
 
+/*******************************************************************************
+ * INCLUDE FILES
+ ******************************************************************************/
 #include "board.h"
 #include "gpio-board.h"
 
-/*----------------------- Local Definitions ------------------------------*/
+/*******************************************************************************
+ * PRIVATE CONSTANT DEFINITIONS
+ ******************************************************************************/
 /*!
  * Number of Pins per Port
  */
@@ -20,35 +25,10 @@
 #define NR_OF_PINS_PORTABC      (NR_OF_PINS_PORTA+NR_OF_PINS_PORTB+NR_OF_PINS_PORTC)
 #define NR_OF_PINS_PORTD        8
 #define NR_OF_PINS_PORTABCD     (NR_OF_PINS_PORTA+NR_OF_PINS_PORTB+NR_OF_PINS_PORTC+NR_OF_PINS_PORTD)
-/*------------------------ Local Variables -------------------------------*/
-/*! Available pins for port A */
-uint8_t pinsPortA[] = { 0, 1, 2, 3, 4 };
 
-/*! Available pins for port B */
-uint8_t pinsPortB[] = { 0, 1, 2, 3, 16, 17 };
-
-/*! Available pins for port C */
-uint8_t pinsPortC[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
-
-/*! Available pins for port D */
-uint8_t pinsPortD[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
-
-/*! GPIO irq handler port A */
-static GpioIrqHandler *GpioAIrq[5];
-
-/*! GPIO irq handler port B */
-static GpioIrqHandler *GpioBIrq[18];
-
-/*! GPIO irq handler port C */
-static GpioIrqHandler *GpioCIrq[8];
-
-/*! GPIO irq handler port D */
-static GpioIrqHandler *GpioDIrq[8];
-
-/* Base pointers */
-const PORT_MemMapPtr g_portBase[] = PORT_BASE_PTRS;
-const GPIO_MemMapPtr g_gpioBase[] = GPIO_BASE_PTRS;
-
+/*******************************************************************************
+ * PRIVATE TYPE DEFINITIONS
+ ******************************************************************************/
 typedef enum _port_interrupt_config {
     kPortIntDisabled = 0x0U, /*!< Interrupt/DMA request is disabled.*/
     kPortDmaRisingEdge = 0x1U, /*!< DMA request on rising edge.*/
@@ -77,13 +57,44 @@ typedef struct {
     port_mux_t muxConfig;
 } alternate_fct_user_config_t;
 
+/*******************************************************************************
+ * PRIVATE VARIABLES (STATIC)
+ ******************************************************************************/
+/*! Available pins for port A */
+uint8_t pinsPortA[] = { 0, 1, 2, 3, 4 };
+
+/*! Available pins for port B */
+uint8_t pinsPortB[] = { 0, 1, 2, 3, 16, 17 };
+
+/*! Available pins for port C */
+uint8_t pinsPortC[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
+
+/*! Available pins for port D */
+uint8_t pinsPortD[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
+
+/*! GPIO irq handler port A */
+static GpioIrqHandler *GpioAIrq[5];
+
+/*! GPIO irq handler port B */
+static GpioIrqHandler *GpioBIrq[18];
+
+/*! GPIO irq handler port C */
+static GpioIrqHandler *GpioCIrq[8];
+
+/*! GPIO irq handler port D */
+static GpioIrqHandler *GpioDIrq[8];
+
+/* Base pointers */
+const PORT_MemMapPtr g_portBase[] = PORT_BASE_PTRS;
+const GPIO_MemMapPtr g_gpioBase[] = GPIO_BASE_PTRS;
+
 static alternate_fct_user_config_t alternateFctCfg[] = {
     {
-        .pinName = PD_7,
+        .pinName = PB_16,
         .muxConfig = kPortMuxAlt3,   ///> UART0_RX
     },
     {
-        .pinName = PD_6,
+        .pinName = PB_17,
         .muxConfig = kPortMuxAlt3,   ///> UART0_TX
     },
     {
@@ -93,6 +104,14 @@ static alternate_fct_user_config_t alternateFctCfg[] = {
     {
         .pinName = PC_3,
         .muxConfig = kPortMuxAlt3,   ///> UART1_RX
+    },
+    {
+        .pinName = PD_2,
+        .muxConfig = kPortMuxAlt3,   ///> UART2_RX
+    },
+    {
+        .pinName = PD_3,
+        .muxConfig = kPortMuxAlt3,   ///> UART2_TX
     },
     {
         .pinName = PD_0,
@@ -123,6 +142,9 @@ static alternate_fct_user_config_t alternateFctCfg[] = {
     }
 };
 
+/*******************************************************************************
+ * MODULE FUNCTIONS (PUBLIC)
+ ******************************************************************************/
 void GpioMcuInit( Gpio_t *obj, PinNames pin, PinModes mode, PinConfigs config, PinTypes type,
         uint32_t value )
 {
@@ -431,4 +453,6 @@ void PORTD_IRQHandler( void )
     else if ( (pendingInt & (1U << 7)) >> 7 ) GpioDIrq[7]();
     /* PTD8 to PTD31 can't be used as GPIO */
 }
-
+/*******************************************************************************
+ * END OF CODE
+ ******************************************************************************/

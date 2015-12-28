@@ -102,9 +102,9 @@
 #define RADIO_DIO_1                    PA_2
 #define RADIO_DIO_2                    PA_1
 #define RADIO_DIO_3                    PD_5
-#define RADIO_DIO_4_A                  PB_16
+#define RADIO_DIO_4_A                  PD_7
 #define RADIO_DIO_4_B                  NC
-#define RADIO_DIO_5                    PB_17
+#define RADIO_DIO_5                    PD_6
 
 #define RADIO_ANT_SWITCH_RX_TX         PC_0
 
@@ -130,8 +130,8 @@
 
 #endif /* SX1276_BOARD */
 
-#define UART0_RX                       PD_6
-#define UART0_TX                       PD_7
+#define UART0_RX                       PB_16
+#define UART0_TX                       PB_17
 #define UART1_RX                       PC_3
 #define UART1_TX                       PC_4
 #define UART2_RX                       PD_2

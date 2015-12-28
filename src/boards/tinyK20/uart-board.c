@@ -6,6 +6,9 @@
  *
  */
 
+/*******************************************************************************
+ * INCLUDE FILES
+ ******************************************************************************/
 #include "board.h"
 #include "uart-board.h"
 
@@ -174,7 +177,6 @@ uint8_t UartMcuGetCharsInRxFifo( Uart_t *obj )
 
 uint8_t UartMcuGetChar( Uart_t *obj, uint8_t *data )
 {
-#if 1
     if ( IsFifoEmpty(&obj->FifoRx) == false ) {
         __disable_irq();
         *data = FifoPop(&obj->FifoRx);
@@ -182,49 +184,15 @@ uint8_t UartMcuGetChar( Uart_t *obj, uint8_t *data )
         return ERR_OK;   // OK
     }
     return ERR_RXEMPTY;   // Busy
-#else
-    if ( UartMcuGetCharsInRxFifo(obj) == 0 ) {
-        /* Rx buffer empty */
-        return ERR_RXEMPTY;
-    }
-
-    uint8_t dummy = g_uartBase[obj->UartId]->S1;
-    dummy++; /* For unused variable warning */
-    *data = g_uartBase[obj->UartId]->D;
-
-    return ERR_OK;
-#endif
 }
 
 uint8_t UartMcuGetBuffer( Uart_t *obj, uint8_t *rxBuff, size_t rxSize )
 {
-#if 0
-    uint8_t retVal = ERR_OK;
-    uint8_t dummy = 0;
-
-    while (rxSize--) {
-        while (((g_uartBase[obj->UartId]->S1) & UART_S1_RDRF_MASK) == 0) {
-        }
-
-        UartMcuGetChar(obj, rxBuff++);
-
-        /* Clear the Overrun flag since it will block receiving */
-        if ( ((g_uartBase[obj->UartId]->S1) & UART_S1_OR_MASK) > 0 ) {
-            dummy = g_uartBase[obj->UartId]->S1;
-            dummy = g_uartBase[obj->UartId]->D;
-            dummy++; /* For unused variable warning */
-            retVal = ERR_OVERRUN;
-        }
-    }
-
-    return retVal;
-#else
     while ((rxSize--) > 0 && !IsFifoEmpty(&obj->FifoRx)) {
         UartMcuGetChar(obj, rxBuff++);
     }
 
     return ERR_OK;
-#endif
 }
 
 void UartInterruptHandler( Uart_t *obj )
@@ -250,25 +218,7 @@ void UartInterruptHandler( Uart_t *obj )
             obj->IrqNotify(UART_NOTIFY_TX);
         }
     }
-
-    /* Data received */
-    if ( (((g_uartBase[obj->UartId]->S1) & UART_S1_OR_MASK) >> UART_S1_OR_SHIFT) == 1 ) {
-        data = g_uartBase[obj->UartId]->D;
-    }
-
-    if ( (((g_uartBase[obj->UartId]->S1) & UART_S1_RDRF_MASK) >> UART_S1_RDRF_SHIFT)
-            == 1 ) {
-        (void) (g_uartBase[obj->UartId]->S1); /* Reset RDRF flag by reading register S1 */
-        data = g_uartBase[obj->UartId]->D;
-        if ( IsFifoFull(&obj->FifoRx) == false ) {
-            // Read one byte from the receive data register
-            FifoPush(&obj->FifoRx, data);
-        }
-        if ( obj->IrqNotify != NULL ) {
-            obj->IrqNotify(UART_NOTIFY_RX);
-        }
-    }
-#else
+#endif
     /* Data overflow */
     if ( ((g_uartBase[obj->UartId]->S1) & UART_S1_OR_MASK) > 0 ) {
         data = g_uartBase[obj->UartId]->D;
@@ -285,7 +235,6 @@ void UartInterruptHandler( Uart_t *obj )
             obj->IrqNotify(UART_NOTIFY_RX);
         }
     }
-#endif
 }
 
 /*!

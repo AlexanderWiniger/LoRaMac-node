@@ -97,7 +97,7 @@
 		<link>
 			<name>src/apps/LoRaMesh/rtos/LoRaMesh_App</name>
 			<type>2</type>
-			<location>C:/workspace/LoRaMac-node/src/apps/LoRaMesh/rtos/LoRaMesh_App</location>
+			<locationURI>PARENT-4-PROJECT_LOC/src/apps/LoRaMesh/rtos/LoRaMesh_App</locationURI>
 		</link>
 		<link>
 			<name>src/apps/LoRaMesh/rtos/LoRaStack</name>
@@ -107,7 +107,7 @@
 		<link>
 			<name>src/apps/LoRaMesh/rtos/Shell_App</name>
 			<type>2</type>
-			<location>C:/workspace/LoRaMac-node/src/apps/LoRaMesh/rtos/Shell_App</location>
+			<locationURI>PARENT-4-PROJECT_LOC/src/apps/LoRaMesh/rtos/Shell_App</locationURI>
 		</link>
 		<link>
 			<name>src/apps/LoRaMesh/rtos/tinyK20</name>

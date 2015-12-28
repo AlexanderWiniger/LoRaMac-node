@@ -6,6 +6,9 @@
  *
  */
 
+/*******************************************************************************
+ * INCLUDE FILES
+ ******************************************************************************/
 #include "board.h"
 
 #define LOG_LEVEL_TRACE
@@ -36,8 +39,8 @@ void GpsMcuOnPpsSignal( void )
     GpsPpsHandler(&parseData);
 
     if ( parseData == true ) {
-//        UartInit(&Uart0, UART_0, UART0_TX, UART0_RX);
-//        UartConfig(&Uart0, RX_ONLY, 4800, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL);
+        UartInit(&Uart0, UART_0, UART0_TX, UART0_RX);
+        UartConfig(&Uart0, RX_ONLY, 4800, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL);
     }
 }
 
@@ -53,9 +56,9 @@ void GpsMcuInit( void )
     GpioSetInterrupt(&GpsPps, IRQ_FALLING_EDGE, IRQ_VERY_LOW_PRIORITY,
             &GpsMcuOnPpsSignal);
 
-    UartInit(&Uart0, UART_0, UART0_TX, UART0_RX);
-    UartConfig(&Uart0, RX_ONLY, 4800, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY,
-            NO_FLOW_CTRL);
+//    UartInit(&Uart0, UART_0, UART0_TX, UART0_RX);
+//    UartConfig(&Uart0, RX_ONLY, 4800, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY,
+//            NO_FLOW_CTRL);
 }
 
 void GpsMcuIrqNotify( UartNotifyId_t id )
@@ -73,7 +76,7 @@ void GpsMcuIrqNotify( UartNotifyId_t id )
                 NmeaString[NmeaStringSize] = '\0';
                 GpsParseGpsData(NmeaString, NmeaStringSize);
                 LOG_TRACE_BARE("%s", NmeaString);
-//                UartDeInit (&Uart0);
+                UartDeInit (&Uart0);
                 BlockLowPowerDuringTask(false);
             }
         }

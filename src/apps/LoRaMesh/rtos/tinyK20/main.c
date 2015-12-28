@@ -45,11 +45,7 @@ int main( void )
     }
 
 #if defined( USE_SHELL )
-#if defined (USE_USB_CDC)
-    Shell_AppInit (&UartUsb);
-#else
-    Shell_AppInit (&Uart1);
-#endif /* USE_USB_CDC */
+    Shell_AppInit ();
 #endif /* USE_SHELL */
 
     LoRaMesh_AppInit();

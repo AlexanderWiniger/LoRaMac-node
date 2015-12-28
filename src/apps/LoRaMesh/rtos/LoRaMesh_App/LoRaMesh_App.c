@@ -28,7 +28,7 @@
 /*******************************************************************************
  * MACRO DEFINITIONS
  ******************************************************************************/
-#define APP_CNTR_VALUE(interval)    (LORAMESH_APP_TX_INTERVAL/RADIO_PROCESS_INTERVAL)
+#define APP_CNTR_VALUE(interval)                    (LORAMESH_APP_TX_INTERVAL/RADIO_PROCESS_INTERVAL)
 
 /*******************************************************************************
  * PRIVATE TYPE DEFINITIONS
@@ -113,13 +113,13 @@ void LoRaMesh_AppInit( void )
 //    LoRaMesh_SetDeviceClass (CLASS_C);
     LoRaMesh_TestSetDutyCycleCtrlOff (LORAWAN_DUTYCYCLE_OFF);
 
-    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", 0x200, (void*) NULL, tskIDLE_PRIORITY,
-            (xTaskHandle*) NULL) != pdPASS ) {
-        /*lint -e527 */
-        for ( ;; ) {
-        }; /* error! probably out of memory */
-        /*lint +e527 */
-    }
+//    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", 0x200, (void*) NULL, tskIDLE_PRIORITY,
+//            (xTaskHandle*) NULL) != pdPASS ) {
+//        /*lint -e527 */
+//        for ( ;; ) {
+//        }; /* error! probably out of memory */
+//        /*lint +e527 */
+//    }
 }
 
 /*******************************************************************************
