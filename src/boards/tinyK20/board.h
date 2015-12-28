@@ -8,6 +8,9 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
+/*******************************************************************************
+ * INCLUDE FILES
+ ******************************************************************************/
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -43,20 +46,19 @@
 #include "usb-cdc-board.h"
 #endif
 
+/*******************************************************************************
+ * CONSTANT DEFINITIONS
+ ******************************************************************************/
 #if defined(USE_LOW_POWER_MODE)
 #define LOW_POWER_MODE_ENABLE   1
 #endif
 
-/*!
- * NULL definition
- */
+/*! NULL definition */
 #ifndef NULL
 #define NULL                           ( ( void * )0 )
 #endif
 
-/*!
- * Generic definition
- */
+/*! Generic definition */
 #ifndef SUCCESS
 #define SUCCESS                        1
 #endif
@@ -64,29 +66,6 @@
 #ifndef FAIL
 #define FAIL                           0
 #endif
-
-/* More specific error codes */
-#define ERR_OK                          0x00U /*!< OK */
-#define ERR_RANGE                       0x01U /*!< Parameter out of range. */
-#define ERR_VALUE                       0x02U /*!< Parameter of incorrect value. */
-#define ERR_OVERFLOW                    0x03U /*!< Timer overflow. */
-#define ERR_ENABLED                     0x04U /*!< Device is enabled. */
-#define ERR_DISABLED                    0x05U /*!< Device is disabled. */
-#define ERR_BUSY                        0x06U /*!< Device is busy. */
-#define ERR_NOTAVAIL                    0x07U /*!< Requested value or method not available. */
-#define ERR_RXEMPTY                     0x08U /*!< No data in receiver. */
-#define ERR_TXFULL                      0x09U /*!< Transmitter is full. */
-#define ERR_OVERRUN                     0x0AU /*!< Overrun error is detected. */
-#define ERR_IDLE                        0x0BU /*!< Idle error is detected. */
-#define ERR_FAULT                       0x0CU /*!< Fault error is detected. */
-#define ERR_CRC                         0x0DU /*!< CRC error is detected. */
-#define ERR_UNDERFLOW                   0x0EU /*!< Underflow error is detected. */
-#define ERR_UNDERRUN                    0x0FU /*!< Underrun error is detected. */
-#define ERR_COMMON                      0x10U /*!< Common error of a device. */
-#define ERR_FAILED                      0x11U /*!< Requested functionality or process failed. */
-#define ERR_QFULL                       0x12U /*!< Queue is full. */
-#define ERR_INVALID_TYPE                0x13U /*!< Invalid type. */
-#define ERR_UNKNOWN                     0x14U /*!< */
 
 /*!
  * Unique Devices IDs register set
@@ -163,15 +142,16 @@
 
 #define PPS                            PC_2
 
-/*!
- * LED GPIO pin objects
- */
+/*******************************************************************************
+ * PUBLIC VARIABLES
+ ******************************************************************************/
+/*! LED GPIO pin objects */
 extern Gpio_t Led1;
+
+/*! GPIO pin objects */
 extern Gpio_t GpsPps;
 
-/*!
- * MCU objects
- */
+/*! MCU objects */
 extern Adc_t Adc;
 extern I2c_t I2c;
 extern Uart_t Uart0;
@@ -181,6 +161,9 @@ extern Uart_t Uart2;
 extern Uart_t UartUsb;
 #endif
 
+/*******************************************************************************
+ * MODULE FUNCTION PROTOTYPES (PUBLIC)
+ ******************************************************************************/
 /*!
  * \brief Initializes the target board peripherals.
  */

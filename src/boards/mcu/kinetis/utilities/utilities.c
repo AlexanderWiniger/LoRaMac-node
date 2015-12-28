@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include "board.h"
 #include "utilities.h"
-#include <stdlib.h>
 
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
@@ -42,16 +41,6 @@ void srand1( uint32_t seed )
 int32_t randr( int32_t min, int32_t max )
 {
     return (int32_t)((uint32_t) rand1() % (max - min + 1) + min);
-}
-
-void *custom_malloc( size_t size )
-{
-    return malloc(size);
-}
-
-void custom_free( void *p )
-{
-    free(p);
 }
 
 void memcpy1( uint8_t *dst, const uint8_t *src, uint16_t size )

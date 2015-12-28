@@ -21,25 +21,40 @@
  * PRIVATE CONSTANT DEFINITIONS
  ******************************************************************************/
 #define MAX_NOF_SCHEDULER_EVENTS            LORAMESH_CONFIG_MAX_NOF_SCHEDULER_EVENTS
+#define MAX_NOF_SCHEDULER_EVENT_HANDLERS    LORAMESH_CONFIG_MAX_NOF_SCHEDULER_EVENT_HANDLERS
 #define MAX_NOF_MULTICAST_GROUPS            LORAMESH_CONFIG_MAX_NOF_MULTICAST_GROUPS
 #define MAX_NOF_CHILD_NODES                 LORAMESH_CONFIG_MAX_NOF_CHILD_NODES
 
-#define ADVERTISING_RESERVED_TIME           2000
-#define UPLINK_RESERVED_TIME                1000
-#define MULTICAST_RESERVED_TIME             3000
-#define RECEPTION_RESERVED_TIME             3000
+#define ADVERTISING_INTERVAL                (30000000)
+#define ADVERTISING_GUARD_TIME              (2280000)
+#define ADVERTISING_RESERVED_TIME           (2120000)
+#define AVAILABLE_SLOT_TIME                 (ADVERTISING_INTERVAL-ADVERTISING_GUARD_TIME-ADVERTISING_RESERVED_TIME)
+#define TIME_PER_SLOT                       (50000)
+#define NOF_AVAILABLE_SLOTS                 (AVAILABLE_SLOT_TIME / TIME_PER_SLOT)
+
+#define UPLINK_RESERVED_TIME                (50000)
+#define MULTICAST_RESERVED_TIME             (250000)
+#define RECEPTION_RESERVED_TIME             (50000)
 /*******************************************************************************
  * PRIVATE TYPE DEFINITIONS
  ******************************************************************************/
-typedef struct LoRaMeshEvent_s {
-    uint32_t slot;
-    TimerEvent_t *timer;
-    TimerTime_t reservedTime;
-    TimerTime_t nextOccurenceTime;
+struct LoRaMeshSchedulerEvent_s;
+
+typedef struct LoRaMeshEventHandler_s {
+    LoRaSchedulerEventType_t eventType;
     LoRaSchedulerEventCallback_t callback;
     void *param;
-    struct LoRaMeshEvent_s *nextEvent;
-} LoRaMeshEvent_t;
+    struct LoRaMeshSchedulerEvent_s *firstScheduledEvent;
+    struct LoRaMeshEventHandler_s *nextEventHandler;
+} LoRaMeshEventHandler_t;
+
+typedef struct LoRaMeshSchedulerEvent_s {
+    uint16_t startSlot;
+    uint16_t endSlot;
+    LoRaMeshEventHandler_t *eventHandler;
+    struct LoRaMeshSchedulerEvent_s *nextRecurringEvent;
+    struct LoRaMeshSchedulerEvent_s *nextSchedulerEvent;
+} LoRaMeshSchedulerEvent_t;
 
 /*******************************************************************************
  * PRIVATE VARIABLES (STATIC)
@@ -88,9 +103,14 @@ static LoRaDevice_t LoRaDevice = {
 };
 
 /*! Scheduler */
-static LoRaMeshEvent_t eventSchedulerList[MAX_NOF_SCHEDULER_EVENTS];
-static LoRaMeshEvent_t *pEventScheduler;
-static LoRaMeshEvent_t *pNextFreeSchedulerEvent;
+static LoRaMeshSchedulerEvent_t eventSchedulerList[MAX_NOF_SCHEDULER_EVENTS];
+static LoRaMeshSchedulerEvent_t *pEventScheduler;
+static LoRaMeshSchedulerEvent_t *pNextFreeSchedulerEvent;
+static LoRaMeshEventHandler_t eventHandlerList[MAX_NOF_SCHEDULER_EVENT_HANDLERS];
+static LoRaMeshEventHandler_t *pEventHandlers;
+static LoRaMeshEventHandler_t *pNextFreeEventHandler;
+static TimerEvent_t EventSchedulerTimer;
+static TimerEvent_t AdvertisingTimer;
 
 /*! Multicast groups */
 static MulticastGroupInfo_t multicastGrpList[MAX_NOF_MULTICAST_GROUPS];
@@ -117,10 +137,34 @@ static uint8_t ScheduleEvent( TimerTime_t interval, LoRaSchedulerEventType_t typ
         LoRaSchedulerEventCallback_t callback, void* param );
 
 /*! */
-static TimerTime_t FindFreeSlot( TimerTime_t interval, LoRaSchedulerEventType_t type );
+static uint8_t FindFreeSlots( TimerTime_t interval, uint16_t durationInSlots,
+        uint8_t nofSlots, uint16_t *allocatedSlots, bool hasRxWindows );
+
+/*  */
+static LoRaMeshSchedulerEvent_t *AllocateEvent( void );
 
 /*!  */
-static void RemoveEvent( void );
+static void FreeEvent( LoRaMeshSchedulerEvent_t *evt );
+
+static LoRaMeshEventHandler_t * AllocateEventHandler( void );
+
+static void FreeEventHandler( LoRaMeshEventHandler_t *evtHandler );
+
+static void OnMulticastSchedulerEvent( void *param );
+
+static void OnReceptionSchedulerEvent( void *param );
+
+static void OnUplinkSchedulerEvent( void *param );
+
+static void OnRx1SchedulerEvent( void *param );
+
+static void OnRx2SchedulerEvent( void *param );
+
+/*! Function executed on advertising timer event */
+static void OnAdvertisingTimerEvent( TimerHandle_t xTimer );
+
+/*! Function executed on event scheduler timer event */
+static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer );
 
 /*! \brief Create new child node with given data. */
 ChildNodeInfo_t* CreateChildNode( uint32_t devAddr, uint8_t* nwkSKey, uint8_t* appSKey,
@@ -204,6 +248,7 @@ byte LoRaMesh_ParseCommand( const unsigned char *cmd, bool *handled,
 
 void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks )
 {
+    LoRaMeshEventHandler_t *handler;
     uint8_t i;
 
     LoRaMeshCallbacks = callbacks;
@@ -218,10 +263,36 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks )
     pEventScheduler = NULL;
     pNextFreeSchedulerEvent = eventSchedulerList;
     for ( i = 0; i < MAX_NOF_SCHEDULER_EVENTS - 1; i++ ) {
-        eventSchedulerList[i].nextEvent = &eventSchedulerList[i + 1];
+        eventSchedulerList[i].nextSchedulerEvent = &eventSchedulerList[i + 1];
     }
-    /* Schedule advertising */
-    ScheduleEvent(30000, EVENT_TYPE_ADVERTISING, NULL, NULL);
+    /* Init event handlers list */
+    pEventHandlers = NULL;
+    pNextFreeEventHandler = eventHandlerList;
+    for ( i = 0; i < MAX_NOF_SCHEDULER_EVENT_HANDLERS - 1; i++ ) {
+        eventHandlerList[i].nextEventHandler = &eventHandlerList[i + 1];
+    }
+    /* Allocate rx1 window handler */
+    handler = AllocateEventHandler();
+    handler->eventType = EVENT_TYPE_RECEPTION;
+    handler->callback = OnRx1SchedulerEvent;
+    handler->param = (void*) NULL;
+    /* Allocate rx2 window handler */
+    handler = AllocateEventHandler();
+    handler->eventType = EVENT_TYPE_RECEPTION;
+    handler->callback = OnRx2SchedulerEvent;
+    handler->param = (void*) NULL;
+
+    /* Event scheduler timer */
+    TimerInit(&EventSchedulerTimer, "EventSchedulerTimer", (void*) NULL,
+            OnEventSchedulerTimerEvent, false);
+    TimerSetValue(&EventSchedulerTimer, ADVERTISING_RESERVED_TIME);
+    TimerStart(&EventSchedulerTimer);
+
+    /* Advertising timer */
+    TimerInit(&AdvertisingTimer, "AdvertisingTimer", (void*) NULL,
+            OnAdvertisingTimerEvent, true);
+    TimerSetValue(&AdvertisingTimer, LORAMESH_CONFIG_ADV_INTERVAL);
+    TimerStart(&AdvertisingTimer);
 
     /* Init child node list */
     pNextFreeChildNode = childNodeList;
@@ -239,6 +310,12 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks )
     LoRaFrm_Init();
     LoRaMac_Init(LoRaMeshCallbacks->GetBatteryLevel);
     LoRaPhy_Init();
+
+    ScheduleEvent(5e6, EVENT_TYPE_UPLINK, OnUplinkSchedulerEvent, (void*) NULL);
+    ScheduleEvent(4e6, EVENT_TYPE_RECEPTION, OnReceptionSchedulerEvent, (void*) NULL);
+    ScheduleEvent(6e6, EVENT_TYPE_UPLINK, OnUplinkSchedulerEvent, (void*) NULL);
+    ScheduleEvent(4e6, EVENT_TYPE_RECEPTION, OnReceptionSchedulerEvent, (void*) NULL);
+    ScheduleEvent(12e6, EVENT_TYPE_MULTICAST, OnMulticastSchedulerEvent, (void*) NULL);
 }
 
 void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey,
@@ -457,40 +534,334 @@ void LoRaMesh_TestSetMic( uint16_t upLinkCounter )
 static uint8_t ScheduleEvent( TimerTime_t interval, LoRaSchedulerEventType_t type,
         LoRaSchedulerEventCallback_t callback, void* param )
 {
-    TimerTime_t eventTime = FindFreeSlot(interval, type);
+    LoRaMeshSchedulerEvent_t *evt, *prevEvt = NULL;
+    LoRaMeshEventHandler_t *handler;
+    uint16_t durationInSlots;
+    uint16_t slots[32];
+    bool receptionWindows = false;
+    uint8_t i, j;
 
-    if ( eventTime > 0 ) {
-
+    handler = AllocateEventHandler();
+    if ( handler == NULL ) {
+        LOG_ERROR("Unable to allocate event handlers.");
+        return ERR_NOTAVAIL;
     }
-}
+    /* Initialize event handler */
+    handler->callback = callback;
+    handler->param = param;
+    handler->eventType = type;
 
-static TimerTime_t FindFreeSlot( TimerTime_t interval, LoRaSchedulerEventType_t type )
-{
-    TimerTime_t reserved;
     switch (type) {
-        case EVENT_TYPE_ADVERTISING:
-            reserved = ADVERTISING_RESERVED_TIME;
-            break;
         case EVENT_TYPE_UPLINK:
-            reserved = UPLINK_RESERVED_TIME;
+            durationInSlots = UPLINK_RESERVED_TIME / TIME_PER_SLOT;
+            receptionWindows = true;
             break;
         case EVENT_TYPE_MULTICAST:
-            reserved = MULTICAST_RESERVED_TIME;
+            durationInSlots = MULTICAST_RESERVED_TIME / TIME_PER_SLOT;
             break;
         case EVENT_TYPE_RECEPTION:
-            reserved = RECEPTION_RESERVED_TIME;
+            durationInSlots = RECEPTION_RESERVED_TIME / TIME_PER_SLOT;
             break;
         default:
             break;
+    }
+
+    /* Find available slots */
+    if ( FindFreeSlots(interval, durationInSlots, AVAILABLE_SLOT_TIME / interval,
+            (uint16_t*) &slots, receptionWindows) != ERR_OK ) return ERR_FAILED;
+
+    for ( i = 0; i < (AVAILABLE_SLOT_TIME / interval); i++ ) {
+        evt = AllocateEvent();
+
+        if ( evt == NULL ) {
+            LOG_ERROR("Unable to allocate event.");
+            return ERR_NOTAVAIL;
+        }
+
+        evt->eventHandler = handler;
+        evt->startSlot = (receptionWindows) ? slots[i * 3] : slots[i];
+        evt->endSlot = evt->startSlot + durationInSlots;
+
+        if ( pEventScheduler == NULL ) {
+            evt->nextSchedulerEvent = NULL;
+            pEventScheduler = evt;
+        } else {
+            LoRaMeshSchedulerEvent_t *iterEvt = pEventScheduler;
+            while (iterEvt != NULL) {
+                if ( ((iterEvt->endSlot < evt->startSlot)
+                        && (iterEvt->nextSchedulerEvent != NULL)
+                        && (iterEvt->nextSchedulerEvent->startSlot > evt->endSlot))
+                        || ((iterEvt->nextSchedulerEvent == NULL)
+                                && (iterEvt->endSlot < evt->startSlot)) ) {
+                    evt->nextSchedulerEvent = iterEvt->nextSchedulerEvent;
+                    iterEvt->nextSchedulerEvent = evt;
+                    break;
+                }
+                iterEvt = iterEvt->nextSchedulerEvent;
+            }
+        }
+
+        if ( receptionWindows ) {
+            LoRaMeshSchedulerEvent_t *rxEvt;
+            for ( j = 0; j < 2; j++ ) {
+                rxEvt = AllocateEvent();
+                if ( rxEvt == NULL ) {
+                    LOG_ERROR("Coulnd't allocate reception window %u", j);
+                    return ERR_NOTAVAIL;
+                }
+
+                rxEvt->eventHandler = &eventHandlerList[j];
+                rxEvt->startSlot = slots[((i * 3) + 1) + j];
+                rxEvt->endSlot = rxEvt->startSlot
+                        + (RECEPTION_RESERVED_TIME / TIME_PER_SLOT);
+
+                /* Place in recurring event list */
+                if ( rxEvt->eventHandler->firstScheduledEvent == NULL ) {
+                    rxEvt->eventHandler->firstScheduledEvent = rxEvt;
+                } else {
+                    LoRaMeshSchedulerEvent_t *iterEvt =
+                            rxEvt->eventHandler->firstScheduledEvent;
+                    while (iterEvt->nextRecurringEvent != NULL) {
+                        if ( (iterEvt->endSlot < rxEvt->startSlot)
+                                && (iterEvt->nextRecurringEvent->startSlot
+                                        > rxEvt->startSlot) ) {
+                            rxEvt->nextRecurringEvent = iterEvt->nextRecurringEvent;
+                            iterEvt->nextRecurringEvent = rxEvt;
+                            break;
+                        }
+                        iterEvt = iterEvt->nextRecurringEvent;
+                    }
+                    if ( rxEvt->nextRecurringEvent == NULL
+                            && iterEvt->nextRecurringEvent == NULL )
+                        iterEvt->nextRecurringEvent = rxEvt;
+                }
+
+                /* Place in scheduler event list */
+                LoRaMeshSchedulerEvent_t *iterEvt = pEventScheduler;
+                while (iterEvt != NULL) {
+                    if ( ((iterEvt->endSlot < rxEvt->startSlot)
+                            && (iterEvt->nextSchedulerEvent != NULL)
+                            && (iterEvt->nextSchedulerEvent->startSlot > rxEvt->endSlot))
+                            || ((iterEvt->nextSchedulerEvent == NULL)
+                                    && (iterEvt->endSlot < rxEvt->startSlot)) ) {
+                        rxEvt->nextSchedulerEvent = iterEvt->nextSchedulerEvent;
+                        iterEvt->nextSchedulerEvent = rxEvt;
+                        break;
+                    }
+                    iterEvt = iterEvt->nextSchedulerEvent;
+                }
+            }
+        }
+
+        if ( prevEvt == NULL ) {
+            prevEvt = evt;
+        } else {
+            prevEvt->nextRecurringEvent = evt;
+            prevEvt = evt;
+        }
+    }
+
+    return ERR_OK;
+}
+
+static uint8_t FindFreeSlots( TimerTime_t interval, uint16_t durationInSlots,
+        uint8_t nofSlots, uint16_t *allocatedSlots, bool scheduleRxWindows )
+{
+    int16_t slots[32];
+    LoRaMeshSchedulerEvent_t *evt;
+    uint16_t i = 0;
+
+    if ( pEventScheduler == NULL ) {
+        uint16_t slot = 0;
+        for ( i = 0; i < nofSlots; i++ ) {
+            *(allocatedSlots++) = slot + ((interval / TIME_PER_SLOT) * i);
+            *(allocatedSlots++) = slot + ((interval / TIME_PER_SLOT) * i)
+                    + (pLoRaDevice->rxWindow1Delay / TIME_PER_SLOT);
+            *(allocatedSlots++) = slot + ((interval / TIME_PER_SLOT) * i)
+                    + (pLoRaDevice->rxWindow2Delay / TIME_PER_SLOT);
+        }
+    } else {
+        bool allocationDone = false;
+        uint16_t nextSlot = 0, offSet = 0;
+        uint32_t timeFrame = 0;
+
+        if ( scheduleRxWindows ) {
+            nofSlots *= 3;
+        }
+
+        while (!allocationDone) {
+            evt = pEventScheduler;
+            /* Find first free slot */
+            while (evt != NULL) {
+                if ( evt->nextSchedulerEvent != NULL ) timeFrame =
+                        (evt->nextSchedulerEvent->startSlot - evt->endSlot);
+                else timeFrame = NOF_AVAILABLE_SLOTS - evt->endSlot - 1;
+
+                if ( timeFrame > durationInSlots ) {
+                    /* Potential first slot found */
+                    slots[0] = (evt->endSlot + 1 + offSet);
+                    break;
+                }
+                evt = evt->nextSchedulerEvent;
+            }
+
+            /* Allocate recurring events */
+            for ( i = 1; i < nofSlots; i++ ) {
+                if ( scheduleRxWindows ) {
+                    if ( (i % 3) == 1 ) {
+                        nextSlot = slots[0] + ((interval / TIME_PER_SLOT) * (i / 3))
+                                + (pLoRaDevice->rxWindow1Delay / TIME_PER_SLOT);
+                    } else if ( (i % 3) == 2 ) {
+                        nextSlot = slots[0] + ((interval / TIME_PER_SLOT) * (i / 3))
+                                + (pLoRaDevice->rxWindow2Delay / TIME_PER_SLOT);
+                    } else {
+                        nextSlot = slots[0] + ((interval / TIME_PER_SLOT) * (i / 3));
+                    }
+                } else {
+                    nextSlot = slots[0] + ((interval / TIME_PER_SLOT) * i);
+                }
+                slots[i] = -1;
+                while (evt != NULL) {
+                    if ( evt->endSlot < nextSlot ) {
+                        if ( ((evt->nextSchedulerEvent != NULL)
+                                && (evt->nextSchedulerEvent->startSlot > nextSlot))
+                                || ((evt->nextSchedulerEvent == NULL)
+                                        && ((NOF_AVAILABLE_SLOTS - durationInSlots)
+                                                > nextSlot)) ) {
+                            slots[i] = nextSlot;
+                            break;
+                        }
+                    } else {
+                        offSet += ((evt->startSlot + (evt->endSlot - evt->startSlot))
+                                - nextSlot + 1);
+                        break;
+                    }
+                    evt = evt->nextSchedulerEvent;
+                }
+                /* Allocation not possible */
+                if ( slots[i] == -1 ) break;
+            }
+            if ( i == (nofSlots) ) allocationDone = true;
+        }
+
+        for ( i = 0; i < nofSlots; i++ ) {
+            *(allocatedSlots++) = slots[i];
+        }
+    }
+
+    return ERR_OK;
+}
+
+/*!
+ *
+ */
+static LoRaMeshSchedulerEvent_t *AllocateEvent( void )
+{
+    LoRaMeshSchedulerEvent_t *evt = pNextFreeSchedulerEvent;
+
+    if ( evt != NULL ) {
+        pNextFreeSchedulerEvent = evt->nextSchedulerEvent;
+        evt->startSlot = 0;
+        evt->startSlot = 0;
+        evt->nextRecurringEvent = NULL;
+        evt->nextSchedulerEvent = NULL;
+        evt->eventHandler = NULL;
+    }
+
+    return evt;
+}
+
+/*!
+ *
+ */
+static void FreeEvent( LoRaMeshSchedulerEvent_t *evt )
+{
+    if ( pEventScheduler != NULL ) {
+        LoRaMeshSchedulerEvent_t* iterEvt = pEventScheduler;
+
+        while (iterEvt->nextSchedulerEvent != NULL) {
+            if ( iterEvt->nextSchedulerEvent == evt ) {
+                iterEvt->nextSchedulerEvent = evt->nextSchedulerEvent;
+                evt->nextSchedulerEvent = pNextFreeSchedulerEvent;
+                pNextFreeSchedulerEvent = evt;
+            }
+            iterEvt = iterEvt->nextSchedulerEvent;
+        }
     }
 }
 
 /*!
  *
  */
-static void RemoveEvent( void )
+static LoRaMeshEventHandler_t * AllocateEventHandler( void )
 {
+    LoRaMeshEventHandler_t *handler = pNextFreeEventHandler;
 
+    if ( handler != NULL ) {
+        pNextFreeEventHandler = handler->nextEventHandler;
+        handler->callback = NULL;
+        handler->param = (void*) NULL;
+        handler->eventType = EVENT_TYPE_UPLINK;
+        handler->nextEventHandler = pEventHandlers;
+        handler->firstScheduledEvent = NULL;
+        pEventHandlers = handler;
+    }
+
+    return handler;
+}
+
+/*!
+ *
+ */
+static void FreeEventHandler( LoRaMeshEventHandler_t *handler )
+{
+    if ( pEventHandlers != NULL ) {
+        LoRaMeshEventHandler_t* iterHandler = pEventHandlers;
+
+        while (iterHandler->nextEventHandler != NULL) {
+            if ( iterHandler->nextEventHandler == handler ) {
+                iterHandler->nextEventHandler = handler->nextEventHandler;
+                handler->nextEventHandler = pNextFreeEventHandler;
+                pNextFreeEventHandler = handler;
+            }
+            iterHandler = iterHandler->nextEventHandler;
+        }
+    }
+}
+
+static void OnMulticastSchedulerEvent( void *param )
+{
+    LOG_TRACE("Multicast event at %d.", TimerGetCurrentTime());
+}
+
+static void OnReceptionSchedulerEvent( void *param )
+{
+    LOG_TRACE("Reception window event at %d.", TimerGetCurrentTime());
+}
+
+static void OnUplinkSchedulerEvent( void *param )
+{
+    LOG_TRACE("Up link event at %d.", TimerGetCurrentTime());
+}
+
+static void OnRx1SchedulerEvent( void *param )
+{
+    LOG_TRACE("Reception window 1 event at %d.", TimerGetCurrentTime());
+}
+
+static void OnRx2SchedulerEvent( void *param )
+{
+    LOG_TRACE("Reception window 2 event at %d.", TimerGetCurrentTime());
+}
+
+static void OnAdvertisingTimerEvent( TimerHandle_t xTimer )
+{
+    LOG_TRACE("Advertising timer event at %d.", TimerGetCurrentTime());
+}
+
+static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer )
+{
+    LOG_TRACE("Event scheduler timer event at %d.", TimerGetCurrentTime());
 }
 
 /*!

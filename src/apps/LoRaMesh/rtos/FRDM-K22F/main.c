@@ -13,7 +13,7 @@
 #include <math.h>
 #include "board.h"
 
-#include "Shell.h"
+#include "Shell_App.h"
 #include "LoRaMesh_App.h"
 #include "LoRaMacCrypto.h"
 

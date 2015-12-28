@@ -105,7 +105,7 @@
 #define configMINIMAL_STACK_SIZE                  ((unsigned portSHORT)200) /* stack size in addressable stack units */
 /*----------------------------------------------------------*/
 /* Heap Memory */
-#define configFRTOS_MEMORY_SCHEME                 2 /* either 1 (only alloc), 2 (alloc/free), 3 (malloc) or 4 (coalesc blocks) */
+#define configFRTOS_MEMORY_SCHEME                 4 /* either 1 (only alloc), 2 (alloc/free), 3 (malloc) or 4 (coalesc blocks) */
 #define configTOTAL_HEAP_SIZE                     ((size_t)(0x2000)) /* size of heap in bytes */
 #define configUSE_HEAP_SECTION_NAME               1 /* set to 1 if a custom section name (configHEAP_SECTION_NAME_STRING) shall be used, 0 otherwise */
 #if configUSE_HEAP_SECTION_NAME

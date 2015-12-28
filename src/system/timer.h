@@ -36,9 +36,7 @@ typedef uint64_t TimerTime_t;
 /*! \brief Timer object description */
 typedef struct TimerEvent_s {
     TimerHandle_t Handle;               //! Timer handle
-    uint8_t Priority;//! Timer priority
     uint32_t PeriodInMs;//! Timer period value
-    uint32_t NextScheduledEvent;//! Next schedule timer event
     bool HasChanged;//! Period of the timer has changed
     bool AutoReload;//! Is auto reload enabled
     bool IsRunning;//! Is Timer running

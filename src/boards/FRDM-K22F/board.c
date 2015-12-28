@@ -138,9 +138,6 @@ Uart_t UartUsb;
 /*******************************************************************************
  * PRIVATE VARIABLES (STATIC)
  ******************************************************************************/
-/*! Initializes the unused GPIO to a known status */
-static void BoardUnusedIoInit( void );
-
 /*! Flag to indicate if the MCU is Initialized */
 static bool McuInitialized = false;
 
@@ -149,6 +146,12 @@ static bool McuInitialized = false;
 uint8_t TxBuffer[FIFO_TX_SIZE];
 uint8_t RxBuffer[FIFO_RX_SIZE];
 #endif
+
+/*******************************************************************************
+ * PRIVATE FUNCTION PROTOTYPES (STATIC)
+ ******************************************************************************/
+/*! Initializes the unused GPIO to a known status */
+static void BoardUnusedIoInit( void );
 
 /*******************************************************************************
  * MODULE FUNCTIONS (PUBLIC)
@@ -318,6 +321,9 @@ uint32_t BoardGetRandomSeed( void )
     return randout;
 }
 
+/*******************************************************************************
+ * PRIVATE FUNCTIONS (STATIC)
+ ******************************************************************************/
 void BoardGetUniqueId( uint8_t *id )
 {
     id[0] = (ID1 + ID3) >> 24;
@@ -339,3 +345,6 @@ void HardFault_Handler( void )
 {
     __ASM("BKPT #0\n");
 }
+/*******************************************************************************
+ * END OF CODE
+ ******************************************************************************/

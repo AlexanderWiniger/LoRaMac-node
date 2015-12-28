@@ -95,9 +95,19 @@
 			<locationURI>PARENT-4-PROJECT_LOC/src/boards/mcu/kinetis</locationURI>
 		</link>
 		<link>
+			<name>src/apps/LoRaMesh/rtos/LoRaMesh_App</name>
+			<type>2</type>
+			<location>C:/workspace/LoRaMac-node/src/apps/LoRaMesh/rtos/LoRaMesh_App</location>
+		</link>
+		<link>
 			<name>src/apps/LoRaMesh/rtos/LoRaStack</name>
 			<type>2</type>
 			<locationURI>PARENT-4-PROJECT_LOC/src/apps/LoRaMesh/rtos/LoRaStack</locationURI>
+		</link>
+		<link>
+			<name>src/apps/LoRaMesh/rtos/Shell_App</name>
+			<type>2</type>
+			<location>C:/workspace/LoRaMac-node/src/apps/LoRaMesh/rtos/Shell_App</location>
 		</link>
 		<link>
 			<name>src/apps/LoRaMesh/rtos/tinyK20</name>

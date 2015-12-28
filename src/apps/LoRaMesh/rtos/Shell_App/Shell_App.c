@@ -17,7 +17,7 @@
  * INCLUDE FILES
  ******************************************************************************/
 #include "board.h"
-#include "Shell.h"
+#include "Shell_App.h"
 #include "LoRaMesh.h"
 #include <string.h>
 
@@ -68,9 +68,9 @@ void SendSeparatedStrings( const byte *strA, const byte *strB, byte tabChar, byt
 /*******************************************************************************
  * MODULE FUNCTIONS (PUBLIC)
  ******************************************************************************/
-void Shell_Init( Uart_t *uart )
+void Shell_AppInit( Uart_t *stdio )
 {
-    Shell_Uart = uart;
+    Shell_Uart = stdio;
 
     if ( xTaskCreate(ShellTask, "Shell", configMINIMAL_STACK_SIZE + 300, (void*) NULL,
             tskIDLE_PRIORITY + 1, (xTaskHandle*) NULL) != pdPASS ) {
@@ -110,12 +110,12 @@ uint8_t Shell_ParseCommand( const unsigned char *cmd, bool *handled,
         Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
         Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
         Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
-        Shell_SendStr((unsigned char*) "tinyK20 Demo", io->stdOut);
+        Shell_SendStr((unsigned char*) "LoRaMesh demo application", io->stdOut);
         Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
         Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
         Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
         Shell_SendHelpStr((unsigned char*) "Shell",
-                (const unsigned char*) "Group of CLS1 commands\r\n", io->stdOut);
+                (const unsigned char*) "Group of shell commands\r\n", io->stdOut);
         Shell_SendHelpStr((unsigned char*) "  help|status",
                 (const unsigned char*) "Print help or status information\r\n",
                 io->stdOut);
@@ -200,14 +200,16 @@ void Shell_SendChar( unsigned char ch )
 {
     if ( !Shell_Uart->IsInitialized ) return;
 
-    while (UartPutChar(Shell_Uart, (uint8_t) ch) == ERR_TXFULL) {
-    } /* Send char */
+    UartPutBuffer(Shell_Uart, (uint8_t *) &ch, 1);
 }
 
 bool Shell_KeyPressed( void )
 {
-    if ( IsFifoEmpty(&(Shell_Uart->FifoRx)) ) return false;
-    else return true;
+#if 0
+    return UartGetCharsInRxFifo(Shell_Uart);
+#else
+    return !IsFifoEmpty(&Shell_Uart->FifoRx);
+#endif
 }
 
 /*******************************************************************************
@@ -290,6 +292,7 @@ bool ReadLine( uint8_t *buf, size_t bufSize, Shell_ConstStdIO_t *io )
                 break; /* get out of loop */
             }
             *buf = (uint8_t) c; /* append character to the string */
+            io->stdOut(c); /* console feedback */
             buf++;
             bufSize--;
             if ( (c == '\r') || (c == '\n') ) {

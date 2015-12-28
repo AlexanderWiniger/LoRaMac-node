@@ -17,7 +17,7 @@
 #include "LoRaFrm.h"
 #include "LoRaMac.h"
 #include "LoRaPhy.h"
-#include "Shell.h"
+#include "Shell_App.h"
 
 /*******************************************************************************
  * CONSTANT DEFINITIONS
@@ -154,7 +154,7 @@ typedef struct {
 } LoRaDevice_t;
 
 typedef enum {
-    EVENT_TYPE_ADVERTISING, EVENT_TYPE_UPLINK, EVENT_TYPE_MULTICAST, EVENT_TYPE_RECEPTION
+    EVENT_TYPE_UPLINK, EVENT_TYPE_MULTICAST, EVENT_TYPE_RECEPTION
 } LoRaSchedulerEventType_t;
 
 typedef void (*LoRaSchedulerEventCallback_t)( void *param );

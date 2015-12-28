@@ -12,8 +12,8 @@
  *          - created
  *******************************************************************************
  */
-#ifndef SHELL_H_
-#define SHELL_H_
+#ifndef SHELL_APP_H_
+#define SHELL_APP_H_
 
 /*******************************************************************************
  * INCLUDE FILES
@@ -66,7 +66,7 @@ typedef const Shell_ParseCommandCallback_t Shell_ConstParseCommandCallback_t;
 /*******************************************************************************
  * MODULE FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/
-void Shell_Init( Uart_t *uart );
+void Shell_AppInit( Uart_t *uart );
 
 void Shell_SendHelpStr( const byte *strCmd, const byte *strHelp,
         StdIO_OutErrFunction_t io );
@@ -94,4 +94,4 @@ bool Shell_KeyPressed( void );
  * END OF CODE
  ******************************************************************************/
 
-#endif /* SHELL_H_ */
+#endif /* SHELL_APP_H_ */

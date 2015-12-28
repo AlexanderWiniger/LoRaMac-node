@@ -107,7 +107,7 @@ typedef uint32_t I2C_TypeDef;
 
  \return               IPSR Register value
  */
-__attribute__( ( always_inline ))     static inline uint32_t __get_IPSR( void )
+__attribute__( ( always_inline ))      static inline uint32_t __get_IPSR( void )
 {
     uint32_t result;
 
@@ -157,16 +157,6 @@ void srand1( uint32_t seed );
  * \retval random random value in range min..max
  */
 int32_t randr( int32_t min, int32_t max );
-
-/*!
- *
- */
-void *custom_malloc( size_t size );
-
-/*!
- *
- */
-void custom_free( void *p );
 
 /*!
  * \brief Copies size elements of src array to dst array

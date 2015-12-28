@@ -110,13 +110,6 @@ static uint32_t ReceiveDelay2;
 static uint32_t JoinAcceptDelay1;
 static uint32_t JoinAcceptDelay2;
 
-/*! LoRaPhy reception windows delay
- * \remark normal frame: RxWindowXDelay = ReceiveDelayX - RADIO_WAKEUP_TIME
- *         join frame  : RxWindowXDelay = JoinAcceptDelayX - RADIO_WAKEUP_TIME
- */
-static uint32_t RxWindow1Delay;
-static uint32_t RxWindow2Delay;
-
 /*! LoRa maximum time a reception window stays open */
 static uint32_t MaxRxWindow;
 
@@ -133,8 +126,8 @@ static TimerTime_t AggregatedTimeOff;
 static LoRaPhy_Band_t Bands[LORA_MAX_NB_BANDS] = { BAND0, BAND1, BAND2, BAND3, BAND4, };
 
 /*! LoRaPhy channels */
-static LoRaPhy_ChannelParams_t Channels[LORA_MAX_NB_CHANNELS] = { LC1, LC2, LC3, LC4, LC5, LC6, LC7,
-        LC8, LC9, };
+static LoRaPhy_ChannelParams_t Channels[LORA_MAX_NB_CHANNELS] = { LC1, LC2, LC3, LC4, LC5,
+        LC6, LC7, LC8, LC9, };
 
 /*! Last transmission time on air */
 static TimerTime_t TxTimeOnAir = 0;
@@ -161,8 +154,8 @@ static uint8_t GetTxMsg( uint8_t *buf, size_t bufSize );
 static uint8_t GetRxMsg( uint8_t *buf, size_t bufSize );
 
 /*! \brief Adds an element to rx or tx queue */
-static uint8_t QueuePut( uint8_t *buf, size_t bufSize, size_t payloadSize, bool fromISR, bool isTx,
-        bool toBack, uint8_t flags );
+static uint8_t QueuePut( uint8_t *buf, size_t bufSize, size_t payloadSize, bool fromISR,
+        bool isTx, bool toBack, uint8_t flags );
 
 /*! \brief Check if tx queue contains any messages and send them if so */
 static uint8_t CheckTx( void );
@@ -193,7 +186,7 @@ static void OnRadioRxError( void );
 static void OnRadioRxTimeout( void );
 
 /*! Function executed on second Rx window timer event */
-static void OnRxWindowTimerEvent( void *param );
+static void OnRxWindowTimerEvent( TimerHandle_t xTimer );
 
 /*******************************************************************************
  * API FUNCTIONS (PUBLIC)
@@ -254,8 +247,8 @@ void LoRaPhy_Init( void )
     JoinAcceptDelay1 = JOIN_ACCEPT_DELAY1;
     JoinAcceptDelay2 = JOIN_ACCEPT_DELAY2;
 
-    RxWindow1Delay = RECEIVE_DELAY1 - RADIO_WAKEUP_TIME;
-    RxWindow2Delay = RECEIVE_DELAY2 - RADIO_WAKEUP_TIME;
+    pLoRaDevice->rxWindow1Delay = RECEIVE_DELAY1 - RADIO_WAKEUP_TIME;
+    pLoRaDevice->rxWindow2Delay = RECEIVE_DELAY2 - RADIO_WAKEUP_TIME;
 
     /* Initialize advertising guard time */
     AdvertisingGuardTime = ((TX_TIMEOUT + RECEIVE_DELAY2 + MAX_RX_WINDOW) / 1e3)
@@ -318,7 +311,8 @@ uint8_t LoRaPhy_Process( void )
     return ERR_OK;
 }
 
-uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, size_t payloadSize, uint8_t flags )
+uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, size_t payloadSize,
+        uint8_t flags )
 {
     return QueuePut(buf, bufSize, payloadSize, false, true, true, flags);
 }
@@ -369,23 +363,28 @@ void LoRaPhy_SetChannel( uint8_t id, LoRaPhy_ChannelParams_t params )
         // Don't activate the channel
     }
 
-    if ( (Channels[id].Frequency >= 865000000) && (Channels[id].Frequency <= 868000000) ) {
+    if ( (Channels[id].Frequency >= 865000000)
+            && (Channels[id].Frequency <= 868000000) ) {
         if ( Channels[id].Band != BAND_G1_0 ) {
             Channels[id].Band = BAND_G1_0;
         }
-    } else if ( (Channels[id].Frequency > 868000000) && (Channels[id].Frequency <= 868600000) ) {
+    } else if ( (Channels[id].Frequency > 868000000)
+            && (Channels[id].Frequency <= 868600000) ) {
         if ( Channels[id].Band != BAND_G1_1 ) {
             Channels[id].Band = BAND_G1_1;
         }
-    } else if ( (Channels[id].Frequency >= 868700000) && (Channels[id].Frequency <= 869200000) ) {
+    } else if ( (Channels[id].Frequency >= 868700000)
+            && (Channels[id].Frequency <= 869200000) ) {
         if ( Channels[id].Band != BAND_G1_2 ) {
             Channels[id].Band = BAND_G1_2;
         }
-    } else if ( (Channels[id].Frequency >= 869400000) && (Channels[id].Frequency <= 869650000) ) {
+    } else if ( (Channels[id].Frequency >= 869400000)
+            && (Channels[id].Frequency <= 869650000) ) {
         if ( Channels[id].Band != BAND_G1_3 ) {
             Channels[id].Band = BAND_G1_3;
         }
-    } else if ( (Channels[id].Frequency >= 869700000) && (Channels[id].Frequency <= 870000000) ) {
+    } else if ( (Channels[id].Frequency >= 869700000)
+            && (Channels[id].Frequency <= 870000000) ) {
         if ( Channels[id].Band != BAND_G1_4 ) {
             Channels[id].Band = BAND_G1_4;
         }
@@ -470,9 +469,11 @@ void LoRaPhy_SetRxParameters( uint8_t rx1DrOffset, uint8_t rx2Dr, uint32_t rx2Fr
 /*******************************************************************************
  * TEST FUNCTION PROTOTYPES (PUBLIC) (FOR DEBUG PURPOSES ONLY)
  ******************************************************************************/
-uint8_t LoRaPhy_QueueRxMessage( uint8_t *payload, size_t payloadSize, bool toBack, uint8_t flags )
+uint8_t LoRaPhy_QueueRxMessage( uint8_t *payload, size_t payloadSize, bool toBack,
+        uint8_t flags )
 {
-    return QueuePut(payload, LORAPHY_BUFFER_SIZE, payloadSize, false, false, toBack, flags);
+    return QueuePut(payload, LORAPHY_BUFFER_SIZE, payloadSize, false, false, toBack,
+            flags);
 }
 
 /*******************************************************************************
@@ -486,15 +487,13 @@ static void HandleStateMachine()
     uint8_t result;
 
     for ( ;; ) {
-        switch ( phyStatus ) {
+        switch (phyStatus) {
             case PHY_INITIAL_STATE:
                 Radio.Reset();
                 /* Random seed initialization */
                 srand1(Radio.Random());
-                if ( pLoRaDevice->devClass != CLASS_C )
-                    phyStatus = PHY_IDLE;
-                else
-                    phyStatus = PHY_RECEIVING;
+                if ( pLoRaDevice->devClass != CLASS_C ) phyStatus = PHY_IDLE;
+                else phyStatus = PHY_RECEIVING;
                 break;
             case PHY_POWER_DOWN:
                 Radio.Sleep();
@@ -512,10 +511,8 @@ static void HandleStateMachine()
             case PHY_WAIT_FOR_TXDONE:
                 if ( phyFlags.Bits.TxDone == 1 ) {
                     phyFlags.Bits.TxDone = 0;
-                    if ( pLoRaDevice->devClass != CLASS_C )
-                        phyStatus = PHY_POWER_DOWN;
-                    else
-                        phyStatus = PHY_RECEIVING;
+                    if ( pLoRaDevice->devClass != CLASS_C ) phyStatus = PHY_POWER_DOWN;
+                    else phyStatus = PHY_RECEIVING;
                     break;
                 }
                 return;
@@ -592,8 +589,8 @@ static uint8_t GetRxMsg( uint8_t *buf, size_t bufSize )
  *
  * \return Error code, ERR_OK if message has been queued.
  */
-static uint8_t QueuePut( uint8_t *buf, size_t bufSize, size_t payloadSize, bool fromISR, bool isTx,
-        bool toBack, uint8_t flags )
+static uint8_t QueuePut( uint8_t *buf, size_t bufSize, size_t payloadSize, bool fromISR,
+        bool isTx, bool toBack, uint8_t flags )
 {
     /* data format is: dataSize(8bit) data */
     uint8_t res = ERR_OK;
@@ -676,11 +673,11 @@ static uint8_t CheckTx( void )
         channel = Channels[pLoRaDevice->currChannelIndex];
 
         if ( flags & LORAPHY_PACKET_FLAGS_JOIN_REQ ) {
-            RxWindow1Delay = JoinAcceptDelay1 - RADIO_WAKEUP_TIME;
-            RxWindow2Delay = JoinAcceptDelay2 - RADIO_WAKEUP_TIME;
+            pLoRaDevice->rxWindow1Delay = JoinAcceptDelay1 - RADIO_WAKEUP_TIME;
+            pLoRaDevice->rxWindow2Delay = JoinAcceptDelay2 - RADIO_WAKEUP_TIME;
         } else {
-            RxWindow1Delay = ReceiveDelay1 - RADIO_WAKEUP_TIME;
-            RxWindow2Delay = ReceiveDelay2 - RADIO_WAKEUP_TIME;
+            pLoRaDevice->rxWindow1Delay = ReceiveDelay1 - RADIO_WAKEUP_TIME;
+            pLoRaDevice->rxWindow2Delay = ReceiveDelay2 - RADIO_WAKEUP_TIME;
         }
 
         Radio.SetChannel(channel.Frequency);
@@ -688,17 +685,20 @@ static uint8_t CheckTx( void )
 
         if ( pLoRaDevice->currDataRateIndex == DR_7 ) {   // High Speed FSK channel
             Radio.SetTxConfig(MODEM_FSK, TxPowers[pLoRaDevice->currTxPowerIndex], 25e3, 0,
-                    Datarates[pLoRaDevice->currDataRateIndex] * 1e3, 0, 5, false, true, 0, 0, false,
+                    Datarates[pLoRaDevice->currDataRateIndex] * 1e3, 0, 5, false, true, 0,
+                    0, false,
                     TX_TIMEOUT);
             TxTimeOnAir = Radio.TimeOnAir(MODEM_FSK, LORAPHY_BUF_SIZE(TxDataBuffer));
-        } else if ( pLoRaDevice->currDataRateIndex == DR_6 ) {   // High speed LoRa channel
+        } else if ( pLoRaDevice->currDataRateIndex == DR_6 ) {  // High speed LoRa channel
             Radio.SetTxConfig(MODEM_LORA, TxPowers[pLoRaDevice->currTxPowerIndex], 0, 1,
-                    Datarates[pLoRaDevice->currDataRateIndex], 1, 8, false, true, 0, 0, false,
+                    Datarates[pLoRaDevice->currDataRateIndex], 1, 8, false, true, 0, 0,
+                    false,
                     TX_TIMEOUT);
             TxTimeOnAir = Radio.TimeOnAir(MODEM_LORA, LORAPHY_BUF_SIZE(TxDataBuffer));
         } else {   // Normal LoRa channel
             Radio.SetTxConfig(MODEM_LORA, TxPowers[pLoRaDevice->currTxPowerIndex], 0, 0,
-                    Datarates[pLoRaDevice->currDataRateIndex], 1, 8, false, true, 0, 0, false,
+                    Datarates[pLoRaDevice->currDataRateIndex], 1, 8, false, true, 0, 0,
+                    false,
                     TX_TIMEOUT);
             TxTimeOnAir = Radio.TimeOnAir(MODEM_LORA, LORAPHY_BUF_SIZE(TxDataBuffer));
         }
@@ -710,11 +710,12 @@ static uint8_t CheckTx( void )
             AggregatedTimeOff = 0;
         }
 
-        if ( MAX(Bands[channel.Band].TimeOff, AggregatedTimeOff) > (TimerGetCurrentTime()) ) {
+        if ( MAX(Bands[channel.Band].TimeOff, AggregatedTimeOff)
+                > (TimerGetCurrentTime()) ) {
             // Schedule transmission
             LOG_TRACE("Send in %d ticks on channel %d (DR: %u).",
-                    MAX(Bands[channel.Band].TimeOff, AggregatedTimeOff), channel.Frequency,
-                    pLoRaDevice->currDataRateIndex);
+                    MAX(Bands[channel.Band].TimeOff, AggregatedTimeOff),
+                    channel.Frequency, pLoRaDevice->currDataRateIndex);
             vTaskDelay(
                     MAX(Bands[channel.Band].TimeOff, AggregatedTimeOff)
                             / MAX(Bands[channel.Band].TimeOff, AggregatedTimeOff));
@@ -722,12 +723,15 @@ static uint8_t CheckTx( void )
             // Send now
             LOG_TRACE("Sending now on channel %d (DR: %u).", channel.Frequency,
                     pLoRaDevice->currDataRateIndex);
-            Radio.Send(LORAPHY_BUF_PAYLOAD_START(TxDataBuffer), LORAPHY_BUF_SIZE(TxDataBuffer));
+            Radio.Send(LORAPHY_BUF_PAYLOAD_START(TxDataBuffer),
+                    LORAPHY_BUF_SIZE(TxDataBuffer));
         }
 
-        if ( (flags & LORAPHY_PACKET_FLAGS_FRM_MASK) == LORAPHY_PACKET_FLAGS_FRM_ADVERTISING ) {
+        if ( (flags & LORAPHY_PACKET_FLAGS_FRM_MASK)
+                == LORAPHY_PACKET_FLAGS_FRM_ADVERTISING ) {
             phyFlags.Bits.TxType = LORAPHY_TXTYPE_ADVERTISING;
-        } else if ( (flags & LORAPHY_PACKET_FLAGS_FRM_MASK) == LORAPHY_PACKET_FLAGS_FRM_REGULAR ) {
+        } else if ( (flags & LORAPHY_PACKET_FLAGS_FRM_MASK)
+                == LORAPHY_PACKET_FLAGS_FRM_REGULAR ) {
             phyFlags.Bits.TxType = LORAPHY_TXTYPE_REGULAR;
         } else if ( (flags & LORAPHY_PACKET_FLAGS_FRM_MASK)
                 == LORAPHY_PACKET_FLAGS_FRM_MULTICAST ) {
@@ -760,12 +764,12 @@ static void OpenReceptionWindow( uint32_t freq, int8_t datarate, uint32_t bandwi
         Radio.SetChannel(freq);
         if ( datarate == DR_7 ) {
             modem = MODEM_FSK;
-            Radio.SetRxConfig(MODEM_FSK, 50e3, downlinkDatarate * 1e3, 0, 83.333e3, 5, 0, false, 0,
-                    true, 0, 0, false, rxContinuous);
+            Radio.SetRxConfig(MODEM_FSK, 50e3, downlinkDatarate * 1e3, 0, 83.333e3, 5, 0,
+                    false, 0, true, 0, 0, false, rxContinuous);
         } else {
             modem = MODEM_LORA;
-            Radio.SetRxConfig(MODEM_LORA, bandwidth, downlinkDatarate, 1, 0, 8, timeout, false, 0,
-                    false, 0, 0, true, rxContinuous);
+            Radio.SetRxConfig(MODEM_LORA, bandwidth, downlinkDatarate, 1, 0, 8, timeout,
+                    false, 0, false, 0, 0, true, rxContinuous);
         }
 
         Radio.SetMaxPayloadLength(modem, MaxPayloadByDatarate[datarate]);
@@ -822,18 +826,18 @@ static uint8_t SetNextChannel( void )
     for ( i = 0, k = 0; i < LORA_MAX_NB_CHANNELS; i += 16, k++ ) {
         for ( j = 0; j < 16; j++ ) {
             if ( (pLoRaDevice->channelsMask[k] & (1 << j)) != 0 ) {
-                if ( Channels[i + j].Frequency == 0 ) {   // Check if the channel is enabled
+                if ( Channels[i + j].Frequency == 0 ) { // Check if the channel is enabled
                     continue;
                 }
                 if ( ((Channels[i + j].DrRange.Fields.Min <= pLoRaDevice->currChannelIndex)
-                        && (pLoRaDevice->currDataRateIndex <= Channels[i + j].DrRange.Fields.Max))
-                        == false ) {   // Check if the current channel selection supports the given datarate
+                        && (pLoRaDevice->currDataRateIndex
+                                <= Channels[i + j].DrRange.Fields.Max)) == false ) { // Check if the current channel selection supports the given datarate
                     continue;
                 }
-                if ( Bands[Channels[i + j].Band].TimeOff > 0 ) {   // Check if the band is available for transmission
+                if ( Bands[Channels[i + j].Band].TimeOff > 0 ) { // Check if the band is available for transmission
                     continue;
                 }
-                if ( AggregatedTimeOff > 0 ) {   // Check if there is time available for transmission
+                if ( AggregatedTimeOff > 0 ) { // Check if there is time available for transmission
                     continue;
                 }
                 enabledChannels[nbEnabledChannels++] = i + j;
@@ -859,22 +863,26 @@ static void OnRadioTxDone( void )
     Bands[Channels[pLoRaDevice->currChannelIndex].Band].LastTxDoneTime = curTime;
     if ( pLoRaDevice->dbgFlags.Bits.dutyCycleCtrlOff == 0 ) {
         Bands[Channels[pLoRaDevice->currChannelIndex].Band].TimeOff = TxTimeOnAir
-                * Bands[Channels[pLoRaDevice->currChannelIndex].Band].DCycle - TxTimeOnAir;
+                * Bands[Channels[pLoRaDevice->currChannelIndex].Band].DCycle
+                - TxTimeOnAir;
     } else {
         Bands[Channels[pLoRaDevice->currChannelIndex].Band].TimeOff = 0;
     }
     // Update Agregated Time OFF
     AggregatedLastTxDoneTime = curTime;
-    AggregatedTimeOff = AggregatedTimeOff + (TxTimeOnAir * AggregatedDCycle - TxTimeOnAir);
+    AggregatedTimeOff = AggregatedTimeOff
+            + (TxTimeOnAir * AggregatedDCycle - TxTimeOnAir);
 
     if ( phyFlags.Bits.TxType == LORAPHY_TXTYPE_ADVERTISING ) {
         /* Open advertising beacon reception window */
 
     } else if ( phyFlags.Bits.TxType == LORAPHY_TXTYPE_REGULAR
             && pLoRaDevice->dbgFlags.Bits.rxWindowsDisabled != 1 ) {
-        TimerSetValue(&RxWindowTimers[LORAPHY_RXSLOT_RX1WINDOW], RxWindow1Delay);
+        TimerSetValue(&RxWindowTimers[LORAPHY_RXSLOT_RX1WINDOW],
+                pLoRaDevice->rxWindow1Delay);
         TimerStart(&RxWindowTimers[LORAPHY_RXSLOT_RX1WINDOW]);
-        TimerSetValue(&RxWindowTimers[LORAPHY_RXSLOT_RX2WINDOW], RxWindow2Delay);
+        TimerSetValue(&RxWindowTimers[LORAPHY_RXSLOT_RX2WINDOW],
+                pLoRaDevice->rxWindow2Delay);
         TimerStart(&RxWindowTimers[LORAPHY_RXSLOT_RX2WINDOW]);
     } else {
         phyFlags.Bits.TxDone = 1;
@@ -894,7 +902,8 @@ static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t
     packet.phyData = payload;
     packet.phySize = LORAPHY_BUFFER_SIZE;
 
-    if ( QueuePut(packet.rxtx, packet.phySize, size, true, false, true, packet.flags) == ERR_OK ) {
+    if ( QueuePut(packet.rxtx, packet.phySize, size, true, false, true, packet.flags)
+            == ERR_OK ) {
         phyFlags.Bits.RxDone = 1;
     }
 }
@@ -904,7 +913,8 @@ static void OnCadDone( bool channelActivityDetected )
     uint64_t curTime = TimerGetCurrentTime();
     Radio.Sleep();
     if ( !channelActivityDetected ) {
-        LOG_TRACE("Channel clear. Send packet now (%d%d)", *(((int*) (&curTime)) + 1), curTime);
+        LOG_TRACE("Channel clear. Send packet now (%d%d)", *(((int*) (&curTime)) + 1),
+                curTime);
 //        Radio.Send(LoRaMacBuffer, LoRaMacBufferPktLen);
     }
 }
@@ -965,7 +975,9 @@ static void OnRxWindowTimerEvent( TimerHandle_t xTimer )
     bandwidth = 0;          // 125 kHz
     datarate = 0;           // DR_0
     rxContinuous = false;
-    rxType = (rxSlot == LORAPHY_RXSLOT_ADVERTISING) ? RX_TYPE_ADVERTISING : RX_TYPE_REGULAR;
+    rxType =
+            (rxSlot == LORAPHY_RXSLOT_ADVERTISING) ?
+                    RX_TYPE_ADVERTISING : RX_TYPE_REGULAR;
 
     freq = RxChannelParams[rxSlot].freq;
 

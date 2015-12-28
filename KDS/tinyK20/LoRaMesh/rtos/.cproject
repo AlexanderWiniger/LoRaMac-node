@@ -58,13 +58,15 @@
 									<listOptionValue builtIn="false" value="USE_MODEM_LORA"/>
 									<listOptionValue builtIn="false" value="USE_LORA_MESH"/>
 									<listOptionValue builtIn="false" value="USE_DEBUGGER"/>
-									<listOptionValue builtIn="false" value="USE_SEGGER_RTT"/>
+									<listOptionValue builtIn="false" value="USE_CUSTOM_UART_HAL"/>
 									<listOptionValue builtIn="false" value="USE_FREE_RTOS"/>
 									<listOptionValue builtIn="false" value="SX1276_BOARD_EMBED"/>
 									<listOptionValue builtIn="false" value="DEBUG"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths.1538249746" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/rtos/tinyK20"/>
+									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/rtos/Shell_App"/>
+									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/rtos/LoRaMesh_App"/>
 									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/rtos/LoRaStack"/>
 									<listOptionValue builtIn="false" value="../../../../../src/boards/tinyK20"/>
 									<listOptionValue builtIn="false" value="../../../../../src/boards/mcu/kinetis/k20d"/>
@@ -119,12 +121,14 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.784262688.234269450" name="custom_list.h" rcbsApplicability="disable" resourcePath="src/boards/mcu/kinetis/utilities/custom_list.h" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="src/radio/sx1272|src/boards/mcu/kinetis/k22f|src/boards/mcu/kinetis/kl26z" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/boards/mcu/kinetis/utilities/custom_list.h|src/boards/mcu/kinetis/utilities/custom_list.c|src/radio/sx1272|src/boards/mcu/kinetis/k22f|src/boards/mcu/kinetis/kl26z" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+			<storageModule moduleId="ilg.gnuarmeclipse.managedbuild.packs"/>
 		</cconfiguration>
 		<cconfiguration id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.823282875">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.823282875" moduleId="org.eclipse.cdt.core.settings" name="Release">
