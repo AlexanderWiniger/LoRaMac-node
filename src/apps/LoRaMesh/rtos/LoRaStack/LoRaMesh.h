@@ -29,6 +29,14 @@
 /* PHY buffer access macros */
 #define LORAMESH_BUF_IDX_HDR                 (0) /* <Hdr> index */
 #define LORAMESH_BUF_IDX_PAYLOAD             (LORAMESH_HEADER_SIZE) /* <app payload> index */
+
+/* Advertising definitions */
+#define LORAMESH_ADVERTISING_MSG_LENGTH      (0x17)
+#define LORAMESH_ADVERITSING_DEV_ADR_IDX     (LORAPHY_BUF_IDX_PAYLOAD)
+#define LORAMESH_ADVERITSING_ROLE_RANK_IDX   (LORAPHY_BUF_IDX_PAYLOAD + 4)
+#define LORAMESH_ADVERITSING_LOCATION_IDX    (LORAPHY_BUF_IDX_PAYLOAD + 5)
+#define LORAMESH_ADVERITSING_COORD_ADR_IDX   (LORAPHY_BUF_IDX_PAYLOAD + 13)
+#define LORAMESH_ADVERITSING_SLOT_INFO_IDX   (LORAPHY_BUF_IDX_PAYLOAD + 17)
 /*******************************************************************************
  * MACRO DEFINITIONS
  ******************************************************************************/
@@ -41,6 +49,11 @@
 typedef enum {
     CLASS_A, CLASS_B, CLASS_C, CLASS_D /* LoRaMesh class */,
 } DeviceClass_t;
+
+/*! LoRaMesh devices role definition */
+typedef enum {
+    NODE, ROUTER, COORDINATOR /* LoRaMesh class */,
+} DeviceRole_t;
 
 /* LoRaMesh connection info structure */
 typedef struct ConnectionInfo_s {
@@ -132,6 +145,8 @@ typedef struct {
     uint8_t *devEui; /* Device extended unique identifier (64-Bit) */
     uint16_t devNonce; /* Device nonce */
     DeviceClass_t devClass; /* Device class */
+    DeviceRole_t devRole; /* Device role */
+    uint32_t coordinatorAddr; /* Coordinator address */
     uint8_t *appEui; /* Application extended unique identifier (64-Bit) */
     uint8_t *appKey; /* Application key AES 128-Bit */
     ConnectionInfo_t upLinkSlot; /* Up link slot information */
@@ -156,35 +171,35 @@ typedef struct {
 typedef enum {
     EVENT_TYPE_UPLINK,
     EVENT_TYPE_MULTICAST,
-    EVENT_TYPE_RECEPTION
+    EVENT_TYPE_SYNCH_RX_WINDOW,
+    EVENT_TYPE_RX1_WINDOW,
+    EVENT_TYPE_RX2_WINDOW
 } LoRaSchedulerEventType_t;
 
-struct LoRaMeshSchedulerEvent_s;
+typedef void (*LoRaSchedulerEventCallback_t)( void *param );
 
-typedef void (*LoRaSchedulerEventCallback_t)( struct LoRaMeshSchedulerEvent_s *evt, void *param );
-
-typedef struct LoRaMeshEventHandler_s {
+typedef struct LoRaSchedulerEventHandler_s {
     LoRaSchedulerEventType_t eventType;
     LoRaSchedulerEventCallback_t callback;
     void *param;
-    struct LoRaMeshSchedulerEvent_s *firstScheduledEvent;
-    struct LoRaMeshEventHandler_s *nextEventHandler;
-} LoRaMeshEventHandler_t;
+    struct LoRaSchedulerEvent_s *firstScheduledEvent;
+    struct LoRaSchedulerEventHandler_s *nextEventHandler;
+} LoRaSchedulerEventHandler_t;
 
-typedef struct LoRaMeshSchedulerEvent_s {
+typedef struct LoRaSchedulerEvent_s {
     uint16_t startSlot;
     uint16_t endSlot;
-    LoRaMeshEventHandler_t *eventHandler;
-    struct LoRaMeshSchedulerEvent_s *nextRecurringEvent;
-    struct LoRaMeshSchedulerEvent_s *nextSchedulerEvent;
-} LoRaMeshSchedulerEvent_t;
+    LoRaSchedulerEventHandler_t *eventHandler;
+    struct LoRaSchedulerEvent_s *nextRecurringEvent;
+    struct LoRaSchedulerEvent_s *nextSchedulerEvent;
+} LoRaSchedulerEvent_t;
 
-typedef uint8_t (*PortHandlerFunction_t)( uint8_t *payload, uint8_t payloadSize,
-        uint8_t fPort );
+typedef uint8_t (*PortHandlerFunction_t)( uint8_t *payload, uint8_t payloadSize, uint8_t fPort );
 
-typedef struct {
-//    uint8_t Port;
-    PortHandlerFunction_t Handler;
+typedef struct PortHandler_s {
+    uint8_t fPort;
+    PortHandlerFunction_t fHandler;
+    struct PortHandler_s *nextPortHandler;
 } PortHandler_t;
 
 /*******************************************************************************
@@ -208,8 +223,7 @@ extern LoRaDevice_t* pLoRaDevice;
 /*!
  *
  */
-byte LoRaMesh_ParseCommand( const unsigned char *cmd, bool *handled,
-        Shell_ConstStdIO_t *io );
+byte LoRaMesh_ParseCommand( const unsigned char *cmd, bool *handled, Shell_ConstStdIO_t *io );
 
 /*!
  * Initializind mesh network.
@@ -234,8 +248,9 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks );
  * \param [IN] appSKey Pointer to the application session AES128 key array
  *                     ( 16 bytes )
  */
-void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey,
-        uint8_t *appSKey );
+void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint8_t *appSKey );
+
+LoRaSchedulerEventHandler_t * LoRaMesh_AllocateEventHandler( void );
 
 /*!
  * Register an application handler on the specified port.
@@ -245,7 +260,7 @@ void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey,
  *
  * \retval status ERR_OK if port was successfully registered.
  */
-uint8_t LoRaMesh_RegisterApplicationPort( PortHandlerFunction_t fHandler, uint8_t fPort );
+uint8_t LoRaMesh_RegisterApplication( PortHandlerFunction_t fHandler, uint8_t fPort );
 
 /*!
  * Remove an application handler from the specified port.
@@ -255,7 +270,29 @@ uint8_t LoRaMesh_RegisterApplicationPort( PortHandlerFunction_t fHandler, uint8_
  *
  * \retval status ERR_OK if port was successfully removed.
  */
-uint8_t LoRaMesh_RemoveApplicationPort( PortHandlerFunction_t fHandler, uint8_t fPort );
+uint8_t LoRaMesh_RemoveApplication( uint8_t fPort );
+
+/*!
+ * Register a scheduled data transmission
+ *
+ * \param[OUT] eHandler Pointer to the created event handler
+ * \param[IN] interval Transmission period
+ * \param[IN] callback Callback function
+ * \param[IN] param Parameter to be passed to callback function
+ *
+ * \retval status ERR_OK if transmission was scheduled successfully
+ */
+uint8_t LoRaMesh_RegisterTransmission( LoRaSchedulerEventHandler_t * eHandler, uint32_t interval,
+        void (*callback)( void *param ), void* param );
+
+/*!
+ * Remove a scheduled data transmission
+ *
+ * \param[IN] eHandler Pointer to the created event handler
+ *
+ * \retval status ERR_OK if transmission was removed successfully
+ */
+uint8_t LoRaMesh_RemoveTransmission( LoRaSchedulerEventHandler_t * eHandler );
 
 /*!
  * LoRaMAC layer send frame
@@ -298,8 +335,8 @@ uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort,
  *
  * \retval status ERR_OK if frame was handled successfully
  */
-uint8_t LoRaMesh_PutPayload( uint8_t *buf, uint16_t bufSize, uint8_t payloadSize,
-        uint8_t fPort, LoRaFrm_Type_t fType );
+uint8_t LoRaMesh_PutPayload( uint8_t *buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
+        LoRaFrm_Type_t fType );
 
 /*!
  * Process advertising message.

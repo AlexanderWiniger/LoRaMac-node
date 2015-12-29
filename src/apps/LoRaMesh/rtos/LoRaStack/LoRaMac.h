@@ -27,6 +27,9 @@
 /* PHY buffer access macros */
 #define LORAMAC_BUF_IDX_HDR                 (LORAPHY_BUF_IDX_PAYLOAD+0) /* <Hdr> index */
 #define LORAMAC_BUF_IDX_PAYLOAD             (LORAMAC_BUF_IDX_HDR+LORAMAC_HEADER_SIZE) /* <nwk payload> index */
+
+#define LORAMAC_JOIN_MESH_MSG_LENGTH        (0x1B)
+#define LORAMAC_REBIND_MESH_MSG_LENGTH      (0x1F)
 /*******************************************************************************
  * MACRO DEFINITIONS
  ******************************************************************************/

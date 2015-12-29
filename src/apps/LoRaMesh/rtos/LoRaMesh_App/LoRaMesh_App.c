@@ -77,7 +77,7 @@ static uint8_t IsTxConfirmed = LORAWAN_CONFIRMED_MSG_ON;
 static void Process( void );
 
 /* Send frame on configured app port */
-static bool SendFrame( void );
+static void SendFrame( void* param );
 
 static uint8_t ProcessFrame( uint8_t *buf, uint8_t payloadSize, uint8_t fPort );
 
@@ -89,8 +89,17 @@ static portTASK_FUNCTION(LoRaMeshTask, pvParameters);
  ******************************************************************************/
 void LoRaMesh_AppInit( void )
 {
+    LoRaSchedulerEventHandler_t *appEvtHandler, *appEvtHandler2;
     LoRaMesh_Init(&sLoRaMeshCallbacks);
-    LoRaMesh_RegisterApplicationPort((PortHandlerFunction_t) & ProcessFrame, AppPort);
+    LoRaMesh_RegisterApplication((PortHandlerFunction_t) & ProcessFrame, AppPort);
+
+    appEvtHandler = LoRaMesh_AllocateEventHandler();
+    LoRaMesh_RegisterTransmission(appEvtHandler, LORAMESH_APP_TX_INTERVAL, &SendFrame,
+            (void*) NULL);
+
+//    appEvtHandler2 = LoRaMesh_AllocateEventHandler();
+//    LoRaMesh_RegisterTransmission(appEvtHandler2, 6000000, &SendFrame, (void*) NULL);
+//    LoRaMesh_RemoveTransmission(appEvtHandler2);
 
 #if(LORAMESH_TEST_APP_ACTIVATED == 1)
     LoRaTest_AppInit();
@@ -128,7 +137,7 @@ void LoRaMesh_AppInit( void )
 static void Process( void )
 {
     for ( ;; ) {
-        switch (appState) {
+        switch ( appState ) {
             case LORAMESH_INITIAL:
                 appState = LORAMESH_TX_RX;
                 continue;
@@ -154,10 +163,8 @@ static uint8_t ProcessFrame( uint8_t *buf, uint8_t payloadSize, uint8_t fPort )
     return ERR_OK;
 }
 
-static bool SendFrame( void )
+static void SendFrame( void* param )
 {
-    uint8_t sendFrameStatus = 0;
-
     AppData[0] = 'H';
     AppData[1] = 'e';
     AppData[2] = 'l';
@@ -171,11 +178,8 @@ static bool SendFrame( void )
     AppData[10] = 'd';
     AppData[11] = '\0';
 
-    sendFrameStatus = LoRaMesh_SendFrame(AppData, AppDataSize, AppPort, true,
-            IsTxConfirmed);
-
-    if ( sendFrameStatus == ERR_NOTAVAIL ) return true;
-    else return false;
+    LOG_TRACE("Sending frame.");
+//     LoRaMesh_SendFrame(AppData, AppDataSize, AppPort, true, IsTxConfirmed);
 }
 
 static portTASK_FUNCTION(LoRaMeshTask, pvParameters)

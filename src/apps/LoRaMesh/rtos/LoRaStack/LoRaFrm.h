@@ -20,7 +20,8 @@
 /*******************************************************************************
  * CONSTANT DEFINITIONS
  ******************************************************************************/
-#define LORAFRM_NOF_USABLE_FPORT                (223)
+#define LORAFRM_LOWEST_FPORT                    (223)
+#define LORAFRM_HIGHEST_FPORT                   (224)
 
 #define LORAFRM_HEADER_SIZE_MAX                 (22)
 #define LORAFRM_HEADER_SIZE_MIN                 (7)
@@ -84,8 +85,8 @@ void LoRaFrm_Init( void );
  * \param packet Pointer to the packet descriptor
  * \return Error code, ERR_OK if everything is ok, ERR_OVERFLOW if buffer is too small.
  */
-uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr,
-        LoRaFrm_Direction_t fDir, uint32_t fCnt );
+uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr, LoRaFrm_Direction_t fDir,
+        uint32_t fCnt );
 
 /*!
  * \brief Puts a payload into the buffer queue to be sent asynchronously.
@@ -100,9 +101,8 @@ uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr,
  *
  * \return Error code, ERR_OK if everything is ok, ERR_OVERFLOW if buffer is too small.
  */
-uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
-        uint8_t fPort, LoRaFrm_Type_t fType, LoRaFrm_Direction_t fDir, bool confirmed,
-        bool encrypted );
+uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
+        LoRaFrm_Type_t fType, LoRaFrm_Direction_t fDir, bool confirmed, bool encrypted );
 
 /*******************************************************************************
  * END OF CODE

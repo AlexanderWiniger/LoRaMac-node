@@ -107,6 +107,11 @@
 #define LORAMESH_CONFIG_MAX_NOF_CHILD_NODES                 (8)
 #endif
 
+/*! Maximal number of fPort handlers */
+#ifndef LORAMESH_CONFIG_MAX_NOF_PORT_HANDLERS
+#define LORAMESH_CONFIG_MAX_NOF_PORT_HANDLERS               (16)
+#endif
+
 /* Maximal number of LoRaMesh scheduler events */
 #ifndef LORAMESH_CONFIG_MAX_NOF_SCHEDULER_EVENTS
 #define LORAMESH_CONFIG_MAX_NOF_SCHEDULER_EVENTS            (64)

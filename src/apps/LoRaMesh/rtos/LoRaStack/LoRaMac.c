@@ -59,8 +59,7 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
     payloadSize = LORAPHY_BUF_SIZE(packet->phyData);
 
     /* Check if incoming packet is an advertising beacon */
-    if ( (packet->flags & LORAPHY_PACKET_FLAGS_FRM_MASK)
-            == LORAPHY_PACKET_FLAGS_FRM_ADVERTISING ) {
+    if ( (packet->flags & LORAPHY_PACKET_FLAGS_FRM_MASK) == LORAPHY_PACKET_FLAGS_FRM_ADVERTISING ) {
         LOG_TRACE("Received advertising beacon.");
         return LoRaMesh_ProcessAdvertising(payload, payloadSize);
     }
@@ -70,9 +69,16 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
     /* Check if message version matches*/
     if ( macHdr.Bits.Major != LORAMESH_CONFIG_MAJOR_VERSION ) return ERR_FAILED;
 
-    switch (macHdr.Bits.MType) {
+    switch ( macHdr.Bits.MType ) {
         case MSG_TYPE_JOIN_REQ:
-            LOG_TRACE("Received join request.");
+            if ( payloadSize == LORAMAC_JOIN_MESH_MSG_LENGTH ) {
+                /* Join mesh request */
+            } else if ( payloadSize == LORAMAC_REBIND_MESH_MSG_LENGTH ) {
+                /* Rebind mesh request */
+            } else {
+                /* Regular join request (ignore)*/
+                return ERR_INVALID_TYPE;
+            }
             break;
         case MSG_TYPE_JOIN_ACCEPT:
         {
@@ -84,8 +90,8 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
 
             macRxBuffer[0] = macHdr.Value;
 
-            LoRaMacJoinComputeMic(macRxBuffer, payloadSize - LORAMAC_MIC_SIZE,
-                    pLoRaDevice->appKey, &mic);
+            LoRaMacJoinComputeMic(macRxBuffer, payloadSize - LORAMAC_MIC_SIZE, pLoRaDevice->appKey,
+                    &mic);
 
             micRx |= ((uint32_t) macRxBuffer[payloadSize - LORAMAC_MIC_SIZE]);
             micRx |= ((uint32_t) macRxBuffer[payloadSize - LORAMAC_MIC_SIZE + 1] << 8);
@@ -109,8 +115,7 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
                 pLoRaDevice->devAddr |= ((uint32_t) macRxBuffer[10] << 24);
 
                 // DLSettings
-                LoRaPhy_SetDownLinkSettings((macRxBuffer[11] >> 4) & 0x07,
-                        macRxBuffer[11] & 0x0F);
+                LoRaPhy_SetDownLinkSettings((macRxBuffer[11] >> 4) & 0x07, macRxBuffer[11] & 0x0F);
                 // RxDelay
                 receiveDelay1 = (macRxBuffer[12] & 0x0F);
                 if ( receiveDelay1 == 0 ) {
@@ -156,7 +161,8 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
                 if ( curMulticastGrp != NULL ) {
                     frameCntr = curMulticastGrp->Connection.DownLinkCounter;
                     devAddr = curMulticastGrp->Connection.Address;
-                } else return ERR_FAILED;
+                } else
+                    return ERR_FAILED;
             } else {
                 frameCntr = pLoRaDevice->upLinkSlot.DownLinkCounter;
                 devAddr = pLoRaDevice->devAddr;
@@ -192,23 +198,21 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
     }
 
     micRx |= ((uint32_t) payload[LORAMAC_BUF_IDX_HDR + payloadSize - LORAMAC_MIC_SIZE]);
-    micRx |= ((uint32_t) payload[LORAMAC_BUF_IDX_HDR + payloadSize - LORAMAC_MIC_SIZE + 1]
-            << 8);
-    micRx |= ((uint32_t) payload[LORAMAC_BUF_IDX_HDR + payloadSize - LORAMAC_MIC_SIZE + 2]
-            << 16);
-    micRx |= ((uint32_t) payload[LORAMAC_BUF_IDX_HDR + payloadSize - LORAMAC_MIC_SIZE + 3]
-            << 24);
+    micRx |= ((uint32_t) payload[LORAMAC_BUF_IDX_HDR + payloadSize - LORAMAC_MIC_SIZE + 1] << 8);
+    micRx |= ((uint32_t) payload[LORAMAC_BUF_IDX_HDR + payloadSize - LORAMAC_MIC_SIZE + 2] << 16);
+    micRx |= ((uint32_t) payload[LORAMAC_BUF_IDX_HDR + payloadSize - LORAMAC_MIC_SIZE + 3] << 24);
 
     sequenceCntr = (uint16_t) payload[LORAFRM_BUF_IDX_CNTR];
     sequenceCntr |= (uint16_t) payload[LORAFRM_BUF_IDX_CNTR + 1] << 8;
     sequenceCntrDiff = (sequenceCntr - ((uint16_t)(frameCntr & 0xFFFF)));
 
-    if ( sequenceCntrDiff < (1 << 15) ) frameCntr += sequenceCntrDiff;
-    else frameCntr += 0x10000 + (int16_t) sequenceCntrDiff;
+    if ( sequenceCntrDiff < (1 << 15) )
+        frameCntr += sequenceCntrDiff;
+    else
+        frameCntr += 0x10000 + (int16_t) sequenceCntrDiff;
 
-    LoRaMacComputeMic((uint8_t*) &payload[LORAMAC_BUF_IDX_HDR],
-            payloadSize - LORAMAC_MIC_SIZE, pLoRaDevice->upLinkSlot.NwkSKey, devAddr,
-            frameDir, frameCntr, &mic);
+    LoRaMacComputeMic((uint8_t*) &payload[LORAMAC_BUF_IDX_HDR], payloadSize - LORAMAC_MIC_SIZE,
+            pLoRaDevice->upLinkSlot.NwkSKey, devAddr, frameDir, frameCntr, &mic);
 
     if ( mic == micRx ) {
 #if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
@@ -239,7 +243,7 @@ uint8_t LoRaMac_PutPayload( uint8_t* buf, size_t bufSize, size_t payloadSize,
     buf[LORAMAC_BUF_IDX_HDR] = macHdr.Value;
     payloadSize++;
 
-    switch (macHdr.Bits.MType) {
+    switch ( macHdr.Bits.MType ) {
         case MSG_TYPE_JOIN_REQ:
             LoRaMacJoinComputeMic(buf, payloadSize & 0xFF, pLoRaDevice->appKey, &mic);
 
@@ -256,8 +260,7 @@ uint8_t LoRaMac_PutPayload( uint8_t* buf, size_t bufSize, size_t payloadSize,
         case MSG_TYPE_DATA_CONFIRMED_UP:
         {
             LoRaMacComputeMic(buf, payloadSize, pLoRaDevice->upLinkSlot.NwkSKey,
-                    pLoRaDevice->devAddr, UP_LINK,
-                    pLoRaDevice->upLinkSlot.DownLinkCounter, &mic);
+                    pLoRaDevice->devAddr, UP_LINK, pLoRaDevice->upLinkSlot.DownLinkCounter, &mic);
 
             if ( (payloadSize + LORAMAC_MIC_SIZE) > LORAMAC_PAYLOAD_SIZE ) {
                 return ERR_OVERFLOW;
@@ -294,7 +297,7 @@ uint8_t LoRaMac_AddCommand( uint8_t cmd, uint8_t *args, size_t argsSize )
 
     if ( pLoRaDevice->macCmdBufferIndex > 15 ) return ERR_OVERFLOW;
 
-    switch (cmd) {
+    switch ( cmd ) {
         case MAC_COMMAND_LINK_CHECK:
             /* No payload for this answer */
             break;
@@ -350,9 +353,9 @@ uint8_t LoRaMac_AddCommand( uint8_t cmd, uint8_t *args, size_t argsSize )
 
 void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t commandsSize )
 {
-    while (macIndex < commandsSize) {
+    while ( macIndex < commandsSize ) {
         // Decode Frame MAC commands
-        switch (payload[macIndex++]) {
+        switch ( payload[macIndex++] ) {
             case MAC_COMMAND_LINK_CHECK:
                 pLoRaDevice->ctrlFlags.Bits.linkCheck = 1;
                 lastLinkCheck.Margin = payload[macIndex++];
@@ -410,37 +413,34 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
                                 chMask |= 1 << i;
                             }
                         } else {
-                            if ( ((chMask & (1 << i)) != 0)
-                                    && (channels[i].Frequency == 0) ) { // Trying to enable an undefined channel
-                                status &= 0xFE; // Channel mask KO
+                            if ( ((chMask & (1 << i)) != 0) && (channels[i].Frequency == 0) ) {   // Trying to enable an undefined channel
+                                status &= 0xFE;   // Channel mask KO
                             }
                         }
                     }
                     channelsMask[0] = chMask;
                 }
-                if ( ((datarate < LORAMAC_MIN_DATARATE)
-                        || (datarate > LORAMAC_MAX_DATARATE)) == true ) {
+                if ( ((datarate < LORAMAC_MIN_DATARATE) || (datarate > LORAMAC_MAX_DATARATE))
+                        == true ) {
                     status &= 0xFD;   // Datarate KO
                 }
 
                 //
                 // Remark MaxTxPower = 0 and MinTxPower = 5
                 //
-                if ( ((LORAMAC_MAX_TX_POWER <= txPower)
-                        && (txPower <= LORAMAC_MIN_TX_POWER)) == false ) {
+                if ( ((LORAMAC_MAX_TX_POWER <= txPower) && (txPower <= LORAMAC_MIN_TX_POWER))
+                        == false ) {
                     status &= 0xFB;   // TxPower KO
                 }
                 if ( (status & 0x07) == 0x07 ) {
-                    for ( uint8_t i = 0;
-                            i < (sizeof(channelsMask) / sizeof(channelsMask)); i++ ) {
+                    for ( uint8_t i = 0; i < (sizeof(channelsMask) / sizeof(channelsMask)); i++ ) {
                         pLoRaDevice->channelsMask[i] = channelsMask[i];
                     }
                     pLoRaDevice->currDataRateIndex = datarate;
                     pLoRaDevice->currTxPowerIndex = txPower;
                     pLoRaDevice->nbRep = nbRep;
                 }
-                LoRaMac_AddCommand(MAC_COMMAND_LINK_ADR, (uint8_t*) &status,
-                        sizeof(status));
+                LoRaMac_AddCommand(MAC_COMMAND_LINK_ADR, (uint8_t*) &status, sizeof(status));
                 break;
             }
             case MAC_COMMAND_DUTY_CYCLE:
@@ -466,8 +466,8 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
                     status &= 0xFE;   // Channel frequency KO
                 }
 
-                if ( ((datarate < LORAMAC_MIN_DATARATE)
-                        || (datarate > LORAMAC_MAX_DATARATE)) == true ) {
+                if ( ((datarate < LORAMAC_MIN_DATARATE) || (datarate > LORAMAC_MAX_DATARATE))
+                        == true ) {
                     status &= 0xFD;   // Datarate KO
                 }
 
@@ -515,18 +515,15 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
 
                 if ( (chParam.DrRange.Fields.Min > chParam.DrRange.Fields.Max)
                         || (((LORAMAC_MIN_DATARATE <= chParam.DrRange.Fields.Min)
-                                && (chParam.DrRange.Fields.Min <= LORAMAC_MAX_DATARATE))
-                                == false)
+                                && (chParam.DrRange.Fields.Min <= LORAMAC_MAX_DATARATE)) == false)
                         || (((LORAMAC_MIN_DATARATE <= chParam.DrRange.Fields.Max)
-                                && (chParam.DrRange.Fields.Max <= LORAMAC_MAX_DATARATE))
-                                == false) ) {
+                                && (chParam.DrRange.Fields.Max <= LORAMAC_MAX_DATARATE)) == false) ) {
                     status &= 0xFD;   // Datarate range KO
                 }
                 if ( (status & 0x03) == 0x03 ) {
                     LoRaPhy_SetChannel(channelIndex, chParam);
                 }
-                LoRaMac_AddCommand(MAC_COMMAND_NEW_CHANNEL, (uint8_t*) &status,
-                        sizeof(status));
+                LoRaMac_AddCommand(MAC_COMMAND_NEW_CHANNEL, (uint8_t*) &status, sizeof(status));
                 break;
             }
             case MAC_COMMAND_RX_TIMING_SETUP:

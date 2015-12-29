@@ -29,13 +29,13 @@
 /*!
  * Join requests trials duty cycle.
  */
-#define LORAWAN_OTAA_INTERVAL               10000  // 10 [s] value in us
+#define LORAWAN_OTAA_INTERVAL               10000000  // 10 [s] value in us
 
 /*!
  * Defines the application data transmission duty cycle
  */
-#define LORAMESH_APP_TX_INTERVAL            4000  // 5 [s] value in us
-#define LORAMESH_APP_TX_INTERVAL_RND        1000  // 1 [s] value in us
+#define LORAMESH_APP_TX_INTERVAL            4000000  // 5 [s] value in us
+#define LORAMESH_APP_TX_INTERVAL_RND        1000000  // 1 [s] value in us
 
 /*!
  * Mote device IEEE EUI
