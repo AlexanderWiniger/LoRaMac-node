@@ -104,6 +104,19 @@ uint8_t GpsGetLatestGpsPositionDouble( double *lati, double *longi );
 uint8_t GpsGetLatestGpsPositionBinary( int32_t *latiBin, int32_t *longiBin );
 
 /*!
+ * \brief Calculates the distance between the latest position and the specified
+ *        location.
+ *
+ * \param[IN] latiBin Latitude value
+ * \param[IN] longiBin Longitude value
+ * \param[OUT] distance Calculated distance
+ *
+ * \retval status [SUCCESS, FAIL]
+ */
+uint8_t GpsGetDistanceToLatestGpsPositionBinary( int32_t latiBin, int32_t longiBin,
+        uint32_t *distance );
+
+/*!
  * \brief Parses the NMEA sentence.
  *
  * \remark Only parses GPGGA and GPRMC sentences

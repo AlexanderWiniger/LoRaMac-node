@@ -179,6 +179,7 @@ typedef enum {
 typedef void (*LoRaSchedulerEventCallback_t)( void *param );
 
 typedef struct LoRaSchedulerEventHandler_s {
+    TimerTime_t eventInterval;
     LoRaSchedulerEventType_t eventType;
     LoRaSchedulerEventCallback_t callback;
     void *param;
@@ -234,25 +235,6 @@ byte LoRaMesh_ParseCommand( const unsigned char *cmd, bool *handled, Shell_Const
 void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks );
 
 /*!
- * Initializes the network IDs. Device address,
- * network session AES128 key and application session AES128 key.
- *
- * \remark To be only used when Over-the-Air activation isn't used.
- *
- * \param [IN] netID   24 bits network identifier
- *                     ( provided by network operator )
- * \param [IN] devAddr 32 bits device address on the network
- *                     (must be unique to the network)
- * \param [IN] nwkSKey Pointer to the network session AES128 key array
- *                     ( 16 bytes )
- * \param [IN] appSKey Pointer to the application session AES128 key array
- *                     ( 16 bytes )
- */
-void LoRaMesh_InitNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint8_t *appSKey );
-
-LoRaSchedulerEventHandler_t * LoRaMesh_AllocateEventHandler( void );
-
-/*!
  * Register an application handler on the specified port.
  *
  * \param [IN] handler Message handler to be called if a message is received on the specified port.
@@ -282,8 +264,8 @@ uint8_t LoRaMesh_RemoveApplication( uint8_t fPort );
  *
  * \retval status ERR_OK if transmission was scheduled successfully
  */
-uint8_t LoRaMesh_RegisterTransmission( LoRaSchedulerEventHandler_t * eHandler, uint32_t interval,
-        void (*callback)( void *param ), void* param );
+uint8_t LoRaMesh_RegisterTransmission( uint32_t interval, void (*callback)( void *param ),
+        void* param );
 
 /*!
  * Remove a scheduled data transmission
@@ -292,7 +274,7 @@ uint8_t LoRaMesh_RegisterTransmission( LoRaSchedulerEventHandler_t * eHandler, u
  *
  * \retval status ERR_OK if transmission was removed successfully
  */
-uint8_t LoRaMesh_RemoveTransmission( LoRaSchedulerEventHandler_t * eHandler );
+uint8_t LoRaMesh_RemoveTransmission( uint32_t interval, void (*callback)( void *param ) );
 
 /*!
  * LoRaMAC layer send frame
@@ -312,31 +294,25 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
         bool isUpLink, bool isConfirmed );
 
 /*!
- * Handles received message on the transport layer.
+ * LoRaMAC layer send multicast
  *
- * \param [IN] buf Received frame data buffer
- * \param [IN] payloadSize Received frame payload size
- * \param [IN] fPort Frame port
- * \param [IN] fType Frame type
+ * \param [IN] fBuffer     Frame data buffer to be sent
+ * \param [IN] fBufferSize Frame data buffer size
+ * \param [IN] fPort       Frame payload port (must be > 0)
  *
- * \retval status ERR_OK if frame was handled successfully
+ * \retval status          [0: OK, 1: Busy, 2: No network joined,
+ *                          3: Length or port error, 4: Unknown MAC command
+ *                          5: Unable to find a free channel
+ *                          6: Device switched off]
  */
-uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort,
-        LoRaFrm_Type_t fType );
+uint8_t LoRaMesh_SendMulticast( uint8_t *appPayload, size_t appPayloadSize, uint8_t fPort );
 
 /*!
- * Handles received message on the transport layer.
+ * Send advertising packet.
  *
- * \param [IN] buf Frame data buffer
- * \param [IN] bufSize Frame data buffer size
- * \param [IN] payloadSize Frame payload size
- * \param [IN] fPort Frame port
- * \param [IN] fType Frame type
- *
- * \retval status ERR_OK if frame was handled successfully
+ * \retval status [0: OK]
  */
-uint8_t LoRaMesh_PutPayload( uint8_t *buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort,
-        LoRaFrm_Type_t fType );
+uint8_t LoRaMesh_SendAdvertising( void );
 
 /*!
  * Process advertising message.
@@ -358,9 +334,38 @@ uint8_t LoRaMesh_ProcessAdvertising( uint8_t *aPayload, uint8_t aPayloadSize );
 uint8_t LoRaMesh_JoinReq( uint8_t *devEui, uint8_t *appEui, uint8_t *appKey );
 
 /*!
+ * Send Ad-hoc join request if no network server is present.
  *
+ * \param [IN] devEui Pointer to the device EUI array ( 8 bytes )
+ * \param [IN] appEui Pointer to the application EUI array ( 8 bytes )
+ * \param [IN] appKey Pointer to the application AES128 key array ( 16 bytes )
+ *
+ * \retval status [0: OK, 1: Tx error, 2: Already joined a network]
  */
-uint8_t LoRaMesh_JoinReqAdHoc( int32_t binLat, int32_t binLong, bool isRebind );
+uint8_t LoRaMesh_JoinReqMesh( uint8_t * devEui, uint8_t * appEui, uint8_t * appKey );
+
+/*!
+ * Process join mesh request message
+ *
+ * \param [IN] payload Pointer to join mesh request message payload
+ * \param [IN] payloadSize Join mesh request message payload size
+ */
+uint8_t LoRaMesh_ProcessJoinMeshReq( uint8_t *payload, uint8_t payloadSize );
+
+/*!
+ * Send rebind request because connection to prior parent node was lost.
+ *
+ * \retval status [0: OK, 1: Tx error]
+ */
+uint8_t LoRaMesh_RebindMeshReq( void );
+
+/*!
+ *  Process rebind mesh request message
+ *
+ * \param [IN] payload Pointer to rebind mesh request message payload
+ * \param [IN] payloadSize Rebind mesh request message payload size
+ */
+uint8_t LoRaMesh_ProcessRebindMeshReq( uint8_t *payload, uint8_t payloadSize );
 
 /*!
  * Sends a LinkCheckReq MAC command on the next uplink frame
@@ -370,11 +375,43 @@ uint8_t LoRaMesh_JoinReqAdHoc( int32_t binLat, int32_t binLong, bool isRebind );
 uint8_t LoRaMesh_LinkCheckReq( void );
 
 /*!
+ * Handles received message on the transport layer.
+ *
+ * \param [IN] buf Received frame data buffer
+ * \param [IN] payloadSize Received frame payload size
+ * \param [IN] fPort Frame port
+ * \param [IN] fType Frame type
+ *
+ * \retval status ERR_OK if frame was handled successfully
+ */
+uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint8_t fPort );
+
+/*!
+ * Handles received message on the transport layer.
+ *
+ * \param [IN] buf Frame data buffer
+ * \param [IN] bufSize Frame data buffer size
+ * \param [IN] payloadSize Frame payload size
+ * \param [IN] fPort Frame port
+ * \param [IN] fType Frame type
+ *
+ * \retval status ERR_OK if frame was handled successfully
+ */
+uint8_t LoRaMesh_PutPayload( uint8_t *buf, uint16_t bufSize, uint8_t payloadSize, uint8_t fPort );
+
+/*!
  * Returns whether or not a network is joined.
  *
  * \retval bool True if network is joined.
  */
 bool LoRaMesh_IsNetworkJoined( void );
+
+/*!
+ * Generates a psudo-random device address
+ *
+ * \param nonce Nonce provided to generate device address
+ */
+uint32_t LoRaMesh_GenerateDeviceAddress( uint16_t nonce );
 
 /*!
  * \brief Find child node with specified address.
@@ -395,6 +432,37 @@ MulticastGroupInfo_t* LoRaMesh_FindMulticastGroup( uint32_t grpAddr );
 /*******************************************************************************
  * SETUP FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/
+/*!
+ * Initializes the network IDs. Device address,
+ * network session AES128 key and application session AES128 key.
+ *
+ * \remark To be only used when Over-the-Air activation isn't used.
+ *
+ * \param [IN] netID   24 bits network identifier
+ *                     ( provided by network operator )
+ * \param [IN] devAddr 32 bits device address on the network
+ *                     (must be unique to the network)
+ * \param [IN] nwkSKey Pointer to the network session AES128 key array
+ *                     ( 16 bytes )
+ * \param [IN] appSKey Pointer to the application session AES128 key array
+ *                     ( 16 bytes )
+ */
+void LoRaMesh_SetNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint8_t *appSKey );
+
+/*!
+ * Sets the LoRa end devices class
+ *
+ * \param devClass Device class
+ */
+void LoRaMesh_SetDeviceClass( DeviceClass_t devClass );
+
+/*!
+ * Sets the LoRa end devices role
+ *
+ * \param devRole Device role
+ */
+void LoRaMesh_SetDeviceRole( DeviceRole_t devRole );
+
 /*!
  * \brief Set network to public.
  *
@@ -432,6 +500,30 @@ void LoRaMesh_TestSetRxWindowsOn( bool enable );
  * \param [IN] upLinkCounter Fixed Tx packet counter value
  */
 void LoRaMesh_TestSetMicMode( uint16_t upLinkCounter );
+
+/*!
+ * Create a child node with specified parameters
+ *
+ * \param[IN] devAddr Device address
+ * \param[IN] interval Up link interval
+ * \param[IN] freqChannel Used frequency channel
+ * \param[IN] nwkSKey Network session key
+ * \param[IN] appSKey Application session key
+ */
+void LoRaMesh_TestCreateChildNode( uint32_t devAddr, uint32_t interval, uint32_t freqChannel,
+        uint8_t *nwkSKey, uint8_t *appSKey );
+
+/*!
+ * Create a multicast group with specified parameters
+ *
+ * \param[IN] grpAddr Multicast group address
+ * \param[IN] interval Down link interval
+ * \param[IN] freqChannel Used frequency channel
+ * \param[IN] nwkSKey Network session key
+ * \param[IN] appSKey Application session key
+ */
+void LoRaMesh_TestCreateMulticastGroup( uint32_t grpAddr, uint32_t interval, uint32_t freqChannel,
+        uint8_t *nwkSKey, uint8_t *appSKey );
 
 /*******************************************************************************
  * END OF CODE

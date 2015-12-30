@@ -20,7 +20,7 @@
 /*******************************************************************************
  * CONSTANT DEFINITIONS
  ******************************************************************************/
-#define LORAFRM_LOWEST_FPORT                    (223)
+#define LORAFRM_LOWEST_FPORT                    (1)
 #define LORAFRM_HIGHEST_FPORT                   (224)
 
 #define LORAFRM_HEADER_SIZE_MAX                 (22)
@@ -63,7 +63,7 @@ typedef union {
 } LoRaFrm_Ctrl_t;
 
 typedef enum LoRaFrmType_e {
-    FRM_TYPE_REGULAR = 0, FRM_TYPE_ADVERTISING, FRM_TYPE_MULTICAST
+    FRM_TYPE_REGULAR = 0, FRM_TYPE_MULTICAST
 } LoRaFrm_Type_t;
 
 /*! Frame direction definition */

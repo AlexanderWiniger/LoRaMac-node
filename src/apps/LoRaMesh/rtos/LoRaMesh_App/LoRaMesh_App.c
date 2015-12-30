@@ -89,18 +89,10 @@ static portTASK_FUNCTION(LoRaMeshTask, pvParameters);
  ******************************************************************************/
 void LoRaMesh_AppInit( void )
 {
-    LoRaSchedulerEventHandler_t *appEvtHandler, *appEvtHandler2;
     LoRaMesh_Init(&sLoRaMeshCallbacks);
     LoRaMesh_RegisterApplication((PortHandlerFunction_t) & ProcessFrame, AppPort);
 
-    appEvtHandler = LoRaMesh_AllocateEventHandler();
-    LoRaMesh_RegisterTransmission(appEvtHandler, LORAMESH_APP_TX_INTERVAL, &SendFrame,
-            (void*) NULL);
-
-//    appEvtHandler2 = LoRaMesh_AllocateEventHandler();
-//    LoRaMesh_RegisterTransmission(appEvtHandler2, 6000000, &SendFrame, (void*) NULL);
-//    LoRaMesh_RemoveTransmission(appEvtHandler2);
-
+    LoRaMesh_RegisterTransmission(LORAMESH_APP_TX_INTERVAL, &SendFrame, (void*) NULL);
 #if(LORAMESH_TEST_APP_ACTIVATED == 1)
     LoRaTest_AppInit();
 #endif /* LORAMESH_TEST_APP_ACTIVATED */
@@ -109,7 +101,7 @@ void LoRaMesh_AppInit( void )
     // NwkAddr
     DevAddr = 0x013D02AB;
 
-    LoRaMesh_InitNwkIds(LORAWAN_NETWORK_ID, DevAddr, NwkSKey, AppSKey);
+    LoRaMesh_SetNwkIds(LORAWAN_NETWORK_ID, DevAddr, NwkSKey, AppSKey);
     LOG_DEBUG("LoRaMesh network IDs initialized. Network ID: %u, DevAddr: 0x%08x.",
             LORAWAN_NETWORK_ID, DevAddr);
 #else

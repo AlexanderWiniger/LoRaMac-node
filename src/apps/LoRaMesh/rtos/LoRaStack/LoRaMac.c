@@ -42,7 +42,6 @@ static LoRaMac_BatteryLevelCallback_t batteryLevelCallback = NULL;
 void LoRaMac_Init( LoRaMac_BatteryLevelCallback_t callback )
 {
     batteryLevelCallback = callback;
-
 }
 
 uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
@@ -59,7 +58,7 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
     payloadSize = LORAPHY_BUF_SIZE(packet->phyData);
 
     /* Check if incoming packet is an advertising beacon */
-    if ( (packet->flags & LORAPHY_PACKET_FLAGS_FRM_MASK) == LORAPHY_PACKET_FLAGS_FRM_ADVERTISING ) {
+    if ( (packet->flags & LORAPHY_PACKET_FLAGS_ADVERTISING) > 0 ) {
         LOG_TRACE("Received advertising beacon.");
         return LoRaMesh_ProcessAdvertising(payload, payloadSize);
     }
@@ -71,15 +70,19 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
 
     switch ( macHdr.Bits.MType ) {
         case MSG_TYPE_JOIN_REQ:
+        {
             if ( payloadSize == LORAMAC_JOIN_MESH_MSG_LENGTH ) {
                 /* Join mesh request */
+                return LoRaMesh_ProcessJoinMeshReq(payload, payloadSize);
             } else if ( payloadSize == LORAMAC_REBIND_MESH_MSG_LENGTH ) {
                 /* Rebind mesh request */
+                return LoRaMesh_ProcessRebindMeshReq(payload, payloadSize);
             } else {
                 /* Regular join request (ignore)*/
                 return ERR_INVALID_TYPE;
             }
             break;
+        }
         case MSG_TYPE_JOIN_ACCEPT:
         {
             if ( pLoRaDevice->ctrlFlags.Bits.nwkJoined == 1 ) {
@@ -161,8 +164,9 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
                 if ( curMulticastGrp != NULL ) {
                     frameCntr = curMulticastGrp->Connection.DownLinkCounter;
                     devAddr = curMulticastGrp->Connection.Address;
-                } else
+                } else {
                     return ERR_FAILED;
+                }
             } else {
                 frameCntr = pLoRaDevice->upLinkSlot.DownLinkCounter;
                 devAddr = pLoRaDevice->devAddr;
@@ -357,10 +361,12 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
         // Decode Frame MAC commands
         switch ( payload[macIndex++] ) {
             case MAC_COMMAND_LINK_CHECK:
+            {
                 pLoRaDevice->ctrlFlags.Bits.linkCheck = 1;
                 lastLinkCheck.Margin = payload[macIndex++];
                 lastLinkCheck.GwCnt = payload[macIndex++];
                 break;
+            }
             case MAC_COMMAND_LINK_ADR:
             {
                 uint8_t status = 0x07;
@@ -444,9 +450,11 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
                 break;
             }
             case MAC_COMMAND_DUTY_CYCLE:
+            {
                 LoRaPhy_SetMaxDutyCycle(payload[macIndex++]);
                 LoRaMac_AddCommand(MAC_COMMAND_DUTY_CYCLE, NULL, 0);
                 break;
+            }
             case MAC_COMMAND_RX_PARAM_SETUP:
             {
                 uint8_t status = 0x07;
@@ -539,6 +547,11 @@ void LoRaMac_ProcessCommands( uint8_t *payload, uint8_t macIndex, uint8_t comman
             }
             case MAC_COMMAND_UP_LINK_SLOT_INFO:
             {
+                uint8_t interval = payload[macIndex++] & 0x0F;
+                if ( interval < 1 ) {
+                    interval = 1;
+                }
+                interval *= 1e6;
                 break;
             }
             case MAC_COMMAND_MULTICAST_GROUP_INFO:
