@@ -83,19 +83,6 @@ uint8_t UartPutChar( Uart_t *obj, uint8_t data )
     }
 }
 
-uint8_t UartGetCharsInRxFifo( Uart_t *obj )
-{
-    if ( obj->UartId == UART_USB_CDC ) {
-#if defined( USE_USB_CDC )
-        return 255; // Not supported
-#else
-        return 255; // Not supported
-#endif
-    } else {
-        return UartMcuGetCharsInRxFifo(obj);
-    }
-}
-
 uint8_t UartGetChar( Uart_t *obj, uint8_t *data )
 {
     if ( obj->UartId == UART_USB_CDC ) {

@@ -117,11 +117,6 @@ void UartDeInit( Uart_t *obj );
 uint8_t UartPutChar( Uart_t *obj, uint8_t data );
 
 /*!
- * 
- */
-uint8_t UartGetCharsInRxFifo( Uart_t *obj );
-
-/*!
  * \brief Gets a character from the UART
  *
  * \param [IN] obj   UART object

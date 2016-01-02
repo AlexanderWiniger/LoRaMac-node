@@ -48,7 +48,7 @@ int main( void )
     Shell_AppInit ();
 #endif /* USE_SHELL */
 
-    LoRaMesh_AppInit();
+//    LoRaMesh_AppInit();
 
     vTaskStartScheduler();
 

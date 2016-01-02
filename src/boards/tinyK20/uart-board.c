@@ -170,11 +170,6 @@ uint8_t UartMcuPutBuffer( Uart_t *obj, uint8_t *txBuff, size_t txSize )
     return ERR_OK;
 }
 
-uint8_t UartMcuGetCharsInRxFifo( Uart_t *obj )
-{
-    return g_uartBase[obj->UartId]->RCFIFO;
-}
-
 uint8_t UartMcuGetChar( Uart_t *obj, uint8_t *data )
 {
     if ( IsFifoEmpty(&obj->FifoRx) == false ) {
