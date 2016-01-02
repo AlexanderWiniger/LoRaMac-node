@@ -217,7 +217,7 @@ uint16_t GpsGetLatestGpsAltitude( void )
  *
  * \retval chkPosIdx Position of the checksum in the sentence
  */
-int32_t GpsNmeaChecksum( int8_t *nmeaStr, int32_t nmeaStrSize, int8_t * checksum )
+int32_t GpsNmeaChecksum( uint8_t *nmeaStr, int32_t nmeaStrSize, uint8_t * checksum )
 {
     int i = 0;
     uint8_t checkNum = 0;
@@ -253,10 +253,10 @@ int32_t GpsNmeaChecksum( int8_t *nmeaStr, int32_t nmeaStrSize, int8_t * checksum
  * present at the end of it.
  * Return true if it matches
  */
-static bool GpsNmeaValidateChecksum( int8_t *serialBuff, int32_t buffSize )
+static bool GpsNmeaValidateChecksum( uint8_t *serialBuff, int32_t buffSize )
 {
     int32_t checksumIndex;
-    int8_t checksum[2];   // 2 characters to calculate NMEA checksum
+    uint8_t checksum[2];   // 2 characters to calculate NMEA checksum
 
     checksumIndex = GpsNmeaChecksum(serialBuff, buffSize, checksum);
 
@@ -279,7 +279,7 @@ static bool GpsNmeaValidateChecksum( int8_t *serialBuff, int32_t buffSize )
     }
 }
 
-uint8_t GpsParseGpsData( int8_t *rxBuffer, int32_t rxBufferSize )
+uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
 {
     uint8_t i = 1;
     uint8_t j = 0;

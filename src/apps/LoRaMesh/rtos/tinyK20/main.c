@@ -36,8 +36,8 @@ int main( void )
     BoardInitPeriph();
     LOG_DEBUG("Peripherals initialized.");
 
-    if ( xTaskCreate(LedTask, "Led", configMINIMAL_STACK_SIZE, (void*) NULL,
-            tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
+    if ( xTaskCreate(LedTask, "Led", configMINIMAL_STACK_SIZE, (void*) NULL, tskIDLE_PRIORITY,
+            (xTaskHandle*) NULL) != pdPASS ) {
         /*lint -e527 */
         for ( ;; ) {
         }; /* error! probably out of memory */
@@ -65,8 +65,10 @@ void LedTask( void *pvParameters )
     bool isLedActive = false;
 
     for ( ;; ) {
-        if ( isLedActive ) GpioWrite(&Led1, 1);
-        else GpioWrite(&Led1, 0);
+        if ( isLedActive )
+            GpioWrite(&Led1, 1);
+        else
+            GpioWrite(&Led1, 0);
         isLedActive = !isLedActive;
         vTaskDelay(500 / portTICK_RATE_MS);
     }
