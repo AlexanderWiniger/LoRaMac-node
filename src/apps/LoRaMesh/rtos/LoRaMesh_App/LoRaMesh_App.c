@@ -70,6 +70,8 @@ static uint8_t AppData[LORAMESH_APP_DATA_MAX_SIZE];
 /*! Indicates if the node is sending confirmed or unconfirmed messages */
 static uint8_t IsTxConfirmed = LORAWAN_CONFIRMED_MSG_ON;
 
+/*! Data entries */
+DataEntry_t dataEntries[5];
 /*******************************************************************************
  * PRIVATE FUNCTION PROTOTYPES (STATIC)
  ******************************************************************************/
@@ -79,7 +81,8 @@ static void Process( void );
 /* Send frame on configured app port */
 static void SendFrame( void* param );
 
-static uint8_t ProcessFrame( uint8_t *buf, uint8_t payloadSize, uint8_t fPort );
+static uint8_t ProcessFrame( uint8_t *buf, uint8_t payloadSize, uint32_t devAddr,
+        uint8_t fPort );
 
 /* RTOS task function */
 static portTASK_FUNCTION(LoRaMeshTask, pvParameters);
@@ -91,8 +94,20 @@ void LoRaMesh_AppInit( void )
 {
     LoRaMesh_Init(&sLoRaMeshCallbacks);
     LoRaMesh_RegisterApplication((PortHandlerFunction_t) & ProcessFrame, AppPort);
-
     LoRaMesh_RegisterTransmission(LORAMESH_APP_TX_INTERVAL, &SendFrame, (void*) NULL);
+
+    for ( uint8_t i = 0; i < 5; i++ ) {
+        dataEntries[i].DevAddr = 0;
+        dataEntries[i].Timestamp = 0;
+        dataEntries[i].EntryInfo.Value = 0;
+        dataEntries[i].LatitudeBinary = 0;
+        dataEntries[i].LongitudeBinary = 0;
+        dataEntries[i].Altitude.Barometric = 0;
+        dataEntries[i].Altitude.GPS = 0;
+        dataEntries[i].VectorTrack.Vector = 0;
+        dataEntries[i].VectorTrack.Track = 0;
+        dataEntries[i].WindSpeed = 0;
+    }
 #if(LORAMESH_TEST_APP_ACTIVATED == 1)
     LoRaTest_AppInit();
 #endif /* LORAMESH_TEST_APP_ACTIVATED */
@@ -114,13 +129,13 @@ void LoRaMesh_AppInit( void )
 //    LoRaMesh_SetDeviceClass (CLASS_C);
     LoRaMesh_TestSetDutyCycleCtrlOff (LORAWAN_DUTYCYCLE_OFF);
 
-//    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", 0x200, (void*) NULL, tskIDLE_PRIORITY,
-//            (xTaskHandle*) NULL) != pdPASS ) {
-//        /*lint -e527 */
-//        for ( ;; ) {
-//        }; /* error! probably out of memory */
-//        /*lint +e527 */
-//    }
+    if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", configMINIMAL_STACK_SIZE, (void*) NULL,
+            tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
+        /*lint -e527 */
+        for ( ;; ) {
+        }; /* error! probably out of memory */
+        /*lint +e527 */
+    }
 }
 
 /*******************************************************************************
@@ -129,7 +144,7 @@ void LoRaMesh_AppInit( void )
 static void Process( void )
 {
     for ( ;; ) {
-        switch ( appState ) {
+        switch (appState) {
             case LORAMESH_INITIAL:
                 appState = LORAMESH_TX_RX;
                 continue;
@@ -143,7 +158,8 @@ static void Process( void )
     } /* end for loop */
 }
 
-static uint8_t ProcessFrame( uint8_t *buf, uint8_t payloadSize, uint8_t fPort )
+static uint8_t ProcessFrame( uint8_t *buf, uint8_t payloadSize, uint32_t devAddr,
+        uint8_t fPort )
 {
     LOG_TRACE("Incoming message on port %u", fPort);
     LOG_TRACE_BARE("\t");

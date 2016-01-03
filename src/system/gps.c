@@ -128,11 +128,14 @@ void GpsConvertPositionFromStringToNumerical( void )
         NmeaGpsData.NmeaLatitude[i] = NmeaGpsData.NmeaLatitude[i] & 0xF;
     }
     // Convert latitude from degree/minute/second (DMS) format into decimal
-    valueTmp1 = (double) NmeaGpsData.NmeaLatitude[0] * 10.0 + (double) NmeaGpsData.NmeaLatitude[1];
-    valueTmp2 = (double) NmeaGpsData.NmeaLatitude[2] * 10.0 + (double) NmeaGpsData.NmeaLatitude[3];
+    valueTmp1 = (double) NmeaGpsData.NmeaLatitude[0] * 10.0
+            + (double) NmeaGpsData.NmeaLatitude[1];
+    valueTmp2 = (double) NmeaGpsData.NmeaLatitude[2] * 10.0
+            + (double) NmeaGpsData.NmeaLatitude[3];
     valueTmp3 = (double) NmeaGpsData.NmeaLatitude[5] * 1000.0
             + (double) NmeaGpsData.NmeaLatitude[6] * 100.0
-            + (double) NmeaGpsData.NmeaLatitude[7] * 10.0 + (double) NmeaGpsData.NmeaLatitude[8];
+            + (double) NmeaGpsData.NmeaLatitude[7] * 10.0
+            + (double) NmeaGpsData.NmeaLatitude[8];
 
     Latitude = valueTmp1 + ((valueTmp2 + (valueTmp3 * 0.0001)) / 60.0);
 
@@ -146,7 +149,8 @@ void GpsConvertPositionFromStringToNumerical( void )
     }
     // Convert longitude from degree/minute/second (DMS) format into decimal
     valueTmp1 = (double) NmeaGpsData.NmeaLongitude[0] * 100.0
-            + (double) NmeaGpsData.NmeaLongitude[1] * 10.0 + (double) NmeaGpsData.NmeaLongitude[2];
+            + (double) NmeaGpsData.NmeaLongitude[1] * 10.0
+            + (double) NmeaGpsData.NmeaLongitude[2];
     valueTmp2 = (double) NmeaGpsData.NmeaLongitude[3] * 10.0
             + (double) NmeaGpsData.NmeaLongitude[4];
     valueTmp3 = (double) NmeaGpsData.NmeaLongitude[6] * 1000.0
@@ -154,7 +158,8 @@ void GpsConvertPositionFromStringToNumerical( void )
     valueTmp4 = (double) NmeaGpsData.NmeaLongitude[8] * 10.0
             + (double) NmeaGpsData.NmeaLongitude[9];
 
-    Longitude = valueTmp1 + (valueTmp2 / 60.0) + (((valueTmp3 + valueTmp4) * 0.0001) / 60.0);
+    Longitude = valueTmp1 + (valueTmp2 / 60.0)
+            + (((valueTmp3 + valueTmp4) * 0.0001) / 60.0);
 
     if ( NmeaGpsData.NmeaLongitudePole[0] == 'W' ) {
         Longitude *= -1;
@@ -217,7 +222,7 @@ uint16_t GpsGetLatestGpsAltitude( void )
  *
  * \retval chkPosIdx Position of the checksum in the sentence
  */
-int32_t GpsNmeaChecksum( uint8_t *nmeaStr, int32_t nmeaStrSize, uint8_t * checksum )
+int32_t GpsNmeaChecksum( char *nmeaStr, size_t nmeaStrSize, uint8_t * checksum )
 {
     int i = 0;
     uint8_t checkNum = 0;
@@ -233,7 +238,7 @@ int32_t GpsNmeaChecksum( uint8_t *nmeaStr, int32_t nmeaStrSize, uint8_t * checks
     }
 
     // XOR until '*' or max length is reached
-    while ( nmeaStr[i] != '*' ) {
+    while (nmeaStr[i] != '*') {
         checkNum ^= nmeaStr[i];
         i += 1;
         if ( i >= nmeaStrSize ) {
@@ -253,7 +258,7 @@ int32_t GpsNmeaChecksum( uint8_t *nmeaStr, int32_t nmeaStrSize, uint8_t * checks
  * present at the end of it.
  * Return true if it matches
  */
-static bool GpsNmeaValidateChecksum( uint8_t *serialBuff, int32_t buffSize )
+static bool GpsNmeaValidateChecksum( char *serialBuff, size_t buffSize )
 {
     int32_t checksumIndex;
     uint8_t checksum[2];   // 2 characters to calculate NMEA checksum
@@ -279,7 +284,7 @@ static bool GpsNmeaValidateChecksum( uint8_t *serialBuff, int32_t buffSize )
     }
 }
 
-uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
+uint8_t GpsParseGpsData( char *rxBuffer, size_t rxBufferSize )
 {
     uint8_t i = 1;
     uint8_t j = 0;
@@ -294,7 +299,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
     }
 
     fieldSize = 0;
-    while ( rxBuffer[i + fieldSize++] != ',' ) {
+    while (rxBuffer[i + fieldSize++] != ',') {
         if ( fieldSize > 6 ) {
             return FAIL;
         }
@@ -303,11 +308,11 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         NmeaGpsData.NmeaDataType[j] = rxBuffer[i];
     }
     // Parse the GPGGA data 
-    if ( strncmp((const char*) NmeaGpsData.NmeaDataType, (const char*) NmeaDataTypeGPGGA, 5)
-            == 0 ) {
+    if ( strncmp((const char*) NmeaGpsData.NmeaDataType, (const char*) NmeaDataTypeGPGGA,
+            5) == 0 ) {
         // NmeaUtcTime
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 11 ) {
                 return FAIL;
             }
@@ -317,7 +322,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaLatitude
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 10 ) {
                 return FAIL;
             }
@@ -327,7 +332,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaLatitudePole
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 2 ) {
                 return FAIL;
             }
@@ -337,7 +342,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaLongitude
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 11 ) {
                 return FAIL;
             }
@@ -347,7 +352,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaLongitudePole
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 2 ) {
                 return FAIL;
             }
@@ -357,7 +362,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaFixQuality
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 2 ) {
                 return FAIL;
             }
@@ -367,7 +372,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaSatelliteTracked
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 3 ) {
                 return FAIL;
             }
@@ -377,7 +382,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaHorizontalDilution
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 6 ) {
                 return FAIL;
             }
@@ -387,7 +392,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaAltitude
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 8 ) {
                 return FAIL;
             }
@@ -397,7 +402,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaAltitudeUnit
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 2 ) {
                 return FAIL;
             }
@@ -407,7 +412,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaHeightGeoid
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 8 ) {
                 return FAIL;
             }
@@ -417,7 +422,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaHeightGeoidUnit
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 2 ) {
                 return FAIL;
             }
@@ -428,11 +433,11 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
 
         GpsFormatGpsData();
         return SUCCESS;
-    } else if ( strncmp((const char*) NmeaGpsData.NmeaDataType, (const char*) NmeaDataTypeGPRMC, 5)
-            == 0 ) {
+    } else if ( strncmp((const char*) NmeaGpsData.NmeaDataType,
+            (const char*) NmeaDataTypeGPRMC, 5) == 0 ) {
         // NmeaUtcTime
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 11 ) {
                 return FAIL;
             }
@@ -442,7 +447,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaDataStatus
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 2 ) {
                 return FAIL;
             }
@@ -452,7 +457,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaLatitude
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 10 ) {
                 return FAIL;
             }
@@ -462,7 +467,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaLatitudePole
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 2 ) {
                 return FAIL;
             }
@@ -472,7 +477,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaLongitude
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 11 ) {
                 return FAIL;
             }
@@ -482,7 +487,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaLongitudePole
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 2 ) {
                 return FAIL;
             }
@@ -492,7 +497,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaSpeed
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 8 ) {
                 return FAIL;
             }
@@ -502,7 +507,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaDetectionAngle
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 8 ) {
                 return FAIL;
             }
@@ -512,7 +517,7 @@ uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize )
         }
         // NmeaDate
         fieldSize = 0;
-        while ( rxBuffer[i + fieldSize++] != ',' ) {
+        while (rxBuffer[i + fieldSize++] != ',') {
             if ( fieldSize > 8 ) {
                 return FAIL;
             }

@@ -26,11 +26,8 @@ Gpio_t Led1;
 Gpio_t GpsPps;
 
 /*! MCU objects */
-Adc_t Adc;
-I2c_t I2c;
 Uart_t Uart0;
 Uart_t Uart1;
-Uart_t Uart2;
 #if defined( USE_USB_CDC )
 Uart_t UartUsb;
 #endif

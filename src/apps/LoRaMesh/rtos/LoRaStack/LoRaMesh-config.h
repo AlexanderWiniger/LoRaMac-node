@@ -128,11 +128,11 @@
 
 /* Configuration for Rx and Tx queues */
 #ifndef LORAMESH_CONFIG_MSG_QUEUE_RX_LENGTH
-#define LORAMESH_CONFIG_MSG_QUEUE_RX_LENGTH                 (6)
+#define LORAMESH_CONFIG_MSG_QUEUE_RX_LENGTH                 (4)
 /*!< Number items in the Rx message queue. The higher, the more items can be buffered. */
 #endif
 #ifndef LORAMESH_CONFIG_MSG_QUEUE_TX_LENGTH
-#define LORAMESH_CONFIG_MSG_QUEUE_TX_LENGTH                 (6)
+#define LORAMESH_CONFIG_MSG_QUEUE_TX_LENGTH                 (4)
 /*!< Number items in the Tx message queue. The higher, the more items can be buffered. */
 #endif
 #ifndef LORAMESH_CONFIG_MSG_QUEUE_PUT_BLOCK_TIME_MS

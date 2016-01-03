@@ -149,6 +149,7 @@
 /*******************************************************************************
  * MODULE FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/
+#if !defined(USE_KINETIS_SDK)
 /*!
  * @brief Init the UART/LPUART used for debug messages.
  *
@@ -203,6 +204,7 @@ int debug_scanf( const char *fmt_ptr, ... );
  */
 int debug_getchar( void );
 
+#endif /* USE_KINETIS_SDK */
 #endif /* __DEBUG_H__ */
 /*******************************************************************************
  * END OF CODE

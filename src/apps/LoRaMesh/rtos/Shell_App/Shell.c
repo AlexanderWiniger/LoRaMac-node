@@ -23,7 +23,6 @@
  * PRIVATE CONSTANT DEFINITIONS
  ******************************************************************************/
 /*! FIFO buffers size */
-//#define SHELL_FIFO_TX_SIZE                  128
 #define SHELL_FIFO_RX_SIZE                  128
 
 /*******************************************************************************
@@ -33,17 +32,16 @@
 /*******************************************************************************
  * PRIVATE VARIABLES (STATIC)
  ******************************************************************************/
-static Shell_ConstStdIO_t Shell_stdio = {   (StdIO_InFunction_t) Shell_ReadChar, /* stdin */
-                                            (StdIO_OutErrFunction_t) Shell_SendChar, /* stdout */
-                                            (StdIO_OutErrFunction_t) Shell_SendChar, /* stderr */
-                                            Shell_KeyPressed /* if input is not empty */
-                                        };
+static Shell_ConstStdIO_t Shell_stdio = { (StdIO_InFunction_t) Shell_ReadChar, /* stdin */
+(StdIO_OutErrFunction_t) Shell_SendChar, /* stdout */
+(StdIO_OutErrFunction_t) Shell_SendChar, /* stderr */
+Shell_KeyPressed /* if input is not empty */
+};
 
 /**/
 static Shell_ConstStdIO_t *Shell_currStdIO = &Shell_stdio;
 
 /*! FIFO buffers */
-//uint8_t Shell_TxBuffer[SHELL_FIFO_TX_SIZE];
 uint8_t Shell_RxBuffer[SHELL_FIFO_RX_SIZE];
 
 /*******************************************************************************
@@ -66,12 +64,12 @@ void SendSeparatedStrings( const byte *strA, const byte *strB, byte tabChar, byt
 /*******************************************************************************
  * MODULE FUNCTIONS (PUBLIC)
  ******************************************************************************/
-void Shell_Init(void)
+void Shell_Init( void )
 {
-//    FifoInit( &Uart1.FifoTx, Shell_TxBuffer, SHELL_FIFO_TX_SIZE );
-    FifoInit(&Uart1.FifoRx, Shell_RxBuffer, SHELL_FIFO_RX_SIZE);
-    UartInit(&Uart1, UART_1, UART1_TX, UART1_RX);
-    UartConfig(&Uart1, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL);
+//    FifoInit(&Uart1.FifoRx, Shell_RxBuffer, SHELL_FIFO_RX_SIZE);
+//    UartInit(&Uart1, UART_1, UART1_TX, UART1_RX);
+//    UartConfig(&Uart1, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY,
+//            NO_FLOW_CTRL);
 }
 
 void Shell_SendHelpStr( const unsigned char *strCmd, const unsigned char *strHelp,
@@ -179,12 +177,12 @@ byte Shell_ReadAndParseWithCommandTable( unsigned char *cmdBuf, size_t cmdBufSiz
     return res;
 }
 
-Shell_ConstStdIO_t *Shell_GetStdio(void)
+Shell_ConstStdIO_t *Shell_GetStdio( void )
 {
     return Shell_currStdIO;
 }
 
-uint8_t Shell_SetStdio(Shell_ConstStdIO_t *stdio)
+uint8_t Shell_SetStdio( Shell_ConstStdIO_t *stdio )
 {
     Shell_currStdIO = stdio;
     return ERR_OK;

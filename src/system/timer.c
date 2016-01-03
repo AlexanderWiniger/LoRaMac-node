@@ -56,7 +56,9 @@ void TimerInit( TimerEvent_t *obj, const char* name, void *id, void (*callback)(
 void TimerStart( TimerEvent_t *obj )
 {
     BaseType_t xReturn = pdFAIL, xHigherPriorityTaskWoken = pdFALSE;
+#if defined(LOG_LEVEL_TRACE)
     TickType_t time = 0;
+#endif
 
     if(obj->IsRunning) return;
 
@@ -67,7 +69,9 @@ void TimerStart( TimerEvent_t *obj )
         } else {
             xReturn = xTimerStartFromISR(obj->Handle, &xHigherPriorityTaskWoken);
         }
+#if defined(LOG_LEVEL_TRACE)
         time = xTaskGetTickCountFromISR();
+#endif
     } else {
         if(obj->HasChanged) {
             /* Period has to be changed - this will start the timer */
@@ -75,7 +79,9 @@ void TimerStart( TimerEvent_t *obj )
         } else {
             xReturn = xTimerStart( obj->Handle, 100 );
         }
+#if defined(LOG_LEVEL_TRACE)
         time = xTaskGetTickCount();
+#endif
     }
 
     if(xReturn != pdFAIL) {
@@ -89,16 +95,22 @@ void TimerStart( TimerEvent_t *obj )
 void TimerStop( TimerEvent_t *obj )
 {
     BaseType_t xReturn = pdFAIL, xHigherPriorityTaskWoken = pdFALSE;
+#if defined(LOG_LEVEL_TRACE)
     TickType_t time = 0;
+#endif
 
     if(!obj->IsRunning) return;
 
     if(__get_IPSR()) {
         xReturn = xTimerStopFromISR(obj->Handle, &xHigherPriorityTaskWoken);
+#if defined(LOG_LEVEL_TRACE)
         time = xTaskGetTickCountFromISR();
+#endif
     } else {
         xReturn = xTimerStop( obj->Handle, 100 );
+#if defined(LOG_LEVEL_TRACE)
         time = xTaskGetTickCount();
+#endif
     }
 
     if(xReturn != pdFAIL) {
@@ -142,11 +154,6 @@ void TimerSetValue( TimerEvent_t *obj, uint32_t periodInUs )
         obj->PeriodInMs = periodInMs;
         obj->HasChanged = true;
     }
-}
-
-TimerTime_t TimerGetNextEventTime(void)
-{
-    return 0; //(TimerTime_t)((TimerEvent_t*)pTimerEventList->head->data)->NextScheduledEvent;
 }
 
 TimerTime_t TimerGetCurrentTime( void )

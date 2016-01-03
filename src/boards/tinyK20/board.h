@@ -152,11 +152,8 @@ extern Gpio_t Led1;
 extern Gpio_t GpsPps;
 
 /*! MCU objects */
-extern Adc_t Adc;
-extern I2c_t I2c;
 extern Uart_t Uart0;
 extern Uart_t Uart1;
-extern Uart_t Uart2;
 #if defined( USE_USB_CDC )
 extern Uart_t UartUsb;
 #endif

@@ -126,7 +126,7 @@ uint8_t GpsGetDistanceToLatestGpsPositionBinary( int32_t latiBin, int32_t longiB
  *
  * \retval status [SUCCESS, FAIL]
  */
-uint8_t GpsParseGpsData( unsigned char *rxBuffer, size_t rxBufferSize );
+uint8_t GpsParseGpsData( char *rxBuffer, size_t rxBufferSize );
 
 /*!
  * \brief Returns the latest altitude from the parsed NMEA sentence

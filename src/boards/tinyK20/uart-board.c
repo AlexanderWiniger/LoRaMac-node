@@ -253,5 +253,7 @@ void UART1_RX_TX_IRQHandler( void )
  */
 void UART2_RX_TX_IRQHandler( void )
 {
+#if 0
     UartInterruptHandler (&Uart2);
+#endif
 }

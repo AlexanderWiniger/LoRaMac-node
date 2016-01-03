@@ -38,7 +38,7 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.make.1151627601" name="Build command" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.make" value="make" valueType="string"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.rm.2141744908" name="Remove command" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.rm" value="rm" valueType="string"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash.214075787" name="Create flash image" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash" value="false" valueType="boolean"/>
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize.177546276" name="Print size" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize" value="false" valueType="boolean"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize.177546276" name="Print size" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize" value="true" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.1768972681" name="Enable all common warnings (-Wall)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn" value="true" valueType="boolean"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform.1900113610" isAbstract="false" osList="all" superClass="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform"/>
 							<builder buildPath="${workspace_loc:/FRDM-KL26Z_LoRaMesh-rtos}/Debug" id="ilg.gnuarmeclipse.managedbuild.cross.builder.1403393045" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="ilg.gnuarmeclipse.managedbuild.cross.builder"/>
@@ -52,7 +52,9 @@
 							</tool>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1621233383" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler">
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths.863472489" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/baremetal"/>
+									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/rtos/LoRaStack"/>
+									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/rtos/LoRaMesh_App"/>
+									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/rtos/Shell_App"/>
 									<listOptionValue builtIn="false" value="../../../../../src/system"/>
 									<listOptionValue builtIn="false" value="../../../../../src/system/crypto"/>
 									<listOptionValue builtIn="false" value="../../../../../src/radio"/>
@@ -84,6 +86,7 @@
 									<listOptionValue builtIn="false" value="FRDM_KL26Z"/>
 									<listOptionValue builtIn="false" value="SX1276_BOARD_EMBED"/>
 									<listOptionValue builtIn="false" value="FSL_RTOS_FREE_RTOS"/>
+									<listOptionValue builtIn="false" value="USE_KINETIS_SDK"/>
 									<listOptionValue builtIn="false" value="CPU_MKL26Z128VLH4"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std.1271185206" name="Language standard" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std.gnu99" valueType="enumerated"/>
@@ -124,16 +127,19 @@
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.createlisting.wide.1590131789" name="Wide lines (--wide|-w)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.createlisting.wide" value="true" valueType="boolean"/>
 							</tool>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.printsize.1408825618" name="Cross ARM GNU Print Size" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.printsize">
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.printsize.format.1676425513" name="Size format" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.printsize.format"/>
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.printsize.format.1676425513" name="Size format" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.printsize.format" value="ilg.gnuarmeclipse.managedbuild.cross.option.printsize.format.sysv" valueType="enumerated"/>
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.printsize.hex.282119427" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.printsize.hex" value="true" valueType="boolean"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.1800246038.1434420864" name="custom_list.h" rcbsApplicability="disable" resourcePath="src/boards/mcu/kinetis/utilities/custom_list.h" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="src/boards/mcu/kinetis/k20d|src/boards/mcu/kinetis/k22f|src/radio/sx1272" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/boards/mcu/kinetis/utilities/custom_list.c|src/boards/mcu/kinetis/utilities/custom_list.h|src/boards/mcu/kinetis/k20d|src/boards/mcu/kinetis/k22f|src/radio/sx1272" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+			<storageModule moduleId="ilg.gnuarmeclipse.managedbuild.packs"/>
 		</cconfiguration>
 		<cconfiguration id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.1486901766">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.1486901766" moduleId="org.eclipse.cdt.core.settings" name="Release">
