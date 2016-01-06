@@ -26,8 +26,6 @@
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
  ******************************************************************************/
-const uint8_t frmPayload[] =
-{   'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '\0'};
 /*******************************************************************************
  * PRIVATE TYPE DEFINITIONS
  ******************************************************************************/
@@ -120,11 +118,83 @@ void LoRaTest_AddJoinAcc( uint8_t* devEui, uint8_t* appEui, uint8_t appKey,
     addMessage = true;
 }
 
+void LoRaTest_AddDataFrame(uint32_t devAddr)
+{
+    LoRaFrm_Ctrl_t fCtrl;
+    LoRaMac_Header_t mHdr;
+    uint32_t mic, payloadSize;
+    int32_t latiBin, longiBin;
+    uint8_t frmPayload[19];
+
+    mHdr.Value = 0u;
+    mHdr.Bits.MType = MSG_TYPE_DATA_UNCONFIRMED_DOWN;
+
+    fCtrl.Value = 0u;
+    fCtrl.Bits.Adr = pLoRaDevice->ctrlFlags.Bits.adrCtrlOn;
+
+    latiBin = 0x42DEC4;
+    longiBin = 0x05E868;
+
+    frmPayload[0] = 0x0F;
+    frmPayload[1] = ((latiBin) & 0xFF);
+    frmPayload[2] = ((latiBin >> 8) & 0xFF);
+    frmPayload[3] = ((latiBin >> 16) & 0xFF);
+    frmPayload[4] = ((latiBin >> 24) & 0xFF);
+    frmPayload[5] = ((longiBin) & 0xFF);
+    frmPayload[6] = ((longiBin >> 8) & 0xFF);
+    frmPayload[7] = ((longiBin >> 16) & 0xFF);
+    frmPayload[8] = ((longiBin >> 24) & 0xFF);
+    frmPayload[9] = 0xB9; /* 441 müM*/
+    frmPayload[10] = 0x01;
+    frmPayload[11] = 0xBC; /* 443 müM */
+    frmPayload[12] = 0x01;
+    frmPayload[13] = 0x32; /* 50 dm/s */
+    frmPayload[14] = 0x00;
+    frmPayload[15] = 0x1F; /* 287° */
+    frmPayload[16] = 0x01;
+    frmPayload[17] = 0x0C; /* 12 km/h */
+    frmPayload[18] = 0x00;
+
+    /* Encrypt with decrypt */
+    LoRaMacPayloadDecrypt(frmPayload, sizeof(frmPayload), pLoRaDevice->upLinkSlot.AppSKey,
+            pLoRaDevice->devAddr, DOWN_LINK, pLoRaDevice->upLinkSlot.DownLinkCounter,
+            LORAFRM_BUF_PAYLOAD_START_WPORT(msgBuffer));
+
+    msgBuffer[LORAPHY_BUF_IDX_FLAGS] = LORAPHY_PACKET_FLAGS_NONE;
+    msgBuffer[LORAMAC_BUF_IDX_HDR] = mHdr.Value;
+    msgBuffer[LORAFRM_BUF_IDX_DEVADDR] = (pLoRaDevice->devAddr) & 0xFF;
+    msgBuffer[LORAFRM_BUF_IDX_DEVADDR + 1] = (pLoRaDevice->devAddr >> 8) & 0xFF;
+    msgBuffer[LORAFRM_BUF_IDX_DEVADDR + 2] = (pLoRaDevice->devAddr >> 16) & 0xFF;
+    msgBuffer[LORAFRM_BUF_IDX_DEVADDR + 3] = (pLoRaDevice->devAddr >> 24) & 0xFF;
+    msgBuffer[LORAFRM_BUF_IDX_CTRL] = fCtrl.Value;
+    msgBuffer[LORAFRM_BUF_IDX_CNTR] = pLoRaDevice->upLinkSlot.DownLinkCounter & 0xFF;
+    msgBuffer[LORAFRM_BUF_IDX_CNTR + 1] = (pLoRaDevice->upLinkSlot.DownLinkCounter >> 8)
+    & 0xFF;
+    msgBuffer[LORAFRM_BUF_IDX_PORT(0)] = 2;
+
+    payloadSize = sizeof(frmPayload) + LORAFRM_HEADER_SIZE_MIN + LORAFRM_PORT_SIZE
+    + LORAMAC_HEADER_SIZE;
+
+    LoRaMacComputeMic((uint8_t*) &msgBuffer[LORAMAC_BUF_IDX_HDR], payloadSize,
+            pLoRaDevice->upLinkSlot.NwkSKey, pLoRaDevice->devAddr, DOWN_LINK,
+            pLoRaDevice->upLinkSlot.DownLinkCounter, &mic);
+
+    *LORAMAC_BUF_MIC_START(msgBuffer, payloadSize++) = mic & 0xFF;
+    *LORAMAC_BUF_MIC_START(msgBuffer, payloadSize++) = (mic >> 8) & 0xFF;
+    *LORAMAC_BUF_MIC_START(msgBuffer, payloadSize++) = (mic >> 16) & 0xFF;
+    *LORAMAC_BUF_MIC_START(msgBuffer, payloadSize++) = (mic >> 24) & 0xFF;
+
+    msgBuffer[LORAPHY_BUF_IDX_SIZE] = payloadSize;
+
+    addMessage = true;
+}
+
 void LoRaTest_AddFrame( void )
 {
     LoRaFrm_Ctrl_t fCtrl;
     LoRaMac_Header_t mHdr;
     uint32_t mic, payloadSize;
+    uint8_t frmPayload[] = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '\0'};
 
     mHdr.Value = 0u;
     mHdr.Bits.MType = MSG_TYPE_DATA_UNCONFIRMED_DOWN;

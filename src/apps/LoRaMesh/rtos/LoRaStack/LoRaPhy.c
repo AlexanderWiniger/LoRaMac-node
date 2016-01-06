@@ -690,13 +690,15 @@ static uint8_t CheckTx( void )
                             / MAX(Bands[channel.Band].TimeOff, AggregatedTimeOff));
         } else {
             // Send now
-            LOG_TRACE("Sending now on channel %d (DR: %u).", channel.Frequency,
-                    pLoRaDevice->currDataRateIndex);
+            LOG_TRACE("Sending at %u ms on channel %d (DR: %u).",
+                    (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS),
+                    channel.Frequency, pLoRaDevice->currDataRateIndex);
             Radio.Send(LORAPHY_BUF_PAYLOAD_START(TxDataBuffer),
                     LORAPHY_BUF_SIZE(TxDataBuffer));
         }
 
-        if ( (flags & LORAPHY_PACKET_FLAGS_ADVERTISING) > 0 ) {
+        if ( (flags & LORAPHY_PACKET_FLAGS_FRM_MASK)
+                == LORAPHY_PACKET_FLAGS_FRM_ADVERTISING ) {
             phyFlags.Bits.TxType = LORAPHY_TXTYPE_ADVERTISING;
         } else if ( (flags & LORAPHY_PACKET_FLAGS_FRM_MASK)
                 == LORAPHY_PACKET_FLAGS_FRM_REGULAR ) {
@@ -820,8 +822,10 @@ static uint8_t SetNextChannel( void )
 
 static void OnRadioTxDone( void )
 {
-    LOG_TRACE("Transmitted successfully.");
     TimerTime_t curTime = TimerGetCurrentTime();
+
+    LOG_TRACE("Transmitted successfully (%u ms).",
+            (uint32_t)(curTime * portTICK_PERIOD_MS));
 
     // Update Band Time OFF
     Bands[Channels[pLoRaDevice->currChannelIndex].Band].LastTxDoneTime = curTime;
@@ -895,12 +899,12 @@ static void OnRadioTxTimeout( void )
 
 static void OnRadioRxTimeout( void )
 {
-    if ( phyFlags.Bits.RxSlot == 0 ) {
-        LOG_TRACE("Advertising window timeout occurred.");
-    } else if ( phyFlags.Bits.RxSlot == 1 ) {
-        LOG_TRACE("Receive window 1 timeout occurred.");
+    if ( phyFlags.Bits.RxSlot == 1 ) {
+        LOG_TRACE("Receive window 1 timeout occurred at %u ms.",
+                (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS));
     } else if ( phyFlags.Bits.RxSlot == 2 ) {
-        LOG_TRACE("Receive window 2 timeout occurred.");
+        LOG_TRACE("Receive window 2 timeout occurred at %u ms.",
+                (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS));
     } else if ( phyFlags.Bits.RxSlot == 3 ) {
         LOG_TRACE("Time synchronized reception window timeout occurred.");
     }
@@ -914,7 +918,7 @@ static void OnRadioRxError( void )
     if ( pLoRaDevice->devClass != CLASS_C ) {
         Radio.Sleep();
     } else {
-//        OnRxWindow2TimerEvent();
+        OnRxWindow2TimerEvent (NULL);
     }
     if ( phyFlags.Bits.RxSlot == 2 ) {
         phyFlags.Bits.TxDone = 1;
@@ -942,7 +946,8 @@ static void OnRxWindow1TimerEvent( TimerHandle_t xTimer )
     if ( datarate == DR_6 ) { // LoRa 250 kHz
         bandwidth = 1;
     }
-    LOG_TRACE("Open single Rx window 1 (Channel : %u / DR: %u).",
+    LOG_TRACE("Open single Rx window 1 at %u ms (Channel : %u / DR: %u).",
+            (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS),
             Channels[pLoRaDevice->currChannelIndex].Frequency, datarate);
     OpenReceptionWindow(Channels[pLoRaDevice->currChannelIndex].Frequency, datarate,
             bandwidth, symbTimeout, false);
@@ -971,11 +976,13 @@ static void OnRxWindow2TimerEvent( TimerHandle_t xTimer )
     }
 
     if ( pLoRaDevice->devClass != CLASS_C ) {
-        LOG_TRACE("Open single Rx window 2 (Channel : %u / DR: %u).", Rx2ChannelFrequency,
-                Rx2Dr);
+        LOG_TRACE("Open single Rx window 2 at %u ms (Channel : %u / DR: %u).",
+                (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS),
+                Rx2ChannelFrequency, Rx2Dr);
         OpenReceptionWindow(Rx2ChannelFrequency, Rx2Dr, bandwidth, symbTimeout, false);
     } else {
-        LOG_TRACE("Open continuous Rx window 2 (Channel : %u / DR: %u).",
+        LOG_TRACE("Open continuous Rx window 2 at %u ms (Channel : %u / DR: %u).",
+                (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS),
                 Rx2ChannelFrequency, Rx2Dr);
         OpenReceptionWindow(Rx2ChannelFrequency, Rx2Dr, bandwidth, symbTimeout, true);
     }

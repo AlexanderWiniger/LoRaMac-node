@@ -40,7 +40,7 @@
 /*******************************************************************************
  * MACRO DEFINITIONS
  ******************************************************************************/
-#define LORAMESH_BUF_PAYLOAD_START(phy)      (LORAMESH_HEADER_SIZE)
+#define LORAMESH_BUF_PAYLOAD_START(phy)      (((phy) + LORAMESH_HEADER_SIZE))
 
 /*******************************************************************************
  * TYPE DEFINITIONS
@@ -67,16 +67,18 @@ typedef struct ConnectionInfo_s {
     uint32_t DownLinkCounter;
 } ConnectionInfo_t;
 
-/*! LoRaMesh connection slot info structure */
-typedef struct ConnectionSlotInfo_s {
+typedef struct MulticastGroupInfo_s {
+    ConnectionInfo_t Connection;
+    bool isOwner;
+    uint32_t Periodicity;
+    struct MulticastGroupInfo_s *next;
+} MulticastGroupInfo_t;
+
+typedef struct ChildNodeInfo_s {
     ConnectionInfo_t Connection;
     uint32_t Periodicity;
-    uint32_t Duration;
-    struct ConnectionSlotInfo_s *nextSlot;
-} ConnectionSlotInfo_t;
-
-typedef ConnectionSlotInfo_t MulticastGroupInfo_t;
-typedef ConnectionSlotInfo_t ChildNodeInfo_t;
+    struct ChildNodeInfo_s *next;
+} ChildNodeInfo_t;
 
 /*! LoRaMesh advertising info structure. */
 typedef struct AdvertisingSlotInfo_s {
@@ -183,14 +185,14 @@ typedef struct LoRaSchedulerEventHandler_s {
     LoRaSchedulerEventType_t eventType;
     LoRaSchedulerEventCallback_t callback;
     void *param;
-    struct LoRaSchedulerEventHandler_s *nextEventHandler;
+    struct LoRaSchedulerEventHandler_s *next;
 } LoRaSchedulerEventHandler_t;
 
 typedef struct LoRaSchedulerEvent_s {
     uint16_t startSlot;
     uint16_t endSlot;
     LoRaSchedulerEventHandler_t *eventHandler;
-    struct LoRaSchedulerEvent_s *nextSchedulerEvent;
+    struct LoRaSchedulerEvent_s *next;
 } LoRaSchedulerEvent_t;
 
 typedef uint8_t (*PortHandlerFunction_t)( uint8_t *payload, uint8_t payloadSize,
@@ -199,7 +201,7 @@ typedef uint8_t (*PortHandlerFunction_t)( uint8_t *payload, uint8_t payloadSize,
 typedef struct PortHandler_s {
     uint8_t fPort;
     PortHandlerFunction_t fHandler;
-    struct PortHandler_s *nextPortHandler;
+    struct PortHandler_s *next;
 } PortHandler_t;
 
 /*******************************************************************************
@@ -264,8 +266,9 @@ uint8_t LoRaMesh_RemoveApplication( uint8_t fPort );
  *
  * \retval status ERR_OK if transmission was scheduled successfully
  */
-uint8_t LoRaMesh_RegisterTransmission( uint32_t interval, void (*callback)( void *param ),
-        void* param );
+uint8_t LoRaMesh_RegisterTransmission( uint32_t interval,
+        LoRaSchedulerEventType_t evtType, size_t transmissionLength,
+        void (*callback)( void *param ), void* param );
 
 /*!
  * Remove a scheduled data transmission
@@ -275,6 +278,29 @@ uint8_t LoRaMesh_RegisterTransmission( uint32_t interval, void (*callback)( void
  * \retval status ERR_OK if transmission was removed successfully
  */
 uint8_t LoRaMesh_RemoveTransmission( uint32_t interval, void (*callback)( void *param ) );
+
+/*!
+ * Register a scheduled data transmission
+ *
+ * \param[OUT] eHandler Pointer to the created event handler
+ * \param[IN] interval Transmission period
+ * \param[IN] callback Callback function
+ * \param[IN] param Parameter to be passed to callback function
+ *
+ * \retval status ERR_OK if transmission was scheduled successfully
+ */
+uint8_t LoRaMesh_RegisterReceptionWindow( uint32_t interval,
+        void (*callback)( void *param ), void* param );
+
+/*!
+ * Remove a scheduled data transmission
+ *
+ * \param[IN] eHandler Pointer to the created event handler
+ *
+ * \retval status ERR_OK if transmission was removed successfully
+ */
+uint8_t LoRaMesh_RemoveReceptionWindow( uint32_t interval,
+        void (*callback)( void *param ) );
 
 /*!
  * LoRaMAC layer send frame
@@ -399,8 +425,8 @@ uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint32_t devAddr
  *
  * \retval status ERR_OK if frame was handled successfully
  */
-uint8_t LoRaMesh_PutPayload( uint8_t *buf, uint16_t bufSize, uint8_t payloadSize,
-        uint32_t devAddr, uint8_t fPort );
+uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
+        uint32_t devAddr, uint8_t fPort, bool isConfirmed );
 
 /*!
  * Returns whether or not a network is joined.
@@ -527,7 +553,7 @@ void LoRaMesh_TestCreateChildNode( uint32_t devAddr, uint32_t interval,
  * \param[IN] appSKey Application session key
  */
 void LoRaMesh_TestCreateMulticastGroup( uint32_t grpAddr, uint32_t interval,
-        uint32_t freqChannel, uint8_t *nwkSKey, uint8_t *appSKey );
+        uint32_t freqChannel, uint8_t *nwkSKey, uint8_t *appSKey, bool isOwner );
 
 /*******************************************************************************
  * END OF CODE

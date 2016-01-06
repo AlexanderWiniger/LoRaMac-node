@@ -48,6 +48,13 @@ void LoRaTest_AddJoinAcc( uint8_t* devEui, uint8_t* appEui, uint8_t appKey,
         bool addChannelList );
 
 /*!
+ * \brief Add a test data frame to the rx message queue.
+ *
+ * \param devAddr Device address
+ */
+void LoRaTest_AddDataFrame(uint32_t devAddr);
+
+/*!
  * \brief Add a test frame to the rx message queue.
  */
 void LoRaTest_AddFrame( void );

@@ -124,8 +124,9 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet );
  *
  * \return Error code, ERR_OK if everything is ok, ERR_OVERFLOW if buffer is too small.
  */
-uint8_t LoRaMac_PutPayload( uint8_t* bif, size_t bufSize, size_t payloadSize,
-        LoRaMac_MsgType_t type );
+uint8_t LoRaMac_PutPayload( uint8_t* buf, size_t bufSize, size_t payloadSize,
+        LoRaMac_MsgType_t type, uint32_t addr, uint32_t seqCntr, uint8_t *key,
+        bool isMulticast );
 
 /*!
  * \brief

@@ -14,7 +14,7 @@
  * TYPE DEFINITIONS
  ******************************************************************************/
 typedef struct {
-    uint16_t Vector;
+    uint16_t GroundSpeed;
     uint16_t Track;
 } VectorTrack_t;
 
@@ -34,7 +34,7 @@ typedef union {
     } Bits;
 } DataEntryInfo_t;
 
-typedef struct {
+typedef struct DataEntry_s {
     uint32_t DevAddr;
     uint32_t Timestamp;
     DataEntryInfo_t EntryInfo;
@@ -43,6 +43,7 @@ typedef struct {
     Altitude_t Altitude;
     VectorTrack_t VectorTrack;
     uint16_t WindSpeed;
+    struct DataEntry_s *next;
 } DataEntry_t;
 
 /*******************************************************************************

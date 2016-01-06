@@ -13,7 +13,7 @@
 /*!
  * Activates the LoRa Test application
  */
-#define LORAMESH_TEST_APP_ACTIVATED         0
+#define LORAMESH_TEST_APP_ACTIVATED         1
 
 /*!
  * When set to 1 the application uses the Over-the-Air activation procedure
@@ -134,11 +134,16 @@
 /*!
  * User application data buffer size
  */
-#define LORAMESH_APP_DATA_MAX_SIZE          64
+#define LORAMESH_APP_DATA_MAX_SIZE          242
 
 /*!
  * User application data buffer size
  */
-#define LORAMESH_APP_DATA_SIZE              12
+#define LORAMESH_APP_DATA_SIZE              19
+
+/*!
+ * Number of user application data entries
+ */
+#define LORAMESH_APP_NOF_DATA_ENTRIES       5
 
 #endif /* __LORAMESH_APPCONFIG_H_ */
