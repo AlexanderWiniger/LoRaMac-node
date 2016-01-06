@@ -95,6 +95,9 @@
 /* A few bytes might be lost to byte aligning the heap start address. */
 #define configADJUSTED_HEAP_SIZE	( configTOTAL_HEAP_SIZE - portBYTE_ALIGNMENT )
 
+#include "board.h"
+#define LOG_LEVEL_NONE
+#include "debug.h"
 /*
  * Initialises the heap structures before their first use.
  */
@@ -230,6 +233,7 @@ void *pvPortMalloc( size_t xWantedSize )
                 xFreeBytesRemaining -= pxBlock->xBlockSize;
             }
         }
+        LOG_TRACE("Allocated %u bytes at 0x%08x", xWantedSize, pvReturn);
         traceMALLOC( pvReturn, xWantedSize );
     }
     ( void ) xTaskResumeAll();

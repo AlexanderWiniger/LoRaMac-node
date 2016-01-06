@@ -144,6 +144,6 @@
 /*!
  * Number of user application data entries
  */
-#define LORAMESH_APP_NOF_DATA_ENTRIES       5
+#define LORAMESH_APP_NOF_DATA_ENTRIES       3
 
 #endif /* __LORAMESH_APPCONFIG_H_ */

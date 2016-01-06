@@ -158,8 +158,8 @@ void LoRaMesh_AppInit( void )
         LoRaMesh_TestCreateChildNode(0x013A1024, 5000000, 868300000, NwkSKey, AppSKey);
         LoRaMesh_RegisterReceptionWindow(5000000, &ReceiveDataFrame, (void*) 0x013A1024);
         /* Test child node */
-        LoRaMesh_TestCreateChildNode(0x013AD5F1, 5000000, 868500000, NwkSKey, AppSKey);
-        LoRaMesh_RegisterReceptionWindow(5000000, &ReceiveDataFrame, (void*) 0x013AD5F1);
+//        LoRaMesh_TestCreateChildNode(0x013AD5F1, 5000000, 868500000, NwkSKey, AppSKey);
+//        LoRaMesh_RegisterReceptionWindow(5000000, &ReceiveDataFrame, (void*) 0x013AD5F1);
     }
 
     if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", configMINIMAL_STACK_SIZE, (void*) NULL,
@@ -196,6 +196,8 @@ static uint8_t ProcessDataFrame( uint8_t *buf, uint8_t payloadSize, uint32_t dev
 {
     uint8_t payloadIndex = 0;
     DataEntry_t *entry;
+
+    LOG_TRACE("Received %u bytes from 0x%08x on port %u.", payloadSize, devAddr, fPort);
 
     if ( fPort != AppPort ) return ERR_NOTAVAIL;
 
@@ -261,7 +263,6 @@ static uint8_t ProcessDataFrame( uint8_t *buf, uint8_t payloadSize, uint32_t dev
         entry->WindSpeed = 0x00;
     }
     return ERR_OK;
-
 }
 
 static void SendDataFrame( void* param )
@@ -302,7 +303,7 @@ static void SendMulticastDataFrame( void* param )
     int32_t latiBin, longiBin;
     uint32_t timestamp;
     uint8_t dataSize = 0, i;
-    DataEntry_t *iterEntry = pDataEntries;
+    DataEntry_t *iterEntry;
 
     latiBin = 0x42DEC4;
     longiBin = 0x05E868;
@@ -340,7 +341,8 @@ static void SendMulticastDataFrame( void* param )
 
     /* Second, add child nodes data */
     i = 0;
-    while (iterEntry != NULL) {
+    iterEntry = pDataEntries;
+    while (iterEntry != NULL || iterEntry->DevAddr == 0x00) {
         AppData[dataSize++] = ((iterEntry->DevAddr) & 0xFF); /* Nwk addr */
         AppData[dataSize++] = ((iterEntry->DevAddr >> 8) & 0xFF);
         AppData[dataSize++] = ((iterEntry->DevAddr >> 16) & 0xFF);
@@ -376,6 +378,7 @@ static void SendMulticastDataFrame( void* param )
             AppData[dataSize++] = ((iterEntry->WindSpeed >> 8) & 0xFF);
         }
         i++;
+        iterEntry = iterEntry->next;
     }
     AppData[0] = i + 1;
 

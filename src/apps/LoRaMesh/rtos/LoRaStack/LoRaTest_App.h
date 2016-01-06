@@ -41,11 +41,13 @@
  */
 void LoRaTest_AppInit( void );
 
+#if 0
 /*!
  * \brief Add a test regular LoRa join accept message to the rx message queue.
  */
 void LoRaTest_AddJoinAcc( uint8_t* devEui, uint8_t* appEui, uint8_t appKey,
         bool addChannelList );
+#endif
 
 /*!
  * \brief Add a test data frame to the rx message queue.
@@ -54,10 +56,12 @@ void LoRaTest_AddJoinAcc( uint8_t* devEui, uint8_t* appEui, uint8_t appKey,
  */
 void LoRaTest_AddDataFrame(uint32_t devAddr);
 
+#if 0
 /*!
  * \brief Add a test frame to the rx message queue.
  */
 void LoRaTest_AddFrame( void );
+#endif
 
 /*******************************************************************************
  * END OF CODE

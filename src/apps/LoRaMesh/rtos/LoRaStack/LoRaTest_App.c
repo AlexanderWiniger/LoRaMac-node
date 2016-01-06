@@ -16,6 +16,8 @@
 /*******************************************************************************
  * INCLUDE FILES
  ******************************************************************************/
+#include "board.h"
+#include "semphr.h"
 #include "LoRaMesh.h"
 #include "LoRaMacCrypto.h"
 #include "LoRaTest_App.h"
@@ -33,14 +35,15 @@
 /*******************************************************************************
  * PRIVATE VARIABLES (STATIC)
  ******************************************************************************/
-static uint8_t msgBuffer[LORAMESH_BUFFER_SIZE];
+static uint8_t msgBuffer[64/*LORAMESH_BUFFER_SIZE*/];
 static uint8_t phyFlags;
 static bool addMessage;
+//static SemaphoreHandle_t xSemaphore;
 /*******************************************************************************
  * PRIVATE FUNCTION PROTOTYPES (STATIC)
  ******************************************************************************/
 /* RTOS task function */
-static portTASK_FUNCTION(LoRaTestTask, pvParameters);
+static void LoRaTestTask(void *pvParameters);
 /*******************************************************************************
  * MODULE FUNCTIONS (PUBLIC)
  ******************************************************************************/
@@ -51,18 +54,16 @@ void LoRaTest_AppInit( void )
         msgBuffer[i] = 0u;
     }
 
-    phyFlags = LORAPHY_PACKET_FLAGS_NONE;
     addMessage = false;
+    phyFlags = LORAPHY_PACKET_FLAGS_NONE;
 
+//    xSemaphore = xSemaphoreCreateCounting( 5, 0 );
     if ( xTaskCreate(LoRaTestTask, "LoRaTest", configMINIMAL_STACK_SIZE, (void*) NULL,
-                    tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
-        /*lint -e527 */
-        for (;; ) {
-        }; /* error! probably out of memory */
-        /*lint +e527 */
+                    tskIDLE_PRIORITY, (TaskHandle_t*)NULL) != pdPASS ) {
+        LOG_ERROR("Couldn't create task. Probably out of memory.");
     }
 }
-
+#if 0
 void LoRaTest_AddJoinAcc( uint8_t* devEui, uint8_t* appEui, uint8_t appKey,
         bool addChannelList )
 {
@@ -117,17 +118,22 @@ void LoRaTest_AddJoinAcc( uint8_t* devEui, uint8_t* appEui, uint8_t appKey,
 
     addMessage = true;
 }
+#endif
 
 void LoRaTest_AddDataFrame(uint32_t devAddr)
 {
+    ChildNodeInfo_t *childNode;
     LoRaFrm_Ctrl_t fCtrl;
     LoRaMac_Header_t mHdr;
     uint32_t mic, payloadSize;
     int32_t latiBin, longiBin;
     uint8_t frmPayload[19];
 
+    childNode = LoRaMesh_FindChildNode(devAddr);
+    if(childNode == NULL) return;
+
     mHdr.Value = 0u;
-    mHdr.Bits.MType = MSG_TYPE_DATA_UNCONFIRMED_DOWN;
+    mHdr.Bits.MType = MSG_TYPE_DATA_UNCONFIRMED_UP;
 
     fCtrl.Value = 0u;
     fCtrl.Bits.Adr = pLoRaDevice->ctrlFlags.Bits.adrCtrlOn;
@@ -156,19 +162,19 @@ void LoRaTest_AddDataFrame(uint32_t devAddr)
     frmPayload[18] = 0x00;
 
     /* Encrypt with decrypt */
-    LoRaMacPayloadDecrypt(frmPayload, sizeof(frmPayload), pLoRaDevice->upLinkSlot.AppSKey,
-            pLoRaDevice->devAddr, DOWN_LINK, pLoRaDevice->upLinkSlot.DownLinkCounter,
+    LoRaMacPayloadDecrypt(frmPayload, sizeof(frmPayload), childNode->Connection.AppSKey,
+            devAddr, UP_LINK, childNode->Connection.UpLinkCounter,
             LORAFRM_BUF_PAYLOAD_START_WPORT(msgBuffer));
 
     msgBuffer[LORAPHY_BUF_IDX_FLAGS] = LORAPHY_PACKET_FLAGS_NONE;
     msgBuffer[LORAMAC_BUF_IDX_HDR] = mHdr.Value;
-    msgBuffer[LORAFRM_BUF_IDX_DEVADDR] = (pLoRaDevice->devAddr) & 0xFF;
-    msgBuffer[LORAFRM_BUF_IDX_DEVADDR + 1] = (pLoRaDevice->devAddr >> 8) & 0xFF;
-    msgBuffer[LORAFRM_BUF_IDX_DEVADDR + 2] = (pLoRaDevice->devAddr >> 16) & 0xFF;
-    msgBuffer[LORAFRM_BUF_IDX_DEVADDR + 3] = (pLoRaDevice->devAddr >> 24) & 0xFF;
+    msgBuffer[LORAFRM_BUF_IDX_DEVADDR] = (devAddr) & 0xFF;
+    msgBuffer[LORAFRM_BUF_IDX_DEVADDR + 1] = (devAddr >> 8) & 0xFF;
+    msgBuffer[LORAFRM_BUF_IDX_DEVADDR + 2] = (devAddr >> 16) & 0xFF;
+    msgBuffer[LORAFRM_BUF_IDX_DEVADDR + 3] = (devAddr >> 24) & 0xFF;
     msgBuffer[LORAFRM_BUF_IDX_CTRL] = fCtrl.Value;
-    msgBuffer[LORAFRM_BUF_IDX_CNTR] = pLoRaDevice->upLinkSlot.DownLinkCounter & 0xFF;
-    msgBuffer[LORAFRM_BUF_IDX_CNTR + 1] = (pLoRaDevice->upLinkSlot.DownLinkCounter >> 8)
+    msgBuffer[LORAFRM_BUF_IDX_CNTR] = childNode->Connection.UpLinkCounter & 0xFF;
+    msgBuffer[LORAFRM_BUF_IDX_CNTR + 1] = (childNode->Connection.UpLinkCounter >> 8)
     & 0xFF;
     msgBuffer[LORAFRM_BUF_IDX_PORT(0)] = 2;
 
@@ -176,8 +182,8 @@ void LoRaTest_AddDataFrame(uint32_t devAddr)
     + LORAMAC_HEADER_SIZE;
 
     LoRaMacComputeMic((uint8_t*) &msgBuffer[LORAMAC_BUF_IDX_HDR], payloadSize,
-            pLoRaDevice->upLinkSlot.NwkSKey, pLoRaDevice->devAddr, DOWN_LINK,
-            pLoRaDevice->upLinkSlot.DownLinkCounter, &mic);
+            childNode->Connection.NwkSKey, devAddr, UP_LINK,
+            childNode->Connection.UpLinkCounter, &mic);
 
     *LORAMAC_BUF_MIC_START(msgBuffer, payloadSize++) = mic & 0xFF;
     *LORAMAC_BUF_MIC_START(msgBuffer, payloadSize++) = (mic >> 8) & 0xFF;
@@ -186,9 +192,10 @@ void LoRaTest_AddDataFrame(uint32_t devAddr)
 
     msgBuffer[LORAPHY_BUF_IDX_SIZE] = payloadSize;
 
+//    xSemaphoreGive( xSemaphore );
     addMessage = true;
 }
-
+#if 0
 void LoRaTest_AddFrame( void )
 {
     LoRaFrm_Ctrl_t fCtrl;
@@ -241,22 +248,24 @@ void LoRaTest_AddFrame( void )
 
     addMessage = true;
 }
+#endif
 /*******************************************************************************
  * PRIVATE FUNCTIONS (STATIC)
  ******************************************************************************/
-static portTASK_FUNCTION(LoRaTestTask, pvParameters)
+static void LoRaTestTask(void *pvParameters)
 {
     (void)pvParameters; /* not used */
 
     LOG_DEBUG_BARE("Starting LoRaMesh test application...\r\n");
 
     for(;;) {
-        if(addMessage) {
+//        if( xSemaphoreTake( xSemaphore, portMAX_DELAY ) ) {
+        if( addMessage ) {
             addMessage = false;
             LoRaPhy_QueueRxMessage((uint8_t*)&msgBuffer,
                     LORAPHY_BUF_SIZE(msgBuffer), false, phyFlags);
         }
-        vTaskDelay(1000/portTICK_RATE_MS);
+        vTaskDelay(100 / portTICK_RATE_MS);
     } /* for */
 }
 /*******************************************************************************

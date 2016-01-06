@@ -245,7 +245,7 @@ byte LoRaMesh_ParseCommand( const unsigned char *cmd, bool *handled,
 
 void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks )
 {
-    LoRaSchedulerEventHandler_t *handler;
+//    LoRaSchedulerEventHandler_t *handler;
     uint8_t i;
 
     LoRaMeshCallbacks = callbacks;
@@ -273,16 +273,16 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks )
     for ( i = 0; i < MAX_NOF_SCHEDULER_EVENT_HANDLERS - 1; i++ ) {
         eventHandlerList[i].next = &eventHandlerList[i + 1];
     }
-    /* Allocate rx1 window handler */
-    handler = AllocateEventHandler();
-    handler->eventType = EVENT_TYPE_RX1_WINDOW;
-    handler->callback = NULL; //OnRx1SchedulerEvent;
-    handler->param = (void*) NULL;
-    /* Allocate rx2 window handler */
-    handler = AllocateEventHandler();
-    handler->eventType = EVENT_TYPE_RX2_WINDOW;
-    handler->callback = NULL; //OnRx2SchedulerEvent;
-    handler->param = (void*) NULL;
+//    /* Allocate rx1 window handler */
+//    handler = AllocateEventHandler();
+//    handler->eventType = EVENT_TYPE_RX1_WINDOW;
+//    handler->callback = NULL; //OnRx1SchedulerEvent;
+//    handler->param = (void*) NULL;
+//    /* Allocate rx2 window handler */
+//    handler = AllocateEventHandler();
+//    handler->eventType = EVENT_TYPE_RX2_WINDOW;
+//    handler->callback = NULL; //OnRx2SchedulerEvent;
+//    handler->param = (void*) NULL;
 
     /* Event scheduler timer */
     TimerInit(&EventSchedulerTimer, "EventSchedulerTimer", (void*) NULL,
@@ -1036,7 +1036,7 @@ static uint8_t ScheduleEvent( LoRaSchedulerEventHandler_t *evtHandler,
                     return ERR_NOTAVAIL;
                 }
 
-                rxEvt->eventHandler = &eventHandlerList[j];
+                rxEvt->eventHandler = NULL; //&eventHandlerList[j];
                 rxEvt->startSlot = allocatedSlots[(i + 1) + j];
                 rxEvt->endSlot = rxEvt->startSlot
                         + (RECEPTION_RESERVED_TIME / TIME_PER_SLOT);
@@ -1059,7 +1059,7 @@ static uint8_t ScheduleEvent( LoRaSchedulerEventHandler_t *evtHandler,
         }
     }
 
-    (PrintEventSchedulerList(Shell_GetStdio()));
+//    (PrintEventSchedulerList(Shell_GetStdio()));
     return ERR_OK;
 }
 

@@ -11,9 +11,6 @@
 /*******************************************************************************
  * INCLUDE FILES
  ******************************************************************************/
-#if defined(USE_SEGGER_RTT)
-#include "SEGGER_RTT.h"
-#endif
 
 /*******************************************************************************
  * CONSTANT DEFINITIONS
@@ -89,17 +86,10 @@
  * Define log functions.
  */
 #if defined(LOG_TRACE_IS_ENABLED) && defined(DEBUG)
-#if defined(USE_SEGGER_RTT)
-#define LOG_TRACE(fmt, ...)                 SEGGER_RTT_printf(0, "TRACE: " fmt "\r\n", ##__VA_ARGS__)
-#define LOG_TRACE_BARE(fmt, ...)            SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__)
-#define LOG_TRACE_IF(cond, fmt, ...)        if (cond) { SEGGER_RTT_printf(0, "TRACE: " fmt "\r\n", ##__VA_ARGS__); }
-#define LOG_TRACE_BARE_IF(cond, fmt, ...)   if (cond) { SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__); }
-#else
 #define LOG_TRACE(fmt, ...)                 debug_printf("TRACE: " fmt "\r\n", ##__VA_ARGS__)
 #define LOG_TRACE_BARE(fmt, ...)            debug_printf(fmt, ##__VA_ARGS__)
 #define LOG_TRACE_IF(cond, fmt, ...)        if (cond) { debug_printf("TRACE: " fmt "\r\n", ##__VA_ARGS__); }
 #define LOG_TRACE_BARE_IF(cond, fmt, ...)   if (cond) { debug_printf(fmt, ##__VA_ARGS__); }
-#endif
 #else
 #define LOG_TRACE(fmt, ...)
 #define LOG_TRACE_COLORED(fmt, ...)
@@ -109,17 +99,10 @@
 #endif
 
 #if defined(LOG_DEBUG_IS_ENABLED) && defined(DEBUG)
-#if defined(USE_SEGGER_RTT)
-#define LOG_DEBUG(fmt, ...)                 SEGGER_RTT_printf(0, "DEBUG: " fmt "\r\n", ##__VA_ARGS__)
-#define LOG_DEBUG_BARE(fmt, ...)            SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__)
-#define LOG_DEBUG_IF(cond, fmt, ...)        if (cond) { SEGGER_RTT_printf(0, "DEBUG: " fmt "\r\n", ##__VA_ARGS__); }
-#define LOG_DEBUG_BARE_IF(cond, fmt, ...)   if (cond) { SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__); }
-#else
 #define LOG_DEBUG(fmt, ...)                 debug_printf("DEBUG: " fmt "\r\n", ##__VA_ARGS__)
 #define LOG_DEBUG_BARE(fmt, ...)            debug_printf(fmt, ##__VA_ARGS__)
 #define LOG_DEBUG_IF(cond, fmt, ...)        if (cond) { debug_printf("DEBUG: " fmt "\r\n", ##__VA_ARGS__); }
 #define LOG_DEBUG_BARE_IF(cond, fmt, ...)   if (cond) { debug_printf(fmt, ##__VA_ARGS__); }
-#endif
 #else
 #define LOG_DEBUG(fmt, ...)
 #define LOG_DEBUG_BARE(fmt, ...)
@@ -128,17 +111,10 @@
 #endif
 
 #if defined(LOG_ERROR_IS_ENABLED) && defined(DEBUG)
-#if defined(USE_SEGGER_RTT)
-#define LOG_ERROR(fmt, ...)                 SEGGER_RTT_printf(0, KRED "ERROR: " fmt "\x1b[0m\r\n", ##__VA_ARGS__)
-#define LOG_ERROR_BARE(fmt, ...)            SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__)
-#define LOG_ERROR_IF(cond, fmt, ...)        if (cond) { SEGGER_RTT_printf(0, KRED "ERROR: " fmt KNRM, ##__VA_ARGS__); }
-#define LOG_ERROR_BARE_IF(cond, fmt, ...)   if (cond) { SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__); }
-#else
 #define LOG_ERROR(fmt, ...)                 debug_printf(KRED "ERROR: " fmt "\x1b[0m\r\n", ##__VA_ARGS__)
 #define LOG_ERROR_BARE(fmt, ...)            debug_printf(fmt, ##__VA_ARGS__)
 #define LOG_ERROR_IF(cond, fmt, ...)        if (cond) { debug_printf(KRED "ERROR: " fmt KNRM, ##__VA_ARGS__); }
 #define LOG_ERROR_BARE_IF(cond, fmt, ...)   if (cond) { debug_printf(fmt, ##__VA_ARGS__); }
-#endif
 #else
 #define LOG_ERROR(fmt, ...)
 #define LOG_ERROR_BARE(fmt, ...)

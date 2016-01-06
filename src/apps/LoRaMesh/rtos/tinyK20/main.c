@@ -35,14 +35,15 @@ int main( void )
     LOG_DEBUG("Mcu initialized.");
     BoardInitPeriph();
     LOG_DEBUG("Peripherals initialized.");
-
+#if LORAMESH_TEST_APP_ACTIVATED
     if ( xTaskCreate(LedTask, "Led", configMINIMAL_STACK_SIZE, (void*) NULL,
-            tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
+                    tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
         /*lint -e527 */
-        for ( ;; ) {
+        for (;; ) {
         }; /* error! probably out of memory */
         /*lint +e527 */
     }
+#endif
 
 #if defined( USE_SHELL )
     Shell_AppInit ();
@@ -51,6 +52,8 @@ int main( void )
     LoRaMesh_AppInit();
 
     vTaskStartScheduler();
+
+    LOG_ERROR("Failed to create idle task. Probably out of memory.");
 
     for ( ;; ) {
         /* Should not be reached */
