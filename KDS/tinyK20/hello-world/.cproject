@@ -56,7 +56,6 @@
 									<listOptionValue builtIn="false" value="USE_BAND_868"/>
 									<listOptionValue builtIn="false" value="USE_MODEM_LORA"/>
 									<listOptionValue builtIn="false" value="USE_DEBUGGER"/>
-									<listOptionValue builtIn="false" value="DEBUG"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths.744759224" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../../../src/system"/>
@@ -69,7 +68,6 @@
 									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis/utilities"/>
 									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis/k20d"/>
 									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis/k20d/startup"/>
-									<listOptionValue builtIn="false" value="../../../../src/boards/mcu/kinetis/k20d/segger"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.other.808802241" name="Other compiler flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.other" useByScannerDiscovery="true" value="-fno-common  -ffreestanding  -fno-builtin  -mapcs" valueType="string"/>
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.569288115" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input"/>
@@ -111,8 +109,9 @@
 					</folderInfo>
 					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.711241950.725155245" name="eeprom.h" rcbsApplicability="disable" resourcePath="src/system/eeprom.h" toolsToInvoke=""/>
 					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.711241950.108313035" name="adc.h" rcbsApplicability="disable" resourcePath="src/system/adc.h" toolsToInvoke=""/>
+					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.711241950.1152891652" name="custom_list.h" rcbsApplicability="disable" resourcePath="src/boards/mcu/kinetis/utilities/custom_list.h" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="src/system/adc.h|src/system/adc.c|src/system/eeprom.h|src/system/eeprom.c|src/boards/mcu/kinetis/kl26z|src/boards/mcu/kinetis/k22f" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/boards/mcu/kinetis/utilities/custom_list.c|src/boards/mcu/kinetis/utilities/custom_list.h|src/system/adc.h|src/system/adc.c|src/system/eeprom.h|src/system/eeprom.c|src/boards/mcu/kinetis/kl26z|src/boards/mcu/kinetis/k22f" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

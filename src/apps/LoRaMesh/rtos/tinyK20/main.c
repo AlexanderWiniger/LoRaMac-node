@@ -14,8 +14,8 @@
 #include "board.h"
 
 #include "Shell_App.h"
+#include "LoRaMesh_AppConfig.h"
 #include "LoRaMesh_App.h"
-#include "LoRaMacCrypto.h"
 
 #define LOG_LEVEL_TRACE
 #include "debug.h"
@@ -35,9 +35,9 @@ int main( void )
     LOG_DEBUG("Mcu initialized.");
     BoardInitPeriph();
     LOG_DEBUG("Peripherals initialized.");
-#if LORAMESH_TEST_APP_ACTIVATED
-    if ( xTaskCreate(LedTask, "Led", configMINIMAL_STACK_SIZE, (void*) NULL,
-                    tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
+#if(LORAMESH_TEST_APP_ACTIVATED == 1)
+    if ( xTaskCreate(LedTask, "Led", configMINIMAL_STACK_SIZE, (void*) NULL, tskIDLE_PRIORITY,
+                    (xTaskHandle*) NULL) != pdPASS ) {
         /*lint -e527 */
         for (;; ) {
         }; /* error! probably out of memory */
@@ -68,8 +68,10 @@ void LedTask( void *pvParameters )
     bool isLedActive = false;
 
     for ( ;; ) {
-        if ( isLedActive ) GpioWrite(&Led1, 1);
-        else GpioWrite(&Led1, 0);
+        if ( isLedActive )
+            GpioWrite(&Led1, 1);
+        else
+            GpioWrite(&Led1, 0);
         isLedActive = !isLedActive;
         vTaskDelay(500 / portTICK_RATE_MS);
     }

@@ -13,7 +13,7 @@
 /*!
  * Activates the LoRa Test application
  */
-#define LORAMESH_TEST_APP_ACTIVATED         1
+#define LORAMESH_TEST_APP_ACTIVATED         0
 
 /*!
  * When set to 1 the application uses the Over-the-Air activation procedure
