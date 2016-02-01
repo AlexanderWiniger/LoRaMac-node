@@ -107,7 +107,7 @@ typedef uint32_t I2C_TypeDef;
 
  \return               IPSR Register value
  */
-__attribute__( ( always_inline ))      static inline uint32_t __get_IPSR( void )
+__attribute__( ( always_inline ))             static inline uint32_t __get_IPSR( void )
 {
     uint32_t result;
 
@@ -141,6 +141,73 @@ __attribute__( ( always_inline ))      static inline uint32_t __get_IPSR( void )
  * \retval result of raising 2 to the power n
  */
 #define POW2( n ) ( 1 << n )
+
+/*******************************************************************************
+ * UTILITY FUNCTION PROTOTYPES (PUBLIC)
+ ******************************************************************************/
+void custom_strcpy( unsigned char *dst, size_t dstSize, const unsigned char *src );
+
+void custom_strcat( unsigned char *dst, size_t dstSize, const unsigned char *src );
+
+void num16sToStr( unsigned char *dst, size_t dstSize, int16_t val );
+
+void num16sToStrFormatted( unsigned char *dst, size_t dstSize, int16_t val, char fill,
+        unsigned char nofFill );
+
+void strcatNum16s( unsigned char *dst, size_t dstSize, int16_t val );
+
+void strcatNum16sFormatted( unsigned char *dst, size_t dstSize, int16_t val, char fill,
+        unsigned char nofFill );
+
+void strcatNum8Hex( unsigned char *dst, size_t dstSize, unsigned char num );
+
+void strcatNum16Hex( unsigned char *dst, size_t dstSize, unsigned short num );
+
+void strcatNum32s( unsigned char *dst, size_t dstSize, long val );
+
+void num32sToStr( unsigned char *dst, size_t dstSize, long val );
+
+void strcatNum32Hex( unsigned char *dst, size_t dstSize, unsigned long num );
+
+void chcat( unsigned char *dst, size_t dstSize, unsigned char ch );
+
+void strcatNum32u( unsigned char *dst, size_t dstSize, unsigned long val );
+
+void num32uToStr( unsigned char *dst, size_t dstSize, unsigned long val );
+
+void strcatNum32uFormatted( unsigned char *dst, size_t dstSize, unsigned long val,
+        char fill, unsigned char nofFill );
+
+void num32uToStrFormatted( unsigned char *dst, size_t dstSize, unsigned long val,
+        char fill, unsigned char nofFill );
+
+void strcatNum24Hex( unsigned char *dst, size_t dstSize, unsigned long num );
+
+void num16uToStr( unsigned char *dst, size_t dstSize, unsigned short val );
+
+void num8sToStr( unsigned char *dst, size_t dstSize, signed char val );
+
+void num8uToStr( unsigned char *dst, size_t dstSize, unsigned char val );
+
+void num16uToStrFormatted( unsigned char *dst, size_t dstSize, unsigned short val,
+        char fill, unsigned char nofFill );
+
+void num32sToStrFormatted( unsigned char *dst, size_t dstSize, long val, char fill,
+        unsigned char nofFill );
+
+void strcatNum16u( unsigned char *dst, size_t dstSize, unsigned short val );
+
+void strcatNum16uFormatted( unsigned char *dst, size_t dstSize, unsigned short val,
+        char fill, unsigned char nofFill );
+
+void strcatNum32sFormatted( unsigned char *dst, size_t dstSize, long val, char fill,
+        unsigned char nofFill );
+
+void strcatNum8u( unsigned char *dst, size_t dstSize, unsigned char val );
+
+void strcatNum8s( unsigned char *dst, size_t dstSize, signed char val );
+
+unsigned char xatoi( const unsigned char **str, int32_t *res );
 
 /*!
  * \brief Initializes the pseudo ramdom generator initial value

@@ -21,9 +21,10 @@
 #include "debug.h"
 
 /*******************************************************************************
- * PRIVATE FUNCTION PROTOTYPES (STATIC)
+ * PRIVATE VARIABLES (STATIC)
  ******************************************************************************/
-void LedTask( void *pvParameters );
+static uint32_t heartBeatCntr;
+static bool heartBeatLedOn;
 
 /*******************************************************************************
  * MODULE FUNCTIONS (PUBLIC)
@@ -51,6 +52,10 @@ int main( void )
 
     LoRaMesh_AppInit();
 
+    /* Reset heartBeatCntr */
+    heartBeatCntr = 0;
+    heartBeatLedOn = false;
+
     vTaskStartScheduler();
 
     LOG_ERROR("Failed to create idle task. Probably out of memory.");
@@ -63,17 +68,12 @@ int main( void )
 /*******************************************************************************
  * PRIVATE FUNCTIONS (STATIC)
  ******************************************************************************/
-void LedTask( void *pvParameters )
+void vApplicationIdleHook( void )
 {
-    bool isLedActive = false;
-
-    for ( ;; ) {
-        if ( isLedActive )
-            GpioWrite(&Led1, 1);
-        else
-            GpioWrite(&Led1, 0);
-        isLedActive = !isLedActive;
-        vTaskDelay(500 / portTICK_RATE_MS);
+    if ( (heartBeatCntr++ % 100000) == 0 ) {
+        if ( heartBeatLedOn ) GpioWrite(&Led1, 1);
+        else GpioWrite(&Led1, 0);
+        heartBeatLedOn = !heartBeatLedOn;
     }
 }
 

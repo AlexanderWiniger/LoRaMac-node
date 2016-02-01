@@ -34,7 +34,7 @@
 /*!
  * Defines the application data transmission duty cycle
  */
-#define LORAMESH_APP_TX_INTERVAL            4000000  // 5 [s] value in us
+#define LORAMESH_APP_TX_INTERVAL            6000000  // 5 [s] value in us
 #define LORAMESH_APP_TX_INTERVAL_RND        1000000  // 1 [s] value in us
 
 /*!

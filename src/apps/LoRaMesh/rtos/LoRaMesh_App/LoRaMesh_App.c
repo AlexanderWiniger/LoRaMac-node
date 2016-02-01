@@ -17,13 +17,15 @@
 #include "LoRaMesh_AppConfig.h"
 #include "LoRaTest_App.h"
 
-#define LOG_LEVEL_TRACE
+#define LOG_LEVEL_DEBUG
 #include "debug.h"
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
  ******************************************************************************/
 #define RADIO_PROCESS_INTERVAL                      100 /* in [ms] = 10ms */
 #define RADIO_RTOS_TICK_DELAY                       (RADIO_PROCESS_INTERVAL/portTICK_RATE_MS)
+
+#define NODE_C
 
 /*******************************************************************************
  * MACRO DEFINITIONS
@@ -127,41 +129,59 @@ void LoRaMesh_AppInit( void )
 
 #if( OVER_THE_AIR_ACTIVATION == 0 )
     // NwkAddr
+#if defined(NODE_A)
     DevAddr = 0x013AE27A;
+#elif defined(NODE_B)
+    DevAddr = 0x013A1024;
+#elif defined(NODE_C)
+    DevAddr = 0x013AD5F1;
+#endif
 
     LoRaMesh_SetNwkIds(LORAWAN_NETWORK_ID, DevAddr, NwkSKey, AppSKey);
     LOG_DEBUG("LoRaMesh network IDs initialized. Network ID: %u, DevAddr: 0x%08x.",
             LORAWAN_NETWORK_ID, DevAddr);
 #else
     // Initialize LoRaMac device unique ID
-    BoardGetUniqueId( DevEui );
+    BoardGetUniqueId (DevEui);
 #endif /* OVER_THE_AIR_ACTIVATION */
 
     LoRaMesh_SetAdrOn (LORAWAN_ADR_ON);
     LoRaMesh_SetPublicNetwork (LORAWAN_PUBLIC_NETWORK);
-//    LoRaMesh_SetDeviceClass (CLASS_C);
-    LoRaMesh_SetDeviceRole (COORDINATOR);
     LoRaMesh_TestSetDutyCycleCtrlOff (LORAWAN_DUTYCYCLE_OFF);
+#if defined(NODE_A)
+    LoRaMesh_SetDeviceRole (COORDINATOR);
+#endif
 
     LoRaMesh_RegisterApplication((PortHandlerFunction_t) & ProcessDataFrame, AppPort);
-#if 0
+
     if ( pLoRaDevice->devRole == NODE ) {
-        LoRaMesh_RegisterTransmission(LORAMESH_APP_TX_INTERVAL, EVENT_TYPE_UPLINK,
+        /* Multicast group */
+#if defined(NODE_B)
+        LoRaMesh_RegisterTransmission(0, 5000000, EVENT_TYPE_UPLINK,
                 LORAMESH_APP_DATA_SIZE, &SendDataFrame, (void*) NULL);
+#elif defined(NODE_C)
+        LoRaMesh_RegisterTransmission(6, 4000000, EVENT_TYPE_UPLINK,
+                LORAMESH_APP_DATA_SIZE, &SendDataFrame, (void*) NULL);
+#endif
+        LoRaMesh_TestCreateMulticastGroup(AppAddr, LORAMESH_APP_TX_INTERVAL, 868100000,
+                NwkSKey, AppSKey, false);
+        LoRaMesh_RegisterReceptionWindow(2, LORAMESH_APP_TX_INTERVAL, &ReceiveDataFrame,
+                (void*) AppAddr);
     } else if ( pLoRaDevice->devRole == COORDINATOR ) {
+        /* Test child node */
+        LoRaMesh_TestCreateChildNode(0x013A1024, 5000000, 868300000, NwkSKey, AppSKey);
+        LoRaMesh_RegisterReceptionWindow(0, 5000000, &ReceiveDataFrame,
+                (void*) 0x013A1024);
         /* Multicast group */
         LoRaMesh_TestCreateMulticastGroup(AppAddr, LORAMESH_APP_TX_INTERVAL, 868100000,
                 NwkSKey, AppSKey, true);
-        LoRaMesh_RegisterTransmission(LORAMESH_APP_TX_INTERVAL, EVENT_TYPE_MULTICAST,
+        LoRaMesh_RegisterTransmission(2, LORAMESH_APP_TX_INTERVAL, EVENT_TYPE_MULTICAST,
                 (3 * LORAMESH_APP_DATA_SIZE), &SendMulticastDataFrame, (void*) NULL);
         /* Test child node */
-        LoRaMesh_TestCreateChildNode(0x013A1024, 5000000, 868300000, NwkSKey, AppSKey);
-        LoRaMesh_RegisterReceptionWindow(5000000, &ReceiveDataFrame, (void*) 0x013A1024);
-        /* Test child node */
-//        LoRaMesh_TestCreateChildNode(0x013AD5F1, 5000000, 868500000, NwkSKey, AppSKey);
-//        LoRaMesh_RegisterReceptionWindow(5000000, &ReceiveDataFrame, (void*) 0x013AD5F1);
+        LoRaMesh_TestCreateChildNode(0x013AD5F1, 4000000, 868500000, NwkSKey, AppSKey);
+        LoRaMesh_RegisterReceptionWindow(6, 4000000, &ReceiveDataFrame,
+                (void*) 0x013AD5F1);
     }
-#endif
 
     if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", configMINIMAL_STACK_SIZE, (void*) NULL,
             tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
@@ -178,7 +198,7 @@ void LoRaMesh_AppInit( void )
 static void Process( void )
 {
     for ( ;; ) {
-        switch ( appState ) {
+        switch (appState) {
             case LORAMESH_INITIAL:
                 appState = LORAMESH_TX_RX;
                 continue;
@@ -202,6 +222,7 @@ static uint8_t ProcessDataFrame( uint8_t *buf, uint8_t payloadSize, uint32_t dev
 
     if ( fPort != AppPort ) return ERR_NOTAVAIL;
 
+#if defined(NODE_A)
     entry = FindEntry(devAddr);
 
     if ( entry == NULL ) {
@@ -213,36 +234,44 @@ static uint8_t ProcessDataFrame( uint8_t *buf, uint8_t payloadSize, uint32_t dev
     entry->EntryInfo.Value = (uint8_t) LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
     /* Latitude */
     entry->LatitudeBinary = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
-    entry->LatitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
-    entry->LatitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 16);
-    entry->LatitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 24);
+    entry->LatitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF)
+            << 8);
+    entry->LatitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF)
+            << 16);
+    entry->LatitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF)
+            << 24);
     /* Longitude */
     entry->LongitudeBinary = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
-    entry->LongitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
-    entry->LongitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 16);
-    entry->LongitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 24);
+    entry->LongitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF)
+            << 8);
+    entry->LongitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF)
+            << 16);
+    entry->LongitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF)
+            << 24);
     /* Store barometric altitude if present */
     if ( entry->EntryInfo.Bits.AltitudeBar == 1 ) {
         entry->Altitude.Barometric = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
-        entry->Altitude.Barometric |=
-                ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
+        entry->Altitude.Barometric |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++]
+                        & 0xFF) << 8);
     } else {
         entry->Altitude.Barometric = 0x00;
     }
     /* Store gps altitude if present */
     if ( entry->EntryInfo.Bits.AltitudeGPS == 1 ) {
         entry->Altitude.GPS = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
-        entry->Altitude.GPS |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
+        entry->Altitude.GPS |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF)
+                << 8);
     } else {
         entry->Altitude.GPS = 0x00;
     }
     /* Store barometric altitude if present */
     if ( entry->EntryInfo.Bits.VectorTrack == 1 ) {
         entry->VectorTrack.GroundSpeed = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
-        entry->VectorTrack.GroundSpeed |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF)
-                << 8);
+        entry->VectorTrack.GroundSpeed |=
+        ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
         entry->VectorTrack.Track = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
-        entry->VectorTrack.Track |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
+        entry->VectorTrack.Track |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++]
+                        & 0xFF) << 8);
     } else {
         entry->VectorTrack.GroundSpeed = 0x00;
         entry->VectorTrack.Track = 0x00;
@@ -250,10 +279,13 @@ static uint8_t ProcessDataFrame( uint8_t *buf, uint8_t payloadSize, uint32_t dev
     /* Store gps altitude if present */
     if ( entry->EntryInfo.Bits.WindSpeed == 1 ) {
         entry->WindSpeed = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
-        entry->WindSpeed |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
+        entry->WindSpeed |=
+        ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
     } else {
         entry->WindSpeed = 0x00;
     }
+#else
+#endif
     return ERR_OK;
 }
 
@@ -334,7 +366,7 @@ static void SendMulticastDataFrame( void* param )
     /* Second, add child nodes data */
     i = 0;
     iterEntry = pDataEntries;
-    while ( iterEntry != NULL || iterEntry->DevAddr == 0x00 ) {
+    while (iterEntry != NULL || iterEntry->DevAddr == 0x00) {
         AppData[dataSize++] = ((iterEntry->DevAddr) & 0xFF); /* Nwk addr */
         AppData[dataSize++] = ((iterEntry->DevAddr >> 8) & 0xFF);
         AppData[dataSize++] = ((iterEntry->DevAddr >> 16) & 0xFF);
@@ -385,6 +417,27 @@ static void ReceiveDataFrame( void *param )
     if(LoRaMesh_IsNetworkJoined()) {
         LoRaTest_AddDataFrame((uint32_t)param);
     }
+#else
+    uint32_t addr = (uint32_t) param;
+    uint8_t ch, dr;
+    ChildNodeInfo_t* childNode;
+    MulticastGroupInfo_t* multicastGrp;
+
+    if ( (childNode = LoRaMesh_FindChildNode(addr)) != NULL ) {
+        ch = childNode->Connection.ChannelIndex;
+        dr = childNode->Connection.DataRateIndex;
+        LOG_TRACE("Open child node reception window at %u ms.",
+                (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS));
+    } else if ( (multicastGrp = LoRaMesh_FindMulticastGroup(addr)) != NULL ) {
+        ch = multicastGrp->Connection.ChannelIndex;
+        dr = multicastGrp->Connection.DataRateIndex;
+        LOG_TRACE("Open multicast group reception window at %u ms.",
+                (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS));
+    } else {
+        return;
+    }
+
+    LoRaMesh_TestOpenReceptionWindow(ch, dr);
 #endif
 }
 
@@ -392,7 +445,7 @@ static DataEntry_t *FindEntry( uint32_t devAddr )
 {
     DataEntry_t *iterEntry = pDataEntries;
 
-    while ( iterEntry->next ) {
+    while (iterEntry->next) {
         if ( iterEntry->DevAddr == devAddr ) {
             return iterEntry;
         }
@@ -434,7 +487,7 @@ static void FreeEntry( DataEntry_t *entry )
         prevEntry = NULL;
         iterEntry = pDataEntries;
 
-        while ( iterEntry != NULL ) {
+        while (iterEntry != NULL) {
             if ( iterEntry == entry ) {
                 if ( prevEntry == NULL ) {
                     pDataEntries = iterEntry->next;
@@ -454,12 +507,13 @@ static void FreeEntry( DataEntry_t *entry )
 static void LoRaMeshTask( void *pvParameters )
 {
     uint32_t cntr = 0; /* initialize send counter */
+    bool meshAppActive = true;
     appState = LORAMESH_INITIAL; /* initialize state machine state */
     (void) pvParameters; /* not used */
 
     LOG_DEBUG_BARE("Starting LoRaMesh application...\r\n");
 
-    for ( ;; ) {
+    while (meshAppActive) {
         Process(); /* process state machine */
 #if( OVER_THE_AIR_ACTIVATION != 0 )
         if(cntr > APP_CNTR_VALUE(LORAWAN_OTAA_INTERVAL)) {
@@ -474,7 +528,15 @@ static void LoRaMeshTask( void *pvParameters )
         cntr++;
         /* Task interval of 10 ms */
         vTaskDelay(10 / portTICK_RATE_MS);
-    } /* for */
+    } /* while */
+
+    DataEntry_t *iterEntry, *prevEntry;
+    iterEntry = pDataEntries;
+    while (iterEntry != NULL) {
+        prevEntry = iterEntry;
+        FreeEntry(prevEntry);
+        iterEntry = iterEntry->next;
+    }
 }
 /*******************************************************************************
  * END OF CODE

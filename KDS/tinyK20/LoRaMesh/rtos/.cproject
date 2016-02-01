@@ -71,7 +71,6 @@
 									<listOptionValue builtIn="false" value="../../../../../src/apps/LoRaMesh/rtos/LoRaStack"/>
 									<listOptionValue builtIn="false" value="../../../../../src/boards/tinyK20"/>
 									<listOptionValue builtIn="false" value="../../../../../src/boards/mcu/kinetis/k20d"/>
-									<listOptionValue builtIn="false" value="../../../../../src/boards/mcu/kinetis/k20d/segger"/>
 									<listOptionValue builtIn="false" value="../../../../../src/boards/mcu/kinetis/k20d/startup"/>
 									<listOptionValue builtIn="false" value="../../../../../src/boards/mcu/kinetis/utilities"/>
 									<listOptionValue builtIn="false" value="../../../../../src/free-rtos/config/tinyK20"/>
@@ -124,7 +123,6 @@
 					</folderInfo>
 					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.784262688.1433880735" name="eeprom.h" rcbsApplicability="disable" resourcePath="src/system/eeprom.h" toolsToInvoke=""/>
 					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.784262688.510488869" name="adc.h" rcbsApplicability="disable" resourcePath="src/system/adc.h" toolsToInvoke=""/>
-					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.784262688.234269450" name="custom_list.h" rcbsApplicability="disable" resourcePath="src/boards/mcu/kinetis/utilities/custom_list.h" toolsToInvoke=""/>
 					<sourceEntries>
 						<entry excluding="src/boards/mcu/kinetis/k20d/segger|src/system/adc.c|src/system/adc.h|src/system/eeprom.c|src/system/eeprom.h|src/boards/mcu/kinetis/utilities/custom_list.h|src/boards/mcu/kinetis/utilities/custom_list.c|src/radio/sx1272|src/boards/mcu/kinetis/k22f|src/boards/mcu/kinetis/kl26z" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>

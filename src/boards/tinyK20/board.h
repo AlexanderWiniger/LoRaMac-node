@@ -19,7 +19,6 @@
 #include "MK20D5.h"
 #include "system_MK20D5.h"
 #include "utilities.h"
-#include "custom_list.h"
 #include "timer.h"
 #include "delay.h"
 #include "gpio.h"

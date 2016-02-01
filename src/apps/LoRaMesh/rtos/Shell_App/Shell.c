@@ -68,7 +68,8 @@ void Shell_Init( void )
 {
     FifoInit(&Uart1.FifoRx, Shell_RxBuffer, SHELL_FIFO_RX_SIZE);
     UartInit(&Uart1, UART_1, UART1_TX, UART1_RX);
-    UartConfig(&Uart1, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY, NO_FLOW_CTRL);
+    UartConfig(&Uart1, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY,
+            NO_FLOW_CTRL);
 }
 
 void Shell_SendHelpStr( const unsigned char *strCmd, const unsigned char *strHelp,
@@ -87,14 +88,16 @@ void Shell_SendStatusStr( const unsigned char *strItem, const unsigned char *str
 
 void Shell_SendStr( const unsigned char *str, StdIO_OutErrFunction_t io )
 {
-    while ( *str != '\0' ) {
+    while (*str != '\0') {
         io(*str++);
     }
 }
 
-uint8_t Shell_ParseCommand( const unsigned char *cmd, bool *handled, Shell_ConstStdIO_t *io )
+uint8_t Shell_ParseCommand( const unsigned char *cmd, bool *handled,
+        Shell_ConstStdIO_t *io )
 {
-    if ( strcmp((char*) cmd, SHELL_CMD_HELP) == 0 || strcmp((char*) cmd, "Shell help") == 0 ) {
+    if ( strcmp((char*) cmd, SHELL_CMD_HELP) == 0
+            || strcmp((char*) cmd, "Shell help") == 0 ) {
         Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
         Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
         Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
@@ -105,7 +108,8 @@ uint8_t Shell_ParseCommand( const unsigned char *cmd, bool *handled, Shell_Const
         Shell_SendHelpStr((unsigned char*) "Shell",
                 (const unsigned char*) "Group of shell commands\r\n", io->stdOut);
         Shell_SendHelpStr((unsigned char*) "  help|status",
-                (const unsigned char*) "Print help or status information\r\n", io->stdOut);
+                (const unsigned char*) "Print help or status information\r\n",
+                io->stdOut);
         *handled = true;
         return ERR_OK;
     } else if ( (strcmp((char*) cmd, SHELL_CMD_STATUS) == 0)
@@ -205,6 +209,7 @@ bool Shell_KeyPressed( void )
 {
     return !IsFifoEmpty(&Uart1.FifoRx);
 }
+
 /*******************************************************************************
  * PRIVATE FUNCTIONS (STATIC)
  ******************************************************************************/
@@ -217,7 +222,7 @@ uint8_t IterateTable( const unsigned char *cmd, bool *handled, Shell_ConstStdIO_
         return ERR_FAILED;
     }
     /* iterate through all parser functions in table */
-    while ( *parserTable != NULL ) {
+    while (*parserTable != NULL) {
         if ( (*parserTable)(cmd, handled, io) != ERR_OK ) {
             res = ERR_FAILED;
         }
@@ -238,8 +243,8 @@ uint8_t PrintStatus( Shell_ConstStdIO_t *io )
     Shell_SendStr((unsigned char*) "\r\nSYSTEM STATUS\r\n", io->stdOut);
     Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
     Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
-    Shell_SendStatusStr((const unsigned char*) "Firmware", (const unsigned char*) __DATE__,
-            io->stdOut);
+    Shell_SendStatusStr((const unsigned char*) "Firmware",
+            (const unsigned char*) __DATE__, io->stdOut);
     Shell_SendStr((unsigned char*) " ", io->stdOut);
     Shell_SendStr((unsigned char*) __TIME__, io->stdOut);
     Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
@@ -253,7 +258,8 @@ void PrintCommandFailed( const unsigned char *cmd, Shell_ConstStdIO_t *io )
     Shell_SendStr((unsigned char*) "\r\n", io->stdErr);
     Shell_SendStr((unsigned char*) "*** Type ", io->stdErr);
     Shell_SendStr((unsigned char*) SHELL_CMD_HELP, io->stdErr);
-    Shell_SendStr((unsigned char*) " to get a list of available commands\r\n", io->stdErr);
+    Shell_SendStr((unsigned char*) " to get a list of available commands\r\n",
+            io->stdErr);
 }
 
 bool ReadLine( uint8_t *buf, size_t bufSize, Shell_ConstStdIO_t *io )
@@ -289,12 +295,12 @@ void SendSeparatedStrings( const uint8_t *strA, const uint8_t *strB, uint8_t tab
         uint8_t tabPos, StdIO_OutErrFunction_t io )
 {
     /* write command part */
-    while ( *strA != '\0' && tabPos > 0 ) {
+    while (*strA != '\0' && tabPos > 0) {
         io(*strA++);
         tabPos--;
     }
     /* fill up until ';' */
-    while ( tabPos > 0 ) {
+    while (tabPos > 0) {
         io(' ');
         tabPos--;
     }

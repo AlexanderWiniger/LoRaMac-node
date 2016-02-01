@@ -67,7 +67,7 @@ typedef const Shell_ParseCommandCallback_t Shell_ConstParseCommandCallback_t;
 /*******************************************************************************
  * MODULE FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/
-void Shell_Init(void);
+void Shell_Init( void );
 
 void Shell_SendHelpStr( const byte *strCmd, const byte *strHelp,
         StdIO_OutErrFunction_t io );
@@ -86,9 +86,9 @@ byte Shell_ParseWithCommandTable( const unsigned char *cmd, Shell_ConstStdIO_t *
 byte Shell_ReadAndParseWithCommandTable( byte *cmdBuf, size_t cmdBufSize,
         Shell_ConstStdIO_t *io, Shell_ConstParseCommandCallback_t *parseCallback );
 
-Shell_ConstStdIO_t *Shell_GetStdio(void);
+Shell_ConstStdIO_t *Shell_GetStdio( void );
 
-uint8_t Shell_SetStdio(Shell_ConstStdIO_t *stdio);
+uint8_t Shell_SetStdio( Shell_ConstStdIO_t *stdio );
 
 void Shell_ReadChar( byte *ch );
 

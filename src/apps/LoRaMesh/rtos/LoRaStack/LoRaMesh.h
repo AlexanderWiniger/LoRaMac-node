@@ -175,14 +175,14 @@ typedef enum {
     EVENT_TYPE_MULTICAST,
     EVENT_TYPE_SYNCH_RX_WINDOW,
     EVENT_TYPE_RX1_WINDOW,
-    EVENT_TYPE_RX2_WINDOW
+    EVENT_TYPE_RX2_WINDOW,
+    EVENT_TYPE_NONE = 0xFF
 } LoRaSchedulerEventType_t;
 
 typedef void (*LoRaSchedulerEventCallback_t)( void *param );
 
 typedef struct LoRaSchedulerEventHandler_s {
     uint16_t eventIntervalTicks;
-    LoRaSchedulerEventType_t eventType;
     LoRaSchedulerEventCallback_t callback;
     void *param;
     struct LoRaSchedulerEventHandler_s *next;
@@ -191,6 +191,7 @@ typedef struct LoRaSchedulerEventHandler_s {
 typedef struct LoRaSchedulerEvent_s {
     uint16_t startSlot;
     uint16_t endSlot;
+    LoRaSchedulerEventType_t eventType;
     LoRaSchedulerEventHandler_t *eventHandler;
     struct LoRaSchedulerEvent_s *next;
 } LoRaSchedulerEvent_t;
@@ -266,7 +267,7 @@ uint8_t LoRaMesh_RemoveApplication( uint8_t fPort );
  *
  * \retval status ERR_OK if transmission was scheduled successfully
  */
-uint8_t LoRaMesh_RegisterTransmission( uint32_t interval,
+uint8_t LoRaMesh_RegisterTransmission( uint16_t firstSlot, uint32_t interval,
         LoRaSchedulerEventType_t evtType, size_t transmissionLength,
         void (*callback)( void *param ), void* param );
 
@@ -289,7 +290,7 @@ uint8_t LoRaMesh_RemoveTransmission( uint32_t interval, void (*callback)( void *
  *
  * \retval status ERR_OK if transmission was scheduled successfully
  */
-uint8_t LoRaMesh_RegisterReceptionWindow( uint32_t interval,
+uint8_t LoRaMesh_RegisterReceptionWindow( uint16_t firstSlot, uint32_t interval,
         void (*callback)( void *param ), void* param );
 
 /*!
@@ -507,6 +508,10 @@ void LoRaMesh_SetPublicNetwork( bool enable );
  */
 void LoRaMesh_SetAdrOn( bool enable );
 
+uint32_t LoRaMesh_GetNofChildNodes( void );
+
+uint32_t LoRaMesh_GetNofMlticastGroups( void );
+
 /*******************************************************************************
  * TEST FUNCTION PROTOTYPES (PUBLIC) (FOR DEBUG PURPOSES ONLY)
  ******************************************************************************/
@@ -554,6 +559,14 @@ void LoRaMesh_TestCreateChildNode( uint32_t devAddr, uint32_t interval,
  */
 void LoRaMesh_TestCreateMulticastGroup( uint32_t grpAddr, uint32_t interval,
         uint32_t freqChannel, uint8_t *nwkSKey, uint8_t *appSKey, bool isOwner );
+
+/*!
+ * Open reception window
+ *
+ * \param[IN] channel Index of the channel to use
+ * \param[IN] datarate Index of the data rate to be used
+ */
+void LoRaMesh_TestOpenReceptionWindow( uint8_t channel, uint8_t datarate );
 
 /*******************************************************************************
  * END OF CODE

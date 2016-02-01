@@ -85,7 +85,7 @@
 
 #define configGENERATE_RUN_TIME_STATS             0 /* 1: generate runtime statistics; 0: no runtime statistics */
 #define configUSE_PREEMPTION                      1 /* 1: pre-emptive mode; 0: cooperative mode */
-#define configUSE_IDLE_HOOK                       0 /* 1: use Idle hook; 0: no Idle hook */
+#define configUSE_IDLE_HOOK                       1 /* 1: use Idle hook; 0: no Idle hook */
 #define configUSE_TICK_HOOK                       0 /* 1: use Tick hook; 0: no Tick hook */
 #define configUSE_MALLOC_FAILED_HOOK              0 /* 1: use MallocFailed hook; 0: no MallocFailed hook */
 #define configTICK_RATE_HZ                        ((TickType_t)100) /* frequency of tick interrupt */

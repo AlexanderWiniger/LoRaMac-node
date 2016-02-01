@@ -46,6 +46,8 @@ static uint16_t Altitude = 0xFFFF;
 
 static uint32_t PpsCnt = 0;
 
+static uint32_t UnixTime = 1454339433;
+
 bool PpsDetected = false;
 
 void GpsPpsHandler( bool *parseData )
@@ -54,10 +56,19 @@ void GpsPpsHandler( bool *parseData )
     PpsCnt++;
     *parseData = false;
 
+    /* SysTick synchronisation */
+    SYST_CSR &= ~SysTick_CSR_ENABLE_MASK; /* Stop SysTick */
+    if ( (SysTick_BASE_PTR->CVR % 1000) > 0 ) {
+        SYST_CVR = 0x00; /* Reset current value register */
+    }
+    SYST_CSR |= SysTick_CSR_ENABLE_MASK; /* Re-enable SysTick */
+
     if ( PpsCnt >= TRIGGER_GPS_CNT ) {
         PpsCnt = 0;
         BlockLowPowerDuringTask(true);
         *parseData = true;
+    } else {
+        UnixTime++;
     }
 }
 
@@ -85,8 +96,7 @@ bool GpsHasFix( void )
 
 uint32_t GpsGetCurrentUnixTime( void )
 {
-    /* \todo return dummy time */
-    return 1448026353;
+    return UnixTime;
 }
 
 void GpsConvertPositionIntoBinary( void )
@@ -112,6 +122,11 @@ void GpsConvertPositionIntoBinary( void )
         temp = Longitude * MaxWestPosition;
         LongitudeBinary = temp / 180;
     }
+}
+
+void GpsConvertUnixTimeFromStringToNumerical( void )
+{
+    xatoi((unsigned char**) NmeaGpsData.NmeaUtcTime, &UnixTime);
 }
 
 void GpsConvertPositionFromStringToNumerical( void )
@@ -537,6 +552,7 @@ void GpsFormatGpsData( void )
 {
     GpsConvertPositionFromStringToNumerical();
     GpsConvertPositionIntoBinary();
+    GpsConvertUnixTimeFromStringToNumerical();
 }
 
 void GpsResetPosition( void )

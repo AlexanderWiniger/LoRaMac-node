@@ -35,6 +35,7 @@ uint8_t NmeaStringLength = 0;
 //const char psrf_103_gsv[] = "$PSRF103,03,00,00,01*27"; /* Deactivate GSV messages */
 //const char psrf_104[] = "$PSRF104,47.0167,8.3167,441,0,566417,1877,12,2*24"; /* LLA Navigation Initialization */
 //const char psrf_117[] = "$PSRF117,16*0B"; /* Shutdown message */
+
 void GpsMcuOnPpsSignal( void )
 {
     bool parseData = false;
