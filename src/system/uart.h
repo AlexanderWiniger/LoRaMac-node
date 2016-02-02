@@ -108,6 +108,28 @@ void UartConfig( Uart_t *obj, UartMode_t mode, uint32_t baudrate, WordLength_t w
 void UartDeInit( Uart_t *obj );
 
 /*!
+ * \brief Enable UART
+ *
+ * \param [IN] obj  UART object
+ */
+void UartEnable( Uart_t *obj );
+
+/*!
+ * \brief Disable UART
+ *
+ * \param [IN] obj  UART object
+ */
+void UartDisable( Uart_t *obj );
+
+/*!
+ * \brief Enable/Disable UART receiver
+ *
+ * \param [IN] obj  UART object
+ * \param [IN] enable  Receiver is enabled
+ */
+void UartEnableReceiver( Uart_t *obj, bool enable );
+
+/*!
  * \brief Sends a character to the UART
  *
  * \param [IN] obj   UART object
@@ -144,7 +166,6 @@ uint8_t UartPutBuffer( Uart_t *obj, uint8_t *buffer, uint16_t size );
  * \param [OUT] nbReadBytes Number of bytes really read
  * \retval status           [0: OK, 1: Busy]
  */
-uint8_t UartGetBuffer( Uart_t *obj, uint8_t *buffer, uint16_t size,
-        uint16_t *nbReadBytes );
+uint8_t UartGetBuffer( Uart_t *obj, uint8_t *buffer, uint16_t size, uint16_t *nbReadBytes );
 
 #endif  // __UART_H__

@@ -10,6 +10,7 @@
  * INCLUDE FILES
  ******************************************************************************/
 #include <stdio.h>
+#include <limits.h>
 #include "board.h"
 #include "utilities.h"
 
@@ -19,14 +20,17 @@
 // Standard random functions redefinition start
 #define RAND_LOCAL_MAX 2147483647L
 
+/* 2000-03-01 (mod 400 year, immediately after feb29 */
+#define LEAPOCH (946684800LL + 86400*(31+29))
+
+#define DAYS_PER_400Y (365*400 + 97)
+#define DAYS_PER_100Y (365*100 + 24)
+#define DAYS_PER_4Y   (365*4   + 1)
+
 /*******************************************************************************
  * PRIVATE FUNCTION PROTOTYPES (STATIC)
  ******************************************************************************/
 static void ShiftRightAndFill( byte *dst, byte fill, byte nofFill );
-
-static byte PreScanHexNumber( const unsigned char **str );
-
-static byte HexToDec( const unsigned char **p, unsigned char *val );
 
 /*******************************************************************************
  * PRIVATE VARIABLES (STATIC)
@@ -49,7 +53,7 @@ static uint32_t next = 1;
 void custom_strcpy( byte *dst, size_t dstSize, const unsigned char *src )
 {
     dstSize--; /* for zero byte */
-    while (dstSize > 0 && *src != '\0') {
+    while ( dstSize > 0 && *src != '\0' ) {
         *dst++ = *src++;
         dstSize--;
     }
@@ -68,12 +72,12 @@ void custom_strcat( byte *dst, size_t dstSize, const unsigned char *src )
 {
     dstSize--; /* for zero byte */
     /* point to the end of the source */
-    while (dstSize > 0 && *dst != '\0') {
+    while ( dstSize > 0 && *dst != '\0' ) {
         dst++;
         dstSize--;
     }
     /* copy the src in the destination */
-    while (dstSize > 0 && *src != '\0') {
+    while ( dstSize > 0 && *src != '\0' ) {
         *dst++ = *src++;
         dstSize--;
     }
@@ -85,7 +89,7 @@ void chcat( byte *dst, size_t dstSize, byte ch )
 {
     dstSize--; /* for zero byte */
     /* point to the end of the source */
-    while (dstSize > 0 && *dst != '\0') {
+    while ( dstSize > 0 && *dst != '\0' ) {
         dst++;
         dstSize--;
     }
@@ -136,7 +140,7 @@ void num16uToStr( byte *dst, size_t dstSize, word val )
         ptr[i++] = '0';
         dstSize--;
     }
-    while (val > 0 && dstSize > 0) {
+    while ( val > 0 && dstSize > 0 ) {
         ptr[i++] = (unsigned char) ((val % 10) + '0');
         dstSize--;
         val /= 10;
@@ -174,7 +178,7 @@ void num16sToStr( byte *dst, size_t dstSize, int16_t val )
         ptr[i++] = '0';
         dstSize--;
     }
-    while (val > 0 && dstSize > 0) {
+    while ( val > 0 && dstSize > 0 ) {
         ptr[i++] = (unsigned char) ((val % 10) + '0');
         dstSize--;
         val /= 10;
@@ -202,8 +206,7 @@ void num16sToStr( byte *dst, size_t dstSize, int16_t val )
  \param[in] fill Fill character, typically ' ' (like for "%2d" or '0' (for "%02d")
  \param[in] nofFill Size for the format (right aligned) string, e.g. '2' for "%2d"
  */
-void num16sToStrFormatted( byte *dst, size_t dstSize, int16_t val, char fill,
-        byte nofFill )
+void num16sToStrFormatted( byte *dst, size_t dstSize, int16_t val, char fill, byte nofFill )
 {
     num16sToStr(dst, dstSize, val);
     ShiftRightAndFill(dst, fill, nofFill);
@@ -237,8 +240,7 @@ void num16uToStrFormatted( byte *dst, size_t dstSize, word val, char fill, byte 
  \param[in] fill Fill character, typically ' ' (like for "%2d" or '0' (for "%02d")
  \param[in] nofFill Size for the format (right aligned) string, e.g. '2' for "%2d"
  */
-void num32uToStrFormatted( byte *dst, size_t dstSize, unsigned long val, char fill,
-        byte nofFill )
+void num32uToStrFormatted( byte *dst, size_t dstSize, unsigned long val, char fill, byte nofFill )
 {
     num32uToStr(dst, dstSize, val);
     ShiftRightAndFill(dst, fill, nofFill);
@@ -355,8 +357,7 @@ void strcatNum16uFormatted( byte *dst, size_t dstSize, word val, char fill, byte
  \param[in] fill Fill character
  \param[in] nofFill Number of fill characters
  */
-void strcatNum16sFormatted( byte *dst, size_t dstSize, int16_t val, char fill,
-        byte nofFill )
+void strcatNum16sFormatted( byte *dst, size_t dstSize, int16_t val, char fill, byte nofFill )
 {
     unsigned char buf[sizeof("-32768")]; /* maximum buffer size we need */
 
@@ -375,8 +376,7 @@ void strcatNum16sFormatted( byte *dst, size_t dstSize, int16_t val, char fill,
  \param[in] fill Fill character
  \param[in] nofFill Number of fill characters
  */
-void strcatNum32uFormatted( byte *dst, size_t dstSize, unsigned long val, char fill,
-        byte nofFill )
+void strcatNum32uFormatted( byte *dst, size_t dstSize, unsigned long val, char fill, byte nofFill )
 {
     unsigned char buf[sizeof("4294967295")]; /* maximum buffer size we need */
 
@@ -441,7 +441,7 @@ void strcatNum16Hex( byte *dst, size_t dstSize, word num )
         buf[i] = (char) (hex + ((hex <= 9) ? '0' : ('A' - 10)));
         num >>= 4; /* next nibble */
         i--;
-    } while (i >= 0);
+    } while ( i >= 0 );
     custom_strcat(dst, dstSize, buf);
 }
 
@@ -464,7 +464,7 @@ void strcatNum24Hex( byte *dst, size_t dstSize, unsigned long num )
         buf[i] = (char) (hex + ((hex <= 9) ? '0' : ('A' - 10)));
         num >>= 4; /* next nibble */
         i--;
-    } while (i >= 0);
+    } while ( i >= 0 );
     custom_strcat(dst, dstSize, buf);
 }
 
@@ -487,7 +487,7 @@ void strcatNum32Hex( byte *dst, size_t dstSize, unsigned long num )
         buf[i] = (char) (hex + ((hex <= 9) ? '0' : ('A' - 10)));
         num >>= 4; /* next nibble */
         i--;
-    } while (i >= 0);
+    } while ( i >= 0 );
     custom_strcat(dst, dstSize, buf);
 }
 
@@ -548,7 +548,7 @@ void num32sToStr( byte *dst, size_t dstSize, long val )
         ptr[i++] = '0';
         dstSize--;
     }
-    while (val > 0 && dstSize > 0) {
+    while ( val > 0 && dstSize > 0 ) {
         ptr[i++] = (unsigned char) ((val % 10) + '0');
         dstSize--;
         val /= 10;
@@ -582,7 +582,7 @@ void num32uToStr( byte *dst, size_t dstSize, unsigned long val )
         ptr[i++] = '0';
         dstSize--;
     }
-    while (val > 0 && dstSize > 0) {
+    while ( val > 0 && dstSize > 0 ) {
         ptr[i++] = (unsigned char) ((val % 10) + '0');
         dstSize--;
         val /= 10;
@@ -601,7 +601,7 @@ byte xatoi( const unsigned char **str, int32_t *res )
     uint8_t c, r, s = 0;
 
     *res = 0;
-    while (**str == ' ') {
+    while ( **str == ' ' ) {
         (*str)++; /* Skip leading spaces */
     }
     c = **str;
@@ -611,7 +611,7 @@ byte xatoi( const unsigned char **str, int32_t *res )
     }
     if ( c == '0' ) {
         c = *(++(*str));
-        switch (c) {
+        switch ( c ) {
             case 'x': /* hexadecimal */
                 r = 16;
                 c = *(++(*str));
@@ -637,7 +637,7 @@ byte xatoi( const unsigned char **str, int32_t *res )
         r = 10; /* decimal */
     }
     val = 0;
-    while (c > ' ' && c != '.') {
+    while ( c > ' ' && c != '.' ) {
         if ( c >= 'a' ) c -= 0x20;
         c -= '0';
         if ( c >= 17 ) {
@@ -672,14 +672,14 @@ int32_t randr( int32_t min, int32_t max )
 
 void memcpy1( uint8_t *dst, const uint8_t *src, uint16_t size )
 {
-    while (size--) {
+    while ( size-- ) {
         *dst++ = *src++;
     }
 }
 
 void memset1( uint8_t *dst, uint8_t value, uint16_t size )
 {
-    while (size--) {
+    while ( size-- ) {
         *dst++ = value;
     }
 }
@@ -700,19 +700,19 @@ static void ShiftRightAndFill( byte *dst, byte fill, byte nofFill )
     signed char i, j;
 
     j = 0;
-    while (dst[j] != '\0') {
+    while ( dst[j] != '\0' ) {
         j++;
     }
     i = (signed char) nofFill;
     if ( i == j ) {
         /* nothing to do, we are done */
     } else if ( i > j ) {
-        while (j >= 0) {
+        while ( j >= 0 ) {
             dst[i] = dst[j];
             i--;
             j--;
         }
-        while (i >= 0) {
+        while ( i >= 0 ) {
             dst[i] = fill;
             i--;
         }
@@ -721,42 +721,3 @@ static void ShiftRightAndFill( byte *dst, byte fill, byte nofFill )
     }
 }
 
-static byte PreScanHexNumber( const unsigned char **str )
-{
-    const unsigned char *p = *str;
-
-    while (*p == ' ') { /* skip leading spaces */
-        p++; /* skip space */
-    }
-    if ( *p != '0' ) { /* must start with 0x */
-        return ERR_FAILED;
-    }
-    p++; /* skip '0' */
-    if ( *p != 'x' ) { /* must start with 0x */
-        return ERR_FAILED;
-    }
-    p++; /* skip 'x' */
-    *str = p;
-    return ERR_OK;
-}
-
-static byte HexToDec( const unsigned char **p, unsigned char *val )
-{
-    /* convert a hexadecimal character into a decimal value */
-    unsigned char ch = **p;
-
-    if ( ch >= '0' && ch <= '9' ) {
-        *val = (unsigned char) (ch - '0');
-        (*p)++;
-        return ERR_OK;
-    } else if ( ch >= 'a' && ch <= 'f' ) {
-        *val = (unsigned char) (ch - 'a' + 10);
-        (*p)++;
-        return ERR_OK;
-    } else if ( ch >= 'A' && ch <= 'F' ) {
-        *val = (unsigned char) (ch - 'A' + 10);
-        (*p)++;
-        return ERR_OK;
-    }
-    return ERR_FAILED;
-}

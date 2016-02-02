@@ -103,6 +103,7 @@ static TimerEvent_t EventSchedulerTimer;
 
 /*! Advertising timer */
 static TimerEvent_t AdvertisingTimer;
+static uint32_t LastAdvertisingWindow;
 
 /*! Multicast groups */
 static MulticastGroupInfo_t multicastGrpList[MAX_NOF_MULTICAST_GROUPS];
@@ -143,9 +144,8 @@ static uint8_t ScheduleEvent( LoRaSchedulerEventHandler_t *evtHandler,
 static uint8_t RemoveEvent( LoRaSchedulerEventHandler_t *evtHandler );
 
 /*! \brief Find free slots for given event */
-static uint8_t FindFreeSlots( uint16_t firstSlot, TimerTime_t interval,
-        uint16_t durationInSlots, uint8_t *nofAllocatedSlots, uint16_t *allocatedSlots,
-        bool scheduleRxWindows );
+static uint8_t FindFreeSlots( uint16_t firstSlot, TimerTime_t interval, uint16_t durationInSlots,
+        uint8_t *nofAllocatedSlots, uint16_t *allocatedSlots, bool scheduleRxWindows );
 
 /*! \brief Allocate new scheduler event */
 static LoRaSchedulerEvent_t *AllocateEvent( void );
@@ -170,8 +170,8 @@ void ChildNodeAdd( ChildNodeInfo_t* childNode );
 void ChildNodeRemove( ChildNodeInfo_t* childNode );
 
 /*! \brief Create new child node with given data. */
-MulticastGroupInfo_t* CreateMulticastGroup( uint32_t grpAddr, uint8_t* nwkSKey,
-        uint8_t* appSKey, uint32_t frequency, uint32_t interval, bool isOwner );
+MulticastGroupInfo_t* CreateMulticastGroup( uint32_t grpAddr, uint8_t* nwkSKey, uint8_t* appSKey,
+        uint32_t frequency, uint32_t interval, bool isOwner );
 
 /*! \brief Add mutlicast group. */
 void MulticastGroupAdd( MulticastGroupInfo_t *multicastGrp );
@@ -215,24 +215,22 @@ extern LoRaDevice_t* pLoRaDevice;
 /*******************************************************************************
  * MODULE FUNCTIONS (PUBLIC)
  ******************************************************************************/
-byte LoRaMesh_ParseCommand( const unsigned char *cmd, bool *handled,
-        Shell_ConstStdIO_t *io )
+byte LoRaMesh_ParseCommand( const unsigned char *cmd, bool *handled, Shell_ConstStdIO_t *io )
 {
-    if ( strcmp((char*) cmd, SHELL_CMD_HELP) == 0
-            || strcmp((char*) cmd, "LoRaMesh help") == 0 ) {
+    if ( strcmp((char*) cmd, SHELL_CMD_HELP) == 0 || strcmp((char*) cmd, "lora help") == 0 ) {
         *handled = true;
         return PrintHelp(io);
     } else if ( (strcmp((char*) cmd, SHELL_CMD_STATUS) == 0)
-            || (strcmp((char*) cmd, "LoRaMesh status") == 0) ) {
+            || (strcmp((char*) cmd, "lora status") == 0) ) {
         *handled = true;
         return PrintStatus(io);
-    } else if ( (strcmp((char*) cmd, "LoRaMesh childnodes") == 0) ) {
+    } else if ( (strcmp((char*) cmd, "lora childnodes") == 0) ) {
         *handled = true;
         return PrintChildNodes(io);
-    } else if ( (strcmp((char*) cmd, "LoRaMesh events") == 0) ) {
+    } else if ( (strcmp((char*) cmd, "lora events") == 0) ) {
         *handled = true;
         return PrintEventSchedulerList(io);
-    } else if ( (strcmp((char*) cmd, "LoRaMesh multicastgroups") == 0) ) {
+    } else if ( (strcmp((char*) cmd, "lora multicastgroups") == 0) ) {
         *handled = true;
         return PrintMulticastGroups(io);
     }
@@ -271,14 +269,11 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks )
     }
 
     /* Event scheduler timer */
-    TimerInit(&EventSchedulerTimer, "EventSchedulerTimer", (void*) NULL,
-            OnEventSchedulerTimerEvent, false);
+    TimerInit(&EventSchedulerTimer, "EventSchedulerTimer", (void*) NULL, OnEventSchedulerTimerEvent,
+            false);
 
     /* Advertising timer */
-    TimerInit(&AdvertisingTimer, "AdvertisingTimer", (void*) NULL,
-            OnAdvertisingTimerEvent, true);
-    TimerSetValue(&AdvertisingTimer, LORAMESH_CONFIG_ADV_INTERVAL);
-    TimerStart(&AdvertisingTimer);
+    TimerInit(&AdvertisingTimer, "AdvertisingTimer", (void*) NULL, OnAdvertisingTimerEvent, true);
 
     /* Init child node list */
     pFreeChildNode = childNodeList;
@@ -307,7 +302,7 @@ uint8_t LoRaMesh_RegisterApplication( PortHandlerFunction_t fHandler, uint8_t fP
     handler = pPortHandlers;
 
     /* Check if port is already registered */
-    while (handler != NULL) {
+    while ( handler != NULL ) {
         if ( handler->fPort == fPort ) return ERR_NOTAVAIL;
         handler = handler->next;
     }
@@ -336,7 +331,7 @@ uint8_t LoRaMesh_RemoveApplication( uint8_t fPort )
     handler = pPortHandlers;
 
     /* Find port handler is already registered */
-    while (handler != NULL) {
+    while ( handler != NULL ) {
         if ( handler->fPort == fPort ) {
             /* Remove port handler */
             handler->fPort = 0;
@@ -359,8 +354,7 @@ uint8_t LoRaMesh_RegisterTransmission( uint16_t firstSlot, uint32_t interval,
     uint32_t duration;
     uint8_t result;
 
-    if ( evtType != EVENT_TYPE_UPLINK && evtType != EVENT_TYPE_MULTICAST )
-        return ERR_FAILED;
+    if ( evtType != EVENT_TYPE_UPLINK && evtType != EVENT_TYPE_MULTICAST ) return ERR_FAILED;
 
     evtHandler = AllocateEventHandler();
     if ( evtHandler == NULL ) {
@@ -387,11 +381,10 @@ uint8_t LoRaMesh_RemoveTransmission( uint32_t interval, void (*callback)( void *
     LoRaSchedulerEventHandler_t * evtHandler;
     uint8_t result;
 
-    while (evtHandler != NULL) {
+    while ( evtHandler != NULL ) {
         if ( (evtHandler->eventIntervalTicks == (interval / 1e2))
                 && (evtHandler->callback == callback) ) {
-            if ( (result = RemoveEvent(evtHandler)) == ERR_OK )
-                FreeEventHandler(evtHandler);
+            if ( (result = RemoveEvent(evtHandler)) == ERR_OK ) FreeEventHandler(evtHandler);
         }
         evtHandler = evtHandler->next;
     }
@@ -417,13 +410,12 @@ uint8_t LoRaMesh_RegisterReceptionWindow( uint16_t firstSlot, uint32_t interval,
     return result;
 }
 
-uint8_t LoRaMesh_RemoveReceptionWindow( uint32_t interval,
-        void (*callback)( void *param ) )
+uint8_t LoRaMesh_RemoveReceptionWindow( uint32_t interval, void (*callback)( void *param ) )
 {
     LoRaSchedulerEventHandler_t *handler;
     uint8_t result;
 
-    while (handler != NULL) {
+    while ( handler != NULL ) {
         if ( (handler->eventIntervalTicks == (interval / 1e2))
                 && (handler->callback == callback) ) {
             if ( (result = RemoveEvent(handler)) == ERR_OK ) FreeEventHandler(handler);
@@ -448,23 +440,22 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
     }
 
     i = 0;
-    while (i < appPayloadSize) {
+    while ( i < appPayloadSize ) {
         LORAMESH_BUF_PAYLOAD_START(buf)[i] = *appPayload;
         appPayload++;
         i++;
     }
 
-    return LoRaMesh_PutPayload(buf, sizeof(buf), appPayloadSize, pLoRaDevice->devAddr,
-            fPort, isConfirmed);
+    return LoRaMesh_PutPayload(buf, sizeof(buf), appPayloadSize, pLoRaDevice->devAddr, fPort,
+            isConfirmed);
 }
 
-uint8_t LoRaMesh_SendMulticast( uint8_t *appPayload, size_t appPayloadSize,
-        uint8_t fPort )
+uint8_t LoRaMesh_SendMulticast( uint8_t *appPayload, size_t appPayloadSize, uint8_t fPort )
 {
     uint8_t i, buf[LORAMESH_BUFFER_SIZE];
     MulticastGroupInfo_t *multicastGrp;
 
-    if ( !LoRaMesh_IsNetworkJoined() ) return ERR_NOTAVAIL; // No network has been joined yet
+    if ( !LoRaMesh_IsNetworkJoined() ) return ERR_NOTAVAIL;   // No network has been joined yet
     if ( pLoRaDevice->devRole == NODE ) return ERR_DISABLED;
 
     if ( appPayloadSize > LORAMESH_PAYLOAD_SIZE ) {
@@ -472,28 +463,28 @@ uint8_t LoRaMesh_SendMulticast( uint8_t *appPayload, size_t appPayloadSize,
     }
 
     i = 0;
-    while (i < appPayloadSize) {
+    while ( i < appPayloadSize ) {
         LORAMESH_BUF_PAYLOAD_START(buf)[i] = *appPayload;
         appPayload++;
         i++;
     }
 
     multicastGrp = pLoRaDevice->multicastGroups;
-    while (multicastGrp != NULL) {
+    while ( multicastGrp != NULL ) {
         if ( multicastGrp->isOwner ) break;
         multicastGrp = multicastGrp->next;
     }
 
     if ( multicastGrp == NULL ) return ERR_DISABLED;
 
-    return LoRaMesh_PutPayload(buf, sizeof(buf), appPayloadSize,
-            multicastGrp->Connection.Address, fPort, false);
+    return LoRaMesh_PutPayload(buf, sizeof(buf), appPayloadSize, multicastGrp->Connection.Address,
+            fPort, false);
 }
 
 uint8_t LoRaMesh_SendAdvertising( void )
 {
-    uint8_t buf[LORAMESH_ADVERTISING_MSG_LENGTH + LORAPHY_HEADER_SIZE], payloadSize,
-            phyFlags, devRank;
+    uint8_t buf[LORAMESH_ADVERTISING_MSG_LENGTH + LORAPHY_HEADER_SIZE], payloadSize, phyFlags,
+            devRank;
     int32_t latiBin, longiBin;
 
     payloadSize = 0;
@@ -506,8 +497,8 @@ uint8_t LoRaMesh_SendAdvertising( void )
 
     /* Device info */
     devRank = CalculateNodeRank();
-    buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] =
-            ((((pLoRaDevice->devRole) & 0xF) << 4) | (devRank & 0xF));
+    buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = ((((pLoRaDevice->devRole) & 0xF) << 4)
+            | (devRank & 0xF));
 
     GpsGetLatestGpsPositionBinary(&latiBin, &longiBin);
     buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (latiBin) & 0xFF;
@@ -523,32 +514,26 @@ uint8_t LoRaMesh_SendAdvertising( void )
     if ( pLoRaDevice->coordinatorAddr == 0x00
             && EvaluateNominationProbability(0, (DeviceClass_t) 0) ) {
         buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->devAddr) & 0xFF;
-        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->devAddr >> 8)
-                & 0xFF;
-        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->devAddr >> 16)
-                & 0xFF;
-        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->devAddr >> 24)
-                & 0xFF;
+        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->devAddr >> 8) & 0xFF;
+        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->devAddr >> 16) & 0xFF;
+        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->devAddr >> 24) & 0xFF;
     } else {
-        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->coordinatorAddr)
+        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->coordinatorAddr) & 0xFF;
+        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->coordinatorAddr >> 8) & 0xFF;
+        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->coordinatorAddr >> 16)
                 & 0xFF;
-        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->coordinatorAddr
-                >> 8) & 0xFF;
-        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->coordinatorAddr
-                >> 16) & 0xFF;
-        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->coordinatorAddr
-                >> 24) & 0xFF;
+        buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->coordinatorAddr >> 24)
+                & 0xFF;
     }
 
     /* Advertising slot info */
-    buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->advertisingSlot.Time)
+    buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->advertisingSlot.Time) & 0xFF;
+    buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->advertisingSlot.Time >> 8)
             & 0xFF;
-    buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->advertisingSlot.Time
-            >> 8) & 0xFF;
-    buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->advertisingSlot.Time
-            >> 16) & 0xFF;
-    buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->advertisingSlot.Time
-            >> 24) & 0xFF;
+    buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->advertisingSlot.Time >> 16)
+            & 0xFF;
+    buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (pLoRaDevice->advertisingSlot.Time >> 24)
+            & 0xFF;
     buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (uint8_t)(
             pLoRaDevice->advertisingSlot.Interval / 1e6);
     buf[LORAPHY_BUF_IDX_PAYLOAD + (payloadSize++)] = (uint8_t)(
@@ -617,8 +602,7 @@ uint8_t LoRaMesh_JoinReq( uint8_t * devEui, uint8_t * appEui, uint8_t * appKey )
     memcpy(&LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize], devEui, 8);
     mPayloadSize += 8;
     LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = pLoRaDevice->devNonce & 0xFF;
-    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devNonce >> 8)
-            & 0xFF;
+    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devNonce >> 8) & 0xFF;
 
     return LoRaMac_PutPayload((uint8_t*) &mPayload, sizeof(mPayload), mPayloadSize,
             MSG_TYPE_JOIN_REQ, 0x00, 0x00, NULL, false);
@@ -640,8 +624,7 @@ uint8_t LoRaMesh_JoinMeshReq( uint8_t * devEui, uint8_t * appEui, uint8_t * appK
     memcpy(&LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize], devEui, 8);
     mPayloadSize += 8;
     LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = pLoRaDevice->devNonce & 0xFF;
-    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devNonce >> 8)
-            & 0xFF;
+    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devNonce >> 8) & 0xFF;
 
     GpsGetLatestGpsPositionBinary(&latiBin, &longiBin);
     LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (latiBin) & 0xFF;
@@ -672,8 +655,7 @@ uint8_t LoRaMesh_ProcessJoinMeshReq( uint8_t *payload, uint8_t payloadSize )
 
     appNonce = LoRaPhy_GenerateNonce();
 
-    LoRaMacJoinComputeSKeys(pLoRaDevice->appKey, (uint8_t*) &appNonce, devNonce, nwkSKey,
-            appSKey);
+    LoRaMacJoinComputeSKeys(pLoRaDevice->appKey, (uint8_t*) &appNonce, devNonce, nwkSKey, appSKey);
 
     latiBin = (payload[LORAMAC_BUF_IDX_PAYLOAD + 18] & 0xFF);
     latiBin |= ((payload[LORAMAC_BUF_IDX_PAYLOAD + 19] >> 8) & 0xFF);
@@ -686,8 +668,8 @@ uint8_t LoRaMesh_ProcessJoinMeshReq( uint8_t *payload, uint8_t payloadSize )
 
     if ( EvaluateAcceptanceProbability(latiBin, longiBin) ) {
         ChildNodeInfo_t* newChild;
-        newChild = CreateChildNode(LoRaMesh_GenerateDeviceAddress(devNonce), nwkSKey,
-                appSKey, 0, 0);
+        newChild = CreateChildNode(LoRaMesh_GenerateDeviceAddress(devNonce), nwkSKey, appSKey, 0,
+                0);
         if ( newChild == NULL ) return ERR_FAILED;
         ChildNodeAdd(newChild);
         if ( pLoRaDevice->devRole == NODE ) pLoRaDevice->devRole = ROUTER;
@@ -709,16 +691,12 @@ uint8_t LoRaMesh_RebindMeshReq( void )
     memcpy1(&LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize], pLoRaDevice->devEui, 8);
     mPayloadSize += 8;
     LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = pLoRaDevice->devNonce & 0xFF;
-    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devNonce >> 8)
-            & 0xFF;
+    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devNonce >> 8) & 0xFF;
 
     LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devAddr) & 0xFF;
-    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devAddr >> 8)
-            & 0xFF;
-    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devAddr >> 16)
-            & 0xFF;
-    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devAddr >> 24)
-            & 0xFF;
+    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devAddr >> 8) & 0xFF;
+    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devAddr >> 16) & 0xFF;
+    LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (pLoRaDevice->devAddr >> 24) & 0xFF;
 
     GpsGetLatestGpsPositionBinary(&latiBin, &longiBin);
     LORAMAC_BUF_PAYLOAD_START(mPayload)[mPayloadSize++] = (latiBin) & 0xFF;
@@ -773,12 +751,11 @@ uint8_t LoRaMesh_LinkCheckReq( void )
     return ERR_OK;
 }
 
-uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint32_t devAddr,
-        uint8_t fPort )
+uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint32_t devAddr, uint8_t fPort )
 {
     if ( fPort >= LORAFRM_LOWEST_FPORT && fPort <= LORAFRM_HIGHEST_FPORT ) {
         PortHandler_t *iterHandler = pPortHandlers;
-        while (iterHandler != NULL) {
+        while ( iterHandler != NULL ) {
             if ( iterHandler->fPort == fPort && iterHandler->fHandler != NULL ) {
                 return iterHandler->fHandler(buf, payloadSize, devAddr, fPort);
             }
@@ -789,8 +766,8 @@ uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint32_t devAddr
     return ERR_FAILED;
 }
 
-uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
-        uint32_t devAddr, uint8_t fPort, bool isConfirmed )
+uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize, uint32_t devAddr,
+        uint8_t fPort, bool isConfirmed )
 {
     /* Add app information */
 #if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
@@ -822,7 +799,7 @@ ChildNodeInfo_t* LoRaMesh_FindChildNode( uint32_t devAddr )
     if ( pLoRaDevice->childNodes != NULL ) {
         ChildNodeInfo_t *childNode = pLoRaDevice->childNodes;
 
-        while (childNode != NULL) {
+        while ( childNode != NULL ) {
             if ( childNode->Connection.Address == devAddr ) return childNode;
             childNode = childNode->next;
         }
@@ -836,7 +813,7 @@ MulticastGroupInfo_t* LoRaMesh_FindMulticastGroup( uint32_t grpAddr )
     if ( pLoRaDevice->multicastGroups != NULL ) {
         MulticastGroupInfo_t *grp = pLoRaDevice->multicastGroups;
 
-        while (grp != NULL) {
+        while ( grp != NULL ) {
             if ( grp->Connection.Address == grpAddr ) return grp;
             grp = grp->next;
         }
@@ -848,8 +825,7 @@ MulticastGroupInfo_t* LoRaMesh_FindMulticastGroup( uint32_t grpAddr )
 /*******************************************************************************
  * PUBLIC SETUP FUNCTIONS
  ******************************************************************************/
-void LoRaMesh_SetNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey,
-        uint8_t *appSKey )
+void LoRaMesh_SetNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint8_t *appSKey )
 {
     pLoRaDevice->netId = netID;
     pLoRaDevice->devAddr = devAddr;
@@ -893,7 +869,7 @@ uint32_t LoRaMesh_GetNofChildNodes( void )
 
     iterNode = pLoRaDevice->childNodes;
 
-    while (iterNode != NULL) {
+    while ( iterNode != NULL ) {
         iterNode = iterNode->next;
         cnt++;
     }
@@ -908,7 +884,7 @@ uint32_t LoRaMesh_GetNofMlticastGroups( void )
 
     iterGrp = pLoRaDevice->multicastGroups;
 
-    while (iterGrp != NULL) {
+    while ( iterGrp != NULL ) {
         iterGrp = iterGrp->next;
         cnt++;
     }
@@ -941,26 +917,34 @@ void LoRaMesh_TestSetMic( uint16_t upLinkCounter )
     }
 }
 
-void LoRaMesh_TestCreateChildNode( uint32_t devAddr, uint32_t interval,
-        uint32_t freqChannel, uint8_t *nwkSKey, uint8_t *appSKey )
+void LoRaMesh_TestCreateChildNode( uint32_t devAddr, uint32_t interval, uint32_t freqChannel,
+        uint8_t *nwkSKey, uint8_t *appSKey )
 {
-    ChildNodeInfo_t *newChildNode = CreateChildNode(devAddr, nwkSKey, appSKey,
-            freqChannel, interval);
+    ChildNodeInfo_t *newChildNode = CreateChildNode(devAddr, nwkSKey, appSKey, freqChannel,
+            interval);
 
     if ( newChildNode != NULL ) {
         ChildNodeAdd(newChildNode);
     }
 }
 
-void LoRaMesh_TestCreateMulticastGroup( uint32_t grpAddr, uint32_t interval,
-        uint32_t freqChannel, uint8_t *nwkSKey, uint8_t *appSKey, bool isOwner )
+void LoRaMesh_TestCreateMulticastGroup( uint32_t grpAddr, uint32_t interval, uint32_t freqChannel,
+        uint8_t *nwkSKey, uint8_t *appSKey, bool isOwner )
 {
-    MulticastGroupInfo_t *newGrp = CreateMulticastGroup(grpAddr, nwkSKey, appSKey,
-            freqChannel, interval, isOwner);
+    MulticastGroupInfo_t *newGrp = CreateMulticastGroup(grpAddr, nwkSKey, appSKey, freqChannel,
+            interval, isOwner);
 
     if ( newGrp != NULL ) {
         MulticastGroupAdd(newGrp);
     }
+}
+
+void LoRaMesh_TestScheduleAdvertising( time_t nextAdvTime )
+{
+    LOG_TRACE("Schedule next advertising for %lu", nextAdvTime);
+    time_t now = GpsGetCurrentUnixTime();
+    TimerSetValue(&AdvertisingTimer, (nextAdvTime - now) * 1000000);
+    TimerStart(&AdvertisingTimer);
 }
 
 void LoRaMesh_TestOpenReceptionWindow( uint8_t channel, uint8_t datarate )
@@ -1002,9 +986,8 @@ static uint8_t ScheduleEvent( LoRaSchedulerEventHandler_t *evtHandler,
     durationInSlots = duration / TIME_PER_SLOT;
     if ( duration % TIME_PER_SLOT != 0 ) durationInSlots++;
 
-    if ( FindFreeSlots(firstSlot, interval, durationInSlots,
-            (uint8_t*) &nofAllocatedSlots, (uint16_t*) &allocatedSlots, receptionWindows)
-            != ERR_OK ) return ERR_FAILED;
+    if ( FindFreeSlots(firstSlot, interval, durationInSlots, (uint8_t*) &nofAllocatedSlots,
+            (uint16_t*) &allocatedSlots, receptionWindows) != ERR_OK ) return ERR_FAILED;
 
     for ( i = 0; i < nofAllocatedSlots; i++ ) {
         evt = AllocateEvent();
@@ -1022,12 +1005,9 @@ static uint8_t ScheduleEvent( LoRaSchedulerEventHandler_t *evtHandler,
             evt->next = NULL;
             pNextSchedulerEvent = evt;
             pEventScheduler = evt;
-
-            TimerSetValue(&EventSchedulerTimer, ADVERTISING_RESERVED_TIME);
-            TimerStart(&EventSchedulerTimer);
         } else {
             LoRaSchedulerEvent_t *iterEvt = pEventScheduler;
-            while (iterEvt != NULL) {
+            while ( iterEvt != NULL ) {
                 if ( ((iterEvt->endSlot < evt->startSlot) && (iterEvt->next != NULL)
                         && (iterEvt->next->startSlot > evt->endSlot))
                         || ((iterEvt->next == NULL) && (iterEvt->endSlot < evt->startSlot)) ) {
@@ -1047,20 +1027,17 @@ static uint8_t ScheduleEvent( LoRaSchedulerEventHandler_t *evtHandler,
                     LOG_ERROR("Coulnd't allocate reception window %u", j);
                     return ERR_NOTAVAIL;
                 }
-                rxEvt->eventType =
-                        (j == 0) ? EVENT_TYPE_RX1_WINDOW : EVENT_TYPE_RX2_WINDOW;
-                rxEvt->eventHandler = NULL; //&eventHandlerList[j];
+                rxEvt->eventType = (j == 0) ? EVENT_TYPE_RX1_WINDOW : EVENT_TYPE_RX2_WINDOW;
+                rxEvt->eventHandler = NULL;   //&eventHandlerList[j];
                 rxEvt->startSlot = allocatedSlots[(i + 1) + j];
-                rxEvt->endSlot = rxEvt->startSlot
-                        + (RECEPTION_RESERVED_TIME / TIME_PER_SLOT);
+                rxEvt->endSlot = rxEvt->startSlot + (RECEPTION_RESERVED_TIME / TIME_PER_SLOT);
 
                 /* Place in scheduler event list */
                 LoRaSchedulerEvent_t *iterEvt = pEventScheduler;
-                while (iterEvt != NULL) {
+                while ( iterEvt != NULL ) {
                     if ( ((iterEvt->endSlot < rxEvt->startSlot) && (iterEvt->next != NULL)
                             && (iterEvt->next->startSlot > rxEvt->endSlot))
-                            || ((iterEvt->next == NULL)
-                                    && (iterEvt->endSlot < rxEvt->startSlot)) ) {
+                            || ((iterEvt->next == NULL) && (iterEvt->endSlot < rxEvt->startSlot)) ) {
                         rxEvt->next = iterEvt->next;
                         iterEvt->next = rxEvt;
                         break;
@@ -1072,7 +1049,7 @@ static uint8_t ScheduleEvent( LoRaSchedulerEventHandler_t *evtHandler,
         }
     }
 
-    (PrintEventSchedulerList(Shell_GetStdio()));
+//    (PrintEventSchedulerList(Shell_GetStdio()));
     return ERR_OK;
 }
 
@@ -1089,16 +1066,15 @@ static uint8_t RemoveEvent( LoRaSchedulerEventHandler_t *evtHandler )
 
     /* Find and remove all related scheduler events */
     iterEvt = pEventScheduler;
-    while (iterEvt != NULL) {
+    while ( iterEvt != NULL ) {
         if ( iterEvt->eventHandler == evtHandler ) {
             /* In case it's an uplink event we also have to remove related rx windows */
             if ( iterEvt->eventType == EVENT_TYPE_UPLINK ) {
                 LoRaSchedulerEvent_t *iterRxEvt = pEventScheduler;
                 /* Remove rx1 window */
-                while (iterRxEvt != NULL) {
+                while ( iterRxEvt != NULL ) {
                     if ( iterRxEvt->startSlot
-                            == (iterEvt->startSlot
-                                    + (pLoRaDevice->rxWindow1Delay / TIME_PER_SLOT)) ) {
+                            == (iterEvt->startSlot + (pLoRaDevice->rxWindow1Delay / TIME_PER_SLOT)) ) {
                         /* Corresponding rx1 window found */
                         FreeEvent(iterRxEvt);
                         break;
@@ -1107,10 +1083,9 @@ static uint8_t RemoveEvent( LoRaSchedulerEventHandler_t *evtHandler )
                 }
                 /* Remove rx2 window */
                 iterRxEvt = pEventScheduler;
-                while (iterRxEvt != NULL) {
+                while ( iterRxEvt != NULL ) {
                     if ( iterRxEvt->startSlot
-                            == (iterEvt->startSlot
-                                    + (pLoRaDevice->rxWindow2Delay / TIME_PER_SLOT)) ) {
+                            == (iterEvt->startSlot + (pLoRaDevice->rxWindow2Delay / TIME_PER_SLOT)) ) {
                         /* Corresponding rx2 window found */
                         FreeEvent(iterRxEvt);
                         break;
@@ -1144,9 +1119,8 @@ static uint8_t RemoveEvent( LoRaSchedulerEventHandler_t *evtHandler )
  *
  * \retval status ERR_OK if slot allocation was successful
  */
-static uint8_t FindFreeSlots( uint16_t firstSlot, TimerTime_t interval,
-        uint16_t durationInSlots, uint8_t *nofAllocatedSlots, uint16_t *allocatedSlots,
-        bool scheduleRxWindows )
+static uint8_t FindFreeSlots( uint16_t firstSlot, TimerTime_t interval, uint16_t durationInSlots,
+        uint8_t *nofAllocatedSlots, uint16_t *allocatedSlots, bool scheduleRxWindows )
 {
     uint8_t nofAllocationTries = 10, maxNofSlots;
     uint16_t slots[32];
@@ -1166,10 +1140,8 @@ static uint8_t FindFreeSlots( uint16_t firstSlot, TimerTime_t interval,
             slot = firstSlot + ((interval / TIME_PER_SLOT) * i);
             if ( scheduleRxWindows ) {
                 uint16_t slotRx1, slotRx2;
-                slotRx1 = slot + durationInSlots
-                        + (pLoRaDevice->rxWindow1Delay / TIME_PER_SLOT);
-                slotRx2 = slot + durationInSlots
-                        + (pLoRaDevice->rxWindow2Delay / TIME_PER_SLOT);
+                slotRx1 = slot + durationInSlots + (pLoRaDevice->rxWindow1Delay / TIME_PER_SLOT);
+                slotRx2 = slot + durationInSlots + (pLoRaDevice->rxWindow2Delay / TIME_PER_SLOT);
                 /* Make sure Rx windows fit in as well */
                 if ( (slotRx2 + durationInSlots) < NOF_AVAILABLE_SLOTS ) {
                     *(allocatedSlots++) = slot;
@@ -1195,10 +1167,10 @@ static uint8_t FindFreeSlots( uint16_t firstSlot, TimerTime_t interval,
 
         slots[0] = 0xFFFF;
 
-        while (!allocationDone && !allocationAborted && nofAllocationTries > 0) {
+        while ( !allocationDone && !allocationAborted && nofAllocationTries > 0 ) {
             /* Find first free slot */
             evt = pEventScheduler;
-            while (evt != NULL) {
+            while ( evt != NULL ) {
                 if ( firstSlot == 0xFFFF ) { /* Free to select any free slot */
                     if ( evt->next != NULL ) {
                         timeFrame = (evt->next->startSlot - evt->endSlot);
@@ -1263,19 +1235,18 @@ static uint8_t FindFreeSlots( uint16_t firstSlot, TimerTime_t interval,
                     nextSlot = slots[0] + ((interval / TIME_PER_SLOT) * i);
                 }
                 slots[i] = 0xFFFF;
-                while (evt != NULL) {
+                while ( evt != NULL ) {
                     if ( evt->endSlot < nextSlot ) {
                         if ( ((evt->next != NULL) && (evt->next->startSlot > nextSlot))
                                 || ((evt->next == NULL)
-                                        && ((NOF_AVAILABLE_SLOTS - durationInSlots)
-                                                > nextSlot)) ) {
+                                        && ((NOF_AVAILABLE_SLOTS - durationInSlots) > nextSlot)) ) {
                             slots[i] = nextSlot;
                             *(nofAllocatedSlots) += 1;
                             break;
                         }
                     } else {
-                        offSet += ((evt->startSlot + (evt->endSlot - evt->startSlot))
-                                - nextSlot + 1);
+                        offSet +=
+                                ((evt->startSlot + (evt->endSlot - evt->startSlot)) - nextSlot + 1);
                         break;
                     }
                     evt = evt->next;
@@ -1311,11 +1282,28 @@ static uint8_t FindFreeSlots( uint16_t firstSlot, TimerTime_t interval,
  */
 static void OnAdvertisingTimerEvent( TimerHandle_t xTimer )
 {
+#if 0
     LOG_TRACE("Advertising timer event at %u (ms).",
             (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS));
-
+#else
+    LOG_TRACE("Advertising timer event at %lu.", (timer_t)(GpsGetCurrentUnixTime()));
+#endif
+    if ( AdvertisingTimer.PeriodInMs != (ADVERTISING_INTERVAL / 1000) ) {
+        TimerStop(&AdvertisingTimer);
+        TimerSetValue(&AdvertisingTimer, ADVERTISING_INTERVAL);
+        TimerStart(&AdvertisingTimer);
+    }
     /* Add packet to message queue */
     LoRaMesh_SendAdvertising();
+
+    LastAdvertisingWindow = TimerGetCurrentTime();
+
+    /* Restart event scheduler */
+    if ( pEventScheduler != NULL ) {
+        TimerSetValue(&EventSchedulerTimer,
+                (ADVERTISING_RESERVED_TIME + (pEventScheduler->startSlot * TIME_PER_SLOT)));
+        TimerStart(&EventSchedulerTimer);
+    }
 }
 
 /*!
@@ -1333,9 +1321,8 @@ static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer )
 
     if ( pNextSchedulerEvent == NULL ) return;
 
-    slot = (((TimerGetCurrentTime() * portTICK_PERIOD_MS) * 1e3)
+    slot = ((((TimerGetCurrentTime() - LastAdvertisingWindow) * portTICK_PERIOD_MS) * 1000)
             - ADVERTISING_RESERVED_TIME) / TIME_PER_SLOT;
-    slot = slot % (ADVERTISING_INTERVAL / TIME_PER_SLOT);
 
     if ( pNextSchedulerEvent->next == NULL ) {
         /* Calculate next event time */
@@ -1346,8 +1333,8 @@ static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer )
         nextEvt = pEventScheduler;
     } else if ( pNextSchedulerEvent->startSlot == slot ) {
         /* Start scheduler timer */
-        nextEvtTime = ((pNextSchedulerEvent->next->startSlot
-                - pNextSchedulerEvent->startSlot) * TIME_PER_SLOT);
+        nextEvtTime = ((pNextSchedulerEvent->next->startSlot - pNextSchedulerEvent->startSlot)
+                * TIME_PER_SLOT);
         /* Move pointer forward */
         nextEvt = pNextSchedulerEvent->next;
     } else {
@@ -1361,8 +1348,7 @@ static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer )
     /* Invoke callback function */
     if ( pNextSchedulerEvent->eventHandler != NULL
             && pNextSchedulerEvent->eventHandler->callback != NULL ) {
-        pNextSchedulerEvent->eventHandler->callback(
-                pNextSchedulerEvent->eventHandler->param);
+        pNextSchedulerEvent->eventHandler->callback(pNextSchedulerEvent->eventHandler->param);
     }
     /* Move pointer forward */
     pNextSchedulerEvent = nextEvt;
@@ -1444,7 +1430,7 @@ static void FreeEvent( LoRaSchedulerEvent_t *evt )
         prevEvt = NULL;
         iterEvt = pEventScheduler;
 
-        while (iterEvt != NULL) {
+        while ( iterEvt != NULL ) {
             if ( iterEvt == evt ) {
                 if ( prevEvt == NULL ) {
                     pEventScheduler = iterEvt->next;
@@ -1500,7 +1486,7 @@ static void FreeEventHandler( LoRaSchedulerEventHandler_t *handler )
         prevHandler = NULL;
         iterHandler = pEventHandlers;
 
-        while (iterHandler != NULL) {
+        while ( iterHandler != NULL ) {
             if ( iterHandler == handler ) {
                 if ( prevHandler == NULL ) {
                     pEventHandlers = iterHandler->next;
@@ -1579,7 +1565,7 @@ void ChildNodeRemove( ChildNodeInfo_t* childNode )
     if ( pLoRaDevice->childNodes != NULL ) {
         ChildNodeInfo_t* iterNode = pLoRaDevice->childNodes;
 
-        while (iterNode->next != NULL) {
+        while ( iterNode->next != NULL ) {
             if ( iterNode->next == childNode ) {
                 iterNode->next = childNode->next;
                 childNode->next = pFreeChildNode;
@@ -1599,8 +1585,8 @@ void ChildNodeRemove( ChildNodeInfo_t* childNode )
  * \param channel Channel frequency
  * \param interval Rx window interval
  */
-MulticastGroupInfo_t* CreateMulticastGroup( uint32_t grpAddr, uint8_t* nwkSKey,
-        uint8_t* appSKey, uint32_t frequency, uint32_t interval, bool isOwner )
+MulticastGroupInfo_t* CreateMulticastGroup( uint32_t grpAddr, uint8_t* nwkSKey, uint8_t* appSKey,
+        uint32_t frequency, uint32_t interval, bool isOwner )
 {
     MulticastGroupInfo_t* newGrp = pFreeMulticastGrp;
 
@@ -1649,7 +1635,7 @@ void MulticastGroupRemove( MulticastGroupInfo_t *multicastGrp )
     if ( pLoRaDevice->multicastGroups != NULL ) {
         MulticastGroupInfo_t* iterGrp = pLoRaDevice->multicastGroups;
 
-        while (iterGrp->next != NULL) {
+        while ( iterGrp->next != NULL ) {
             if ( iterGrp->next == multicastGrp ) {
                 iterGrp->next = multicastGrp->next;
                 multicastGrp->next = pFreeMulticastGrp;
@@ -1711,8 +1697,8 @@ static uint8_t PrintStatus( Shell_ConstStdIO_t *io )
  */
 static uint8_t PrintHelp( Shell_ConstStdIO_t *io )
 {
-    Shell_SendHelpStr((unsigned char*) "LoRaMesh",
-            (unsigned char*) "Group of LoRaMesh commands\r\n", io->stdOut);
+    Shell_SendHelpStr((unsigned char*) "lora", (unsigned char*) "Group of lora commands\r\n",
+            io->stdOut);
     Shell_SendHelpStr((unsigned char*) "  events",
             (unsigned char*) "Print event scheduler list\r\n", io->stdOut);
     Shell_SendHelpStr((unsigned char*) "  childnodes",
@@ -1738,10 +1724,10 @@ static uint8_t PrintEventSchedulerList( Shell_ConstStdIO_t *io )
 
     Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
     Shell_SendStr((unsigned char*) "\r\n\tEvent \t\tStart \tEnd\r\n", io->stdOut);
-    while (evt != NULL) {
+    while ( evt != NULL ) {
         custom_strcpy((unsigned char*) buf, sizeof(""), (unsigned char*) "");
         strcatNum8u(buf, sizeof(buf), (i + 1));
-        switch (evt->eventType) {
+        switch ( evt->eventType ) {
             case EVENT_TYPE_UPLINK:
                 custom_strcat(buf, sizeof(buf), (byte*) "\tUplink\t\t");
                 break;
@@ -1783,7 +1769,7 @@ static uint8_t PrintChildNodes( Shell_ConstStdIO_t *io )
     byte buf[64];
     ChildNodeInfo_t* childNode = pLoRaDevice->childNodes;
 
-    while (childNode != NULL) {
+    while ( childNode != NULL ) {
         Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
         /* Address */
         custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
@@ -1832,7 +1818,7 @@ static uint8_t PrintMulticastGroups( Shell_ConstStdIO_t *io )
     byte buf[64];
     MulticastGroupInfo_t* multicastGrp = pLoRaDevice->multicastGroups;
 
-    while (multicastGrp != NULL) {
+    while ( multicastGrp != NULL ) {
         Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
         /* Address */
         custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
@@ -1853,8 +1839,7 @@ static uint8_t PrintMulticastGroups( Shell_ConstStdIO_t *io )
         strcatNum32u(buf, sizeof(buf), multicastGrp->Connection.DownLinkCounter);
         Shell_SendStatusStr((unsigned char*) "\r\nDownLinkCounter", buf, io->stdOut);
         Shell_SendStatusStr((unsigned char*) "\r\nIsOwner",
-                (unsigned char*) ((multicastGrp->isOwner) ? "true" : "false"),
-                io->stdOut);
+                (unsigned char*) ((multicastGrp->isOwner) ? "true" : "false"), io->stdOut);
 
         Shell_SendStr((unsigned char*) "\r\n---- Downlink Slot Info ----", io->stdOut);
         /* UpLink frequency */

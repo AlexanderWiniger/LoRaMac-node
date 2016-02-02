@@ -46,7 +46,7 @@ void UartConfig( Uart_t *obj, UartMode_t mode, uint32_t baudrate, WordLength_t w
 {
     if ( obj->IsInitialized == false ) {
         // UartInit function must be called first.
-        while (1)
+        while ( 1 )
             ;
     }
     if ( obj->UartId == UART_USB_CDC ) {
@@ -70,13 +70,52 @@ void UartDeInit( Uart_t *obj )
     }
 }
 
+void UartEnable( Uart_t *obj )
+{
+    if ( obj->IsInitialized == false ) return;
+
+    if ( obj->UartId == UART_USB_CDC ) {
+#if defined( USE_USB_CDC )
+        UartUsbEnable( obj );
+#endif
+    } else {
+        UartMcuEnable(obj);
+    }
+}
+
+void UartDisable( Uart_t *obj )
+{
+    if ( obj->IsInitialized == false ) return;
+
+    if ( obj->UartId == UART_USB_CDC ) {
+#if defined( USE_USB_CDC )
+        UartUsbDisable( obj );
+#endif
+    } else {
+        UartMcuDisable(obj);
+    }
+}
+
+void UartEnableReceiver( Uart_t *obj, bool enable )
+{
+    if ( obj->IsInitialized == false ) return;
+
+    if ( obj->UartId == UART_USB_CDC ) {
+#if defined( USE_USB_CDC )
+        UartUsbEnableReceiver( obj, enable );
+#endif
+    } else {
+        UartMcuEnableReceiver(obj, enable);
+    }
+}
+
 uint8_t UartPutChar( Uart_t *obj, uint8_t data )
 {
     if ( obj->UartId == UART_USB_CDC ) {
 #if defined( USE_USB_CDC )
         return UartUsbPutChar( obj, data );
 #else
-        return 255; // Not supported
+        return 255;   // Not supported
 #endif
     } else {
         return UartMcuPutChar(obj, data);
@@ -89,7 +128,7 @@ uint8_t UartGetChar( Uart_t *obj, uint8_t *data )
 #if defined( USE_USB_CDC )
         return UartUsbGetChar( obj, data );
 #else
-        return 255; // Not supported
+        return 255;   // Not supported
 #endif
     } else {
         return UartMcuGetChar(obj, data);
@@ -102,7 +141,7 @@ uint8_t UartPutBuffer( Uart_t *obj, uint8_t *buffer, uint16_t size )
 #if defined( USE_USB_CDC )
         return UartUsbPutBuffer( obj, buffer, size );
 #else
-        return 255; // Not supported
+        return 255;   // Not supported
 #endif
     } else {
 #if defined(USE_CUSTOM_UART_HAL)
@@ -113,29 +152,28 @@ uint8_t UartPutBuffer( Uart_t *obj, uint8_t *buffer, uint16_t size )
 
         for ( i = 0; i < size; i++ ) {
             retryCount = 0;
-            while (UartPutChar(obj, buffer[i]) != 0) {
+            while ( UartPutChar(obj, buffer[i]) != 0 ) {
                 retryCount++;
 
                 // Exit if something goes terribly wrong
                 if ( retryCount > TX_BUFFER_RETRY_COUNT ) {
-                    return 1; // Error
+                    return 1;   // Error
                 }
             }
         }
-        return 0; // OK
+        return 0;   // OK
 #endif /* USE_CUSTOM_UART_HAL */
     }
 }
 
-uint8_t UartGetBuffer( Uart_t *obj, uint8_t *buffer, uint16_t size,
-        uint16_t *nbReadBytes )
+uint8_t UartGetBuffer( Uart_t *obj, uint8_t *buffer, uint16_t size, uint16_t *nbReadBytes )
 {
 #if defined(USE_CUSTOM_UART_HAL)
     return UartMcuGetBuffer(obj, buffer, size);
 #else
     uint16_t localSize = 0;
 
-    while (localSize < size) {
+    while ( localSize < size ) {
         if ( UartGetChar(obj, buffer + localSize) == 0 ) {
             localSize++;
         } else {
@@ -146,9 +184,9 @@ uint8_t UartGetBuffer( Uart_t *obj, uint8_t *buffer, uint16_t size,
     *nbReadBytes = localSize;
 
     if ( localSize == 0 ) {
-        return 1; // Empty
+        return 1;   // Empty
     }
-    return 0; // OK
+    return 0;   // OK
 #endif /* USE_CUSTOM_UART_HAL */
 }
 

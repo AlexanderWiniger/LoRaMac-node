@@ -36,9 +36,8 @@ void UartMcuInit( Uart_t *obj, uint8_t uartId, PinNames tx, PinNames rx );
  * \param [IN] parity       packet parity
  * \param [IN] flowCtrl     UART flow control
  */
-void UartMcuConfig( Uart_t *obj, UartMode_t mode, uint32_t baudrate,
-        WordLength_t wordLength, StopBits_t stopBits, Parity_t parity,
-        FlowCtrl_t flowCtrl );
+void UartMcuConfig( Uart_t *obj, UartMode_t mode, uint32_t baudrate, WordLength_t wordLength,
+        StopBits_t stopBits, Parity_t parity, FlowCtrl_t flowCtrl );
 
 /*!
  * \brief DeInitializes the UART object and MCU peripheral
@@ -46,6 +45,12 @@ void UartMcuConfig( Uart_t *obj, UartMode_t mode, uint32_t baudrate,
  * \param [IN] obj  UART object
  */
 void UartMcuDeInit( Uart_t *obj );
+
+void UartMcuEnableReceiver( Uart_t *obj, bool enable );
+
+void UartMcuEnable( Uart_t *obj );
+
+void UartMcuDisable( Uart_t *obj );
 
 /*!
  * \brief Sends a character to the UART

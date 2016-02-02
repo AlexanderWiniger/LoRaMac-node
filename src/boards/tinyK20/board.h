@@ -86,6 +86,7 @@
  * Board MCU pins definitions
  */
 #define LED_1                          PD_4
+#define SYS_TICK                       PB_0
 
 #if defined(SX1276_BOARD_EMBED)
 
@@ -136,10 +137,10 @@
 #define UART2_RX                       PD_2
 #define UART2_TX                       PD_3
 
-#define I2C_SCL                        PB_0
-#define I2C_SDA                        PB_1
+#define I2C_SCL                        NC//PB_0
+#define I2C_SDA                        NC//PB_1
 
-#define PPS                            PC_2
+#define PPS                            PB_1//PC_2
 
 /*******************************************************************************
  * PUBLIC VARIABLES

@@ -11,6 +11,11 @@
 #define __LORAMESH_APP_H_
 
 /*******************************************************************************
+ * INCLUDE FILES
+ ******************************************************************************/
+#include "Shell.h"
+
+/*******************************************************************************
  * TYPE DEFINITIONS
  ******************************************************************************/
 typedef struct {
@@ -49,6 +54,10 @@ typedef struct DataEntry_s {
 /*******************************************************************************
  * MODULE FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/
+/*!
+ * Shell command parser.
+ */
+byte LoRaMesh_AppParseCommand( const unsigned char *cmd, bool *handled, Shell_ConstStdIO_t *io );
 /*!
  * Initializes the LoRa mesh application
  */

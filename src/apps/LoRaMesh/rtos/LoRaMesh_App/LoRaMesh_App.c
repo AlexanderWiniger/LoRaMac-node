@@ -107,12 +107,37 @@ static DataEntry_t *AllocateEntry( void );
 /**/
 static void FreeEntry( DataEntry_t *entry );
 
+/*! \brief Print status */
+static uint8_t PrintStatus( Shell_ConstStdIO_t *io );
+
+/*! \brief Print help */
+static uint8_t PrintHelp( Shell_ConstStdIO_t *io );
+
+/*! \brief Print event scheduler list */
+static uint8_t PrintEntries( Shell_ConstStdIO_t *io );
+
 /* RTOS task function */
 static void LoRaMeshTask( void *pvParameters );
 
 /*******************************************************************************
  * MODULE FUNCTIONS (PUBLIC)
  ******************************************************************************/
+byte LoRaMesh_AppParseCommand( const unsigned char *cmd, bool *handled, Shell_ConstStdIO_t *io )
+{
+    if ( strcmp((char*) cmd, SHELL_CMD_HELP) == 0 || strcmp((char*) cmd, "app help") == 0 ) {
+        *handled = true;
+        return PrintHelp(io);
+    } else if ( (strcmp((char*) cmd, SHELL_CMD_STATUS) == 0)
+            || (strcmp((char*) cmd, "app status") == 0) ) {
+        *handled = true;
+        return PrintStatus(io);
+    } else if ( (strcmp((char*) cmd, "app entries") == 0) ) {
+        *handled = true;
+        return PrintEntries(io);
+    }
+    return ERR_OK;
+}
+
 void LoRaMesh_AppInit( void )
 {
     LoRaMesh_Init(&sLoRaMeshCallbacks);
@@ -154,34 +179,34 @@ void LoRaMesh_AppInit( void )
 
     LoRaMesh_RegisterApplication((PortHandlerFunction_t) & ProcessDataFrame, AppPort);
 
+#if 0
     if ( pLoRaDevice->devRole == NODE ) {
         /* Multicast group */
 #if defined(NODE_B)
         LoRaMesh_RegisterTransmission(0, 5000000, EVENT_TYPE_UPLINK,
                 LORAMESH_APP_DATA_SIZE, &SendDataFrame, (void*) NULL);
 #elif defined(NODE_C)
-        LoRaMesh_RegisterTransmission(6, 4000000, EVENT_TYPE_UPLINK,
-                LORAMESH_APP_DATA_SIZE, &SendDataFrame, (void*) NULL);
+        LoRaMesh_RegisterTransmission(6, 4000000, EVENT_TYPE_UPLINK, LORAMESH_APP_DATA_SIZE,
+                &SendDataFrame, (void*) NULL);
 #endif
-        LoRaMesh_TestCreateMulticastGroup(AppAddr, LORAMESH_APP_TX_INTERVAL, 868100000,
-                NwkSKey, AppSKey, false);
+        LoRaMesh_TestCreateMulticastGroup(AppAddr, LORAMESH_APP_TX_INTERVAL, 868100000, NwkSKey,
+                AppSKey, false);
         LoRaMesh_RegisterReceptionWindow(2, LORAMESH_APP_TX_INTERVAL, &ReceiveDataFrame,
                 (void*) AppAddr);
     } else if ( pLoRaDevice->devRole == COORDINATOR ) {
         /* Test child node */
         LoRaMesh_TestCreateChildNode(0x013A1024, 5000000, 868300000, NwkSKey, AppSKey);
-        LoRaMesh_RegisterReceptionWindow(0, 5000000, &ReceiveDataFrame,
-                (void*) 0x013A1024);
+        LoRaMesh_RegisterReceptionWindow(0, 5000000, &ReceiveDataFrame, (void*) 0x013A1024);
         /* Multicast group */
-        LoRaMesh_TestCreateMulticastGroup(AppAddr, LORAMESH_APP_TX_INTERVAL, 868100000,
-                NwkSKey, AppSKey, true);
+        LoRaMesh_TestCreateMulticastGroup(AppAddr, LORAMESH_APP_TX_INTERVAL, 868100000, NwkSKey,
+                AppSKey, true);
         LoRaMesh_RegisterTransmission(2, LORAMESH_APP_TX_INTERVAL, EVENT_TYPE_MULTICAST,
                 (3 * LORAMESH_APP_DATA_SIZE), &SendMulticastDataFrame, (void*) NULL);
         /* Test child node */
         LoRaMesh_TestCreateChildNode(0x013AD5F1, 4000000, 868500000, NwkSKey, AppSKey);
-        LoRaMesh_RegisterReceptionWindow(6, 4000000, &ReceiveDataFrame,
-                (void*) 0x013AD5F1);
+        LoRaMesh_RegisterReceptionWindow(6, 4000000, &ReceiveDataFrame, (void*) 0x013AD5F1);
     }
+#endif
 
     if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", configMINIMAL_STACK_SIZE, (void*) NULL,
             tskIDLE_PRIORITY, (xTaskHandle*) NULL) != pdPASS ) {
@@ -198,7 +223,7 @@ void LoRaMesh_AppInit( void )
 static void Process( void )
 {
     for ( ;; ) {
-        switch (appState) {
+        switch ( appState ) {
             case LORAMESH_INITIAL:
                 appState = LORAMESH_TX_RX;
                 continue;
@@ -215,14 +240,14 @@ static void Process( void )
 static uint8_t ProcessDataFrame( uint8_t *buf, uint8_t payloadSize, uint32_t devAddr,
         uint8_t fPort )
 {
-    uint8_t payloadIndex = 0;
-    DataEntry_t *entry;
-
     LOG_TRACE("Received %u bytes from 0x%08x on port %u.", payloadSize, devAddr, fPort);
 
     if ( fPort != AppPort ) return ERR_NOTAVAIL;
 
 #if defined(NODE_A)
+    uint8_t payloadIndex = 0;
+    DataEntry_t *entry;
+
     entry = FindEntry(devAddr);
 
     if ( entry == NULL ) {
@@ -285,6 +310,78 @@ static uint8_t ProcessDataFrame( uint8_t *buf, uint8_t payloadSize, uint32_t dev
         entry->WindSpeed = 0x00;
     }
 #else
+    uint8_t payloadIndex = 0;
+    uint8_t nofEntries = 0;
+    uint32_t rxAddr;
+    DataEntry_t *entry;
+
+    nofEntries = (uint8_t) LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xF;
+
+    while ( nofEntries >= 0 ) {
+        rxAddr = (LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF);
+        rxAddr |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
+        rxAddr |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 16);
+        rxAddr |= ((pLoRaDevice->netId & 0xFF) << 24);
+
+        entry = FindEntry(rxAddr);
+
+        if ( entry == NULL ) {
+            entry = AllocateEntry();
+            if ( entry == NULL ) return ERR_FAILED;
+        }
+
+        /* Timestamp */
+        entry->Timestamp = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
+        entry->Timestamp |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
+        entry->Timestamp |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 16);
+        entry->Timestamp |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 24);
+        /* Entry info */
+        entry->EntryInfo.Value = (uint8_t) LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
+        /* Latitude */
+        entry->LatitudeBinary = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
+        entry->LatitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
+        entry->LatitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 16);
+        entry->LatitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 24);
+        /* Longitude */
+        entry->LongitudeBinary = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
+        entry->LongitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
+        entry->LongitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 16);
+        entry->LongitudeBinary |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 24);
+        /* Store barometric altitude if present */
+        if ( entry->EntryInfo.Bits.AltitudeBar == 1 ) {
+            entry->Altitude.Barometric = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
+            entry->Altitude.Barometric |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF)
+                    << 8);
+        } else {
+            entry->Altitude.Barometric = 0x00;
+        }
+        /* Store gps altitude if present */
+        if ( entry->EntryInfo.Bits.AltitudeGPS == 1 ) {
+            entry->Altitude.GPS = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
+            entry->Altitude.GPS |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
+        } else {
+            entry->Altitude.GPS = 0x00;
+        }
+        /* Store barometric altitude if present */
+        if ( entry->EntryInfo.Bits.VectorTrack == 1 ) {
+            entry->VectorTrack.GroundSpeed = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
+            entry->VectorTrack.GroundSpeed |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++]
+                    & 0xFF) << 8);
+            entry->VectorTrack.Track = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
+            entry->VectorTrack.Track |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF)
+                    << 8);
+        } else {
+            entry->VectorTrack.GroundSpeed = 0x00;
+            entry->VectorTrack.Track = 0x00;
+        }
+        /* Store gps altitude if present */
+        if ( entry->EntryInfo.Bits.WindSpeed == 1 ) {
+            entry->WindSpeed = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
+            entry->WindSpeed |= ((LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++] & 0xFF) << 8);
+        } else {
+            entry->WindSpeed = 0x00;
+        }
+    }
 #endif
     return ERR_OK;
 }
@@ -366,7 +463,7 @@ static void SendMulticastDataFrame( void* param )
     /* Second, add child nodes data */
     i = 0;
     iterEntry = pDataEntries;
-    while (iterEntry != NULL || iterEntry->DevAddr == 0x00) {
+    while ( iterEntry != NULL || iterEntry->DevAddr == 0x00 ) {
         AppData[dataSize++] = ((iterEntry->DevAddr) & 0xFF); /* Nwk addr */
         AppData[dataSize++] = ((iterEntry->DevAddr >> 8) & 0xFF);
         AppData[dataSize++] = ((iterEntry->DevAddr >> 16) & 0xFF);
@@ -445,7 +542,7 @@ static DataEntry_t *FindEntry( uint32_t devAddr )
 {
     DataEntry_t *iterEntry = pDataEntries;
 
-    while (iterEntry->next) {
+    while ( iterEntry->next ) {
         if ( iterEntry->DevAddr == devAddr ) {
             return iterEntry;
         }
@@ -487,7 +584,7 @@ static void FreeEntry( DataEntry_t *entry )
         prevEntry = NULL;
         iterEntry = pDataEntries;
 
-        while (iterEntry != NULL) {
+        while ( iterEntry != NULL ) {
             if ( iterEntry == entry ) {
                 if ( prevEntry == NULL ) {
                     pDataEntries = iterEntry->next;
@@ -506,14 +603,24 @@ static void FreeEntry( DataEntry_t *entry )
 
 static void LoRaMeshTask( void *pvParameters )
 {
-    uint32_t cntr = 0; /* initialize send counter */
+//    uint32_t cntr = 0; /* initialize send counter */
     bool meshAppActive = true;
     appState = LORAMESH_INITIAL; /* initialize state machine state */
     (void) pvParameters; /* not used */
 
     LOG_DEBUG_BARE("Starting LoRaMesh application...\r\n");
 
-    while (meshAppActive) {
+    /* Wait for GPS fix */
+    while ( !GpsHasFix() ) {
+        /* Task interval of 100 ms */
+        vTaskDelay(100 / portTICK_RATE_MS);
+    }
+
+    LOG_DEBUG("Gps has fix. Application process started");
+    time_t now = GpsGetCurrentUnixTime();
+    LoRaMesh_TestScheduleAdvertising(now + (30 - (now % 30)));
+
+    while ( meshAppActive ) {
         Process(); /* process state machine */
 #if( OVER_THE_AIR_ACTIVATION != 0 )
         if(cntr > APP_CNTR_VALUE(LORAWAN_OTAA_INTERVAL)) {
@@ -525,18 +632,149 @@ static void LoRaMeshTask( void *pvParameters )
 #endif /* LORAMESH_TEST_APP_ACTIVATED */
         }
 #endif /* OVER_THE_AIR_ACTIVATION */
-        cntr++;
+//        cntr++;
         /* Task interval of 10 ms */
         vTaskDelay(10 / portTICK_RATE_MS);
     } /* while */
 
     DataEntry_t *iterEntry, *prevEntry;
     iterEntry = pDataEntries;
-    while (iterEntry != NULL) {
+    while ( iterEntry != NULL ) {
         prevEntry = iterEntry;
         FreeEntry(prevEntry);
         iterEntry = iterEntry->next;
     }
+}
+
+/*******************************************************************************
+ * SHELL FUNCTIONS (STATIC)
+ ******************************************************************************/
+/*!
+ * \brief Print out LoRaMesh status.
+ *
+ * \param io Std io to be used for print out.
+ */
+static uint8_t PrintStatus( Shell_ConstStdIO_t *io )
+{
+    byte buf[64], cntr;
+    DataEntry_t *iterEntry;
+
+    iterEntry = pDataEntries;
+    cntr = 0;
+
+    while ( iterEntry != NULL ) {
+        cntr++;
+        iterEntry = iterEntry->next;
+    }
+
+    Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
+    Shell_SendStr((unsigned char*) "\r\nLoRaMesh App", io->stdOut);
+    /* Number of entries */
+    strcatNum8u(buf, sizeof(buf), cntr);
+    Shell_SendStatusStr((unsigned char*) "\r\n# Entries", buf, io->stdOut);
+
+    /* Class */
+    if ( pLoRaDevice->devClass == CLASS_C )
+        custom_strcpy((unsigned char*) buf, sizeof("C"), (unsigned char*) "C");
+    else if ( pLoRaDevice->devClass == CLASS_B )
+        custom_strcpy((unsigned char*) buf, sizeof("B"), (unsigned char*) "B");
+    else
+        custom_strcpy((unsigned char*) buf, sizeof("A"), (unsigned char*) "A");
+    Shell_SendStatusStr((unsigned char*) "\r\nKlasse", buf, io->stdOut);
+
+    /* Role */
+    if ( pLoRaDevice->devRole == COORDINATOR )
+        custom_strcpy((unsigned char*) buf, sizeof("Koordinator"), (unsigned char*) "Koordinator");
+    else if ( pLoRaDevice->devRole == ROUTER )
+        custom_strcpy((unsigned char*) buf, sizeof("Router"), (unsigned char*) "Router");
+    else
+        custom_strcpy((unsigned char*) buf, sizeof("Leaf"), (unsigned char*) "Leaf");
+    Shell_SendStatusStr((unsigned char*) "\r\nRole", buf, io->stdOut);
+
+    /*
+     * Entry
+     */
+    /* Timestamp */
+    custom_strcpy((unsigned char*) buf, sizeof(""), (unsigned char*) "");
+    strcatNum32u(buf, sizeof(buf), GpsGetCurrentUnixTime());
+    Shell_SendStatusStr((unsigned char*) "\r\nTimestamp", buf, io->stdOut);
+    /* Latitude */
+    custom_strcpy((unsigned char*) buf, sizeof(NmeaGpsData.NmeaLatitude),
+            (unsigned char*) NmeaGpsData.NmeaLatitude);
+    custom_strcat((unsigned char*) buf, sizeof(buf), (unsigned char*) NmeaGpsData.NmeaLatitudePole);
+    Shell_SendStatusStr((unsigned char*) "\r\nLatitude", buf, io->stdOut);
+    /* Longitude */
+    custom_strcpy((unsigned char*) buf, sizeof(NmeaGpsData.NmeaLongitude),
+            (unsigned char*) NmeaGpsData.NmeaLongitude);
+    custom_strcat((unsigned char*) buf, sizeof(buf),
+            (unsigned char*) NmeaGpsData.NmeaLongitudePole);
+    Shell_SendStatusStr((unsigned char*) "\r\nLongitude", buf, io->stdOut);
+    /* Altitude GPS */
+    custom_strcpy((unsigned char*) buf, sizeof(NmeaGpsData.NmeaAltitude),
+            (unsigned char*) NmeaGpsData.NmeaAltitude);
+    custom_strcat((unsigned char*) buf, sizeof(buf), (unsigned char*) " m");
+    Shell_SendStatusStr((unsigned char*) "\r\nAltitude (GPS)", buf, io->stdOut);
+    /* Altitude Barometric */
+    NmeaGpsData.NmeaAltitude[0] = '3';
+    custom_strcpy((unsigned char*) buf, sizeof(NmeaGpsData.NmeaAltitude),
+            (unsigned char*) NmeaGpsData.NmeaAltitude);
+    custom_strcat((unsigned char*) buf, sizeof(buf), (unsigned char*) " m");
+    Shell_SendStatusStr((unsigned char*) "\r\nAltitude (bar.)", buf, io->stdOut);
+    /* Vector ground speed */
+    custom_strcpy((unsigned char*) buf, sizeof(NmeaGpsData.NmeaSpeed),
+            (unsigned char*) NmeaGpsData.NmeaSpeed);
+    custom_strcat((unsigned char*) buf, sizeof(buf), (unsigned char*) " dm/s");
+    Shell_SendStatusStr((unsigned char*) "\r\nGround speed", buf, io->stdOut);
+    /* Vector track */
+    custom_strcpy((unsigned char*) buf, sizeof(NmeaGpsData.NmeaDetectionAngle),
+            (unsigned char*) NmeaGpsData.NmeaDetectionAngle);
+    custom_strcat((unsigned char*) buf, sizeof(buf), (unsigned char*) " °N");
+    Shell_SendStatusStr((unsigned char*) "\r\nTrack", buf, io->stdOut);
+    /* Wind speed */
+    Shell_SendStatusStr((unsigned char*) "\r\nWind speed", (unsigned char*) "29.0 km/h",
+            io->stdOut);
+
+    Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
+
+    return ERR_OK;
+}
+
+/*!
+ * \brief Print out LoRaMesh App command help.
+ *
+ * \param io Std io to be used for print out.
+ */
+static uint8_t PrintHelp( Shell_ConstStdIO_t *io )
+{
+    Shell_SendHelpStr((unsigned char*) "app", (unsigned char*) "Group of app commands\r\n",
+            io->stdOut);
+    Shell_SendHelpStr((unsigned char*) "  entries", (unsigned char*) "Print data entries\r\n",
+            io->stdOut);
+    Shell_SendHelpStr((unsigned char*) "  help|status",
+            (unsigned char*) "Print help or status information\r\n", io->stdOut);
+
+    return ERR_OK;
+}
+
+/*!
+ * \brief Print out entries.
+ *
+ * \param io Std io to be used for print out.
+ */
+static uint8_t PrintEntries( Shell_ConstStdIO_t *io )
+{
+    DataEntry_t *iterEntry;
+//    byte buf[64];
+
+    iterEntry = pDataEntries;
+
+    while ( iterEntry != NULL ) {
+        Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
+
+        iterEntry = iterEntry->next;
+    }
+
+    return ERR_OK;
 }
 /*******************************************************************************
  * END OF CODE

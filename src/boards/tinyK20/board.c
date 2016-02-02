@@ -24,6 +24,7 @@ Gpio_t Led1;
 
 /*! GPIO pin objects */
 Gpio_t GpsPps;
+Gpio_t SysTick;
 
 /*! MCU objects */
 Uart_t Uart0;
@@ -51,6 +52,9 @@ void BoardInitPeriph( void )
 {
     /* Init GPIO pins */
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+
+    /* Init GPIO pins */
+    GpioInit(&SysTick, SYS_TICK, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
     /* Init GPS */
     GpsInit();

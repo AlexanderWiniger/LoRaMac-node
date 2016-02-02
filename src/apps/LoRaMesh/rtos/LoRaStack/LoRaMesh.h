@@ -47,7 +47,7 @@
  ******************************************************************************/
 /*! LoRaWAN devices classes definition */
 typedef enum {
-    CLASS_A, CLASS_B, CLASS_C, CLASS_D /* LoRaMesh class */,
+    CLASS_A, CLASS_B, CLASS_C
 } DeviceClass_t;
 
 /*! LoRaMesh devices role definition */
@@ -196,8 +196,8 @@ typedef struct LoRaSchedulerEvent_s {
     struct LoRaSchedulerEvent_s *next;
 } LoRaSchedulerEvent_t;
 
-typedef uint8_t (*PortHandlerFunction_t)( uint8_t *payload, uint8_t payloadSize,
-        uint32_t devAddr, uint8_t fPort );
+typedef uint8_t (*PortHandlerFunction_t)( uint8_t *payload, uint8_t payloadSize, uint32_t devAddr,
+        uint8_t fPort );
 
 typedef struct PortHandler_s {
     uint8_t fPort;
@@ -224,10 +224,9 @@ extern LoRaDevice_t* pLoRaDevice;
  * MODULE FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/
 /*!
- *
+ * Shell command parser.
  */
-byte LoRaMesh_ParseCommand( const unsigned char *cmd, bool *handled,
-        Shell_ConstStdIO_t *io );
+byte LoRaMesh_ParseCommand( const unsigned char *cmd, bool *handled, Shell_ConstStdIO_t *io );
 
 /*!
  * Initializind mesh network.
@@ -300,8 +299,7 @@ uint8_t LoRaMesh_RegisterReceptionWindow( uint16_t firstSlot, uint32_t interval,
  *
  * \retval status ERR_OK if transmission was removed successfully
  */
-uint8_t LoRaMesh_RemoveReceptionWindow( uint32_t interval,
-        void (*callback)( void *param ) );
+uint8_t LoRaMesh_RemoveReceptionWindow( uint32_t interval, void (*callback)( void *param ) );
 
 /*!
  * LoRaMAC layer send frame
@@ -332,8 +330,7 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
  *                          5: Unable to find a free channel
  *                          6: Device switched off]
  */
-uint8_t LoRaMesh_SendMulticast( uint8_t *appPayload, size_t appPayloadSize,
-        uint8_t fPort );
+uint8_t LoRaMesh_SendMulticast( uint8_t *appPayload, size_t appPayloadSize, uint8_t fPort );
 
 /*!
  * Send advertising packet.
@@ -412,8 +409,7 @@ uint8_t LoRaMesh_LinkCheckReq( void );
  *
  * \retval status ERR_OK if frame was handled successfully
  */
-uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint32_t devAddr,
-        uint8_t fPort );
+uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint32_t devAddr, uint8_t fPort );
 
 /*!
  * Handles received message on the transport layer.
@@ -426,8 +422,8 @@ uint8_t LoRaMesh_OnPacketRx( uint8_t *buf, uint8_t payloadSize, uint32_t devAddr
  *
  * \retval status ERR_OK if frame was handled successfully
  */
-uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
-        uint32_t devAddr, uint8_t fPort, bool isConfirmed );
+uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize, uint32_t devAddr,
+        uint8_t fPort, bool isConfirmed );
 
 /*!
  * Returns whether or not a network is joined.
@@ -477,8 +473,7 @@ MulticastGroupInfo_t* LoRaMesh_FindMulticastGroup( uint32_t grpAddr );
  * \param [IN] appSKey Pointer to the application session AES128 key array
  *                     ( 16 bytes )
  */
-void LoRaMesh_SetNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey,
-        uint8_t *appSKey );
+void LoRaMesh_SetNwkIds( uint32_t netID, uint32_t devAddr, uint8_t *nwkSKey, uint8_t *appSKey );
 
 /*!
  * Sets the LoRa end devices class
@@ -545,8 +540,8 @@ void LoRaMesh_TestSetMicMode( uint16_t upLinkCounter );
  * \param[IN] nwkSKey Network session key
  * \param[IN] appSKey Application session key
  */
-void LoRaMesh_TestCreateChildNode( uint32_t devAddr, uint32_t interval,
-        uint32_t freqChannel, uint8_t *nwkSKey, uint8_t *appSKey );
+void LoRaMesh_TestCreateChildNode( uint32_t devAddr, uint32_t interval, uint32_t freqChannel,
+        uint8_t *nwkSKey, uint8_t *appSKey );
 
 /*!
  * Create a multicast group with specified parameters
@@ -557,8 +552,15 @@ void LoRaMesh_TestCreateChildNode( uint32_t devAddr, uint32_t interval,
  * \param[IN] nwkSKey Network session key
  * \param[IN] appSKey Application session key
  */
-void LoRaMesh_TestCreateMulticastGroup( uint32_t grpAddr, uint32_t interval,
-        uint32_t freqChannel, uint8_t *nwkSKey, uint8_t *appSKey, bool isOwner );
+void LoRaMesh_TestCreateMulticastGroup( uint32_t grpAddr, uint32_t interval, uint32_t freqChannel,
+        uint8_t *nwkSKey, uint8_t *appSKey, bool isOwner );
+
+/*!
+ * Schedule next advertising window
+ *
+ * \param[IN] nextAdvTime Next scheduled advertising in unix time
+ */
+void LoRaMesh_TestScheduleAdvertising( time_t nextAdvTime );
 
 /*!
  * Open reception window

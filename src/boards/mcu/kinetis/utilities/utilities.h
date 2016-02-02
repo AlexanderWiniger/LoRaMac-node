@@ -63,6 +63,7 @@ typedef struct {
  ******************************************************************************/
 #include <stddef.h>
 #include <stdint.h>
+#include <time.h>
 
 /*******************************************************************************
  * CONSTANT DEFINITIONS
@@ -107,7 +108,7 @@ typedef uint32_t I2C_TypeDef;
 
  \return               IPSR Register value
  */
-__attribute__( ( always_inline ))             static inline uint32_t __get_IPSR( void )
+__attribute__( ( always_inline ))                 static inline uint32_t __get_IPSR( void )
 {
     uint32_t result;
 
@@ -175,11 +176,11 @@ void strcatNum32u( unsigned char *dst, size_t dstSize, unsigned long val );
 
 void num32uToStr( unsigned char *dst, size_t dstSize, unsigned long val );
 
-void strcatNum32uFormatted( unsigned char *dst, size_t dstSize, unsigned long val,
-        char fill, unsigned char nofFill );
+void strcatNum32uFormatted( unsigned char *dst, size_t dstSize, unsigned long val, char fill,
+        unsigned char nofFill );
 
-void num32uToStrFormatted( unsigned char *dst, size_t dstSize, unsigned long val,
-        char fill, unsigned char nofFill );
+void num32uToStrFormatted( unsigned char *dst, size_t dstSize, unsigned long val, char fill,
+        unsigned char nofFill );
 
 void strcatNum24Hex( unsigned char *dst, size_t dstSize, unsigned long num );
 
@@ -189,16 +190,16 @@ void num8sToStr( unsigned char *dst, size_t dstSize, signed char val );
 
 void num8uToStr( unsigned char *dst, size_t dstSize, unsigned char val );
 
-void num16uToStrFormatted( unsigned char *dst, size_t dstSize, unsigned short val,
-        char fill, unsigned char nofFill );
+void num16uToStrFormatted( unsigned char *dst, size_t dstSize, unsigned short val, char fill,
+        unsigned char nofFill );
 
 void num32sToStrFormatted( unsigned char *dst, size_t dstSize, long val, char fill,
         unsigned char nofFill );
 
 void strcatNum16u( unsigned char *dst, size_t dstSize, unsigned short val );
 
-void strcatNum16uFormatted( unsigned char *dst, size_t dstSize, unsigned short val,
-        char fill, unsigned char nofFill );
+void strcatNum16uFormatted( unsigned char *dst, size_t dstSize, unsigned short val, char fill,
+        unsigned char nofFill );
 
 void strcatNum32sFormatted( unsigned char *dst, size_t dstSize, long val, char fill,
         unsigned char nofFill );

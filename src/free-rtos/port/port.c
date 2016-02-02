@@ -930,6 +930,7 @@ void SysTick_Handler(void) {
 void vPortTickHandler( void )
 {
 #endif
+    PTB_BASE_PTR->PTOR |= 0x1;   // Toggle PB_0
     ACKNOWLEDGE_TICK_ISR();
 #if configUSE_TICKLESS_IDLE == 1
     TICK_INTERRUPT_FLAG_SET();
@@ -1419,7 +1420,7 @@ __attribute__ ((naked)) void SVC_Handler(void) {
 
 #if (configCPU_FAMILY==configCPU_FAMILY_ARM_M0P) && (configCOMPILER==configCOMPILER_ARM_GCC)
         /*-----------------------------------------------------------*/
-        __attribute__(( naked ))  uint32_t ulPortSetInterruptMask( void )
+        __attribute__(( naked ))    uint32_t ulPortSetInterruptMask( void )
         {
             __asm volatile(
                     " mrs r0, PRIMASK    \n"

@@ -20,6 +20,7 @@
 #include "Shell_App.h"
 #include "Shell.h"
 #include "LoRaMesh.h"
+#include "LoRaMesh_App.h"
 
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
@@ -33,7 +34,7 @@
  * PRIVATE VARIABLES (STATIC)
  ******************************************************************************/
 static const Shell_ParseCommandCallback_t CmdParserTable[] = { Shell_ParseCommand,
-        LoRaMesh_ParseCommand, NULL /* sentinel */
+        LoRaMesh_AppParseCommand, LoRaMesh_ParseCommand, NULL /* sentinel */
 };
 
 /*******************************************************************************
