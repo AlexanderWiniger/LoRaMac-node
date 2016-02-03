@@ -33,6 +33,7 @@ static bool heartBeatLedOn;
 int main( void )
 {
     BoardInitMcu();
+    LOG_DEBUG_BARE("\r\n");
     LOG_DEBUG("Mcu initialized.");
     BoardInitPeriph();
     LOG_DEBUG("Peripherals initialized.");
@@ -71,9 +72,25 @@ int main( void )
 void vApplicationIdleHook( void )
 {
     if ( (heartBeatCntr++ % 100000) == 0 ) {
-        if ( heartBeatLedOn ) GpioWrite(&Led1, 1);
-        else GpioWrite(&Led1, 0);
+        if ( heartBeatLedOn )
+            GpioWrite(&Led1, 1);
+        else
+            GpioWrite(&Led1, 0);
         heartBeatLedOn = !heartBeatLedOn;
+    }
+}
+
+void vApplicationStackOverflowHook( xTaskHandle pxTask, char *pcTaskName )
+{
+    /* This will get called if a stack overflow is detected during the context
+     switch.  Set configCHECK_FOR_STACK_OVERFLOWS to 2 to also check for stack
+     problems within nested interrupts, but only do this for debug purposes as
+     it will increase the context switch time. */
+    (void) pxTask;
+    (void) pcTaskName;
+    taskDISABLE_INTERRUPTS();
+    /* Write your code here ... */
+    for ( ;; ) {
     }
 }
 

@@ -72,11 +72,13 @@ bool GpsGetPpsDetectedState( void );
 bool GpsHasFix( void );
 
 /*!
- * \brief Gets the current unix time
+ * \brief Indicates if GPS has a valid datetime
  *
- * \retval Unix time
+ * \retval has valid datetime
  */
-uint32_t GpsGetCurrentUnixTime( void );
+bool GpsHasValidDateTime( void );
+
+time_t GpsConvertLatestDateTimeToUnixTime( void );
 
 /*!
  * \brief Converts the latest Position (latitude and longitude) into a binary

@@ -113,6 +113,7 @@ void UartMcuConfig( Uart_t *obj, UartMode_t mode, uint32_t baudrate, WordLength_
     }
 
     /* Enable interrupt for UARTx */
+    NVIC_BASE_PTR->IP[g_uartIrq[obj->UartId]] = 0x80u; /* Set medium interrupt priority */
     NVIC_BASE_PTR->ISER[(((uint32_t) (int32_t) g_uartIrq[obj->UartId]) >> 5UL)] = (uint32_t)(
             1UL << (((uint32_t) (int32_t) g_uartIrq[obj->UartId]) & 0x1FUL));
 }

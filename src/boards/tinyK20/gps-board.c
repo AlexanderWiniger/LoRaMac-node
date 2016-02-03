@@ -15,18 +15,14 @@
 #define LOG_LEVEL_NONE
 #include "debug.h"
 
+/*******************************************************************************
+ * PRIVATE CONSTANT DEFINITIONS
+ ******************************************************************************/
 /*! FIFO buffers size */
 #define GPS_FIFO_RX_SIZE                                128
 
 /*! Maximum NMEA message length */
 #define NMEA_MAX_MESSAGE_LENGTH                         128
-
-/*! FIFO buffers */
-uint8_t Gps_RxBuffer[GPS_FIFO_RX_SIZE];
-
-/*! Nmea string */
-char NmeaString[NMEA_MAX_MESSAGE_LENGTH];
-uint8_t NmeaStringLength = 0;
 
 /*! Nmea configuration strings */
 //const char psrf_100[] = "$PSRF100,1,19200,8,1,0*38"; /* Set Serial Port */
@@ -35,6 +31,22 @@ uint8_t NmeaStringLength = 0;
 //const char psrf_103_gsv[] = "$PSRF103,03,00,00,01*27"; /* Deactivate GSV messages */
 //const char psrf_104[] = "$PSRF104,47.0167,8.3167,441,0,566417,1877,12,2*24"; /* LLA Navigation Initialization */
 //const char psrf_117[] = "$PSRF117,16*0B"; /* Shutdown message */
+/*******************************************************************************
+ * PRIVATE VARIABLES (STATIC)
+ ******************************************************************************/
+/*! FIFO buffers */
+static uint8_t Gps_RxBuffer[GPS_FIFO_RX_SIZE];
+
+/*! Nmea string */
+static char NmeaString[NMEA_MAX_MESSAGE_LENGTH];
+static uint8_t NmeaStringLength = 0;
+
+/*! */
+static bool rmcMsgParsed;
+static bool ggaMsgParsed;
+/*******************************************************************************
+ * MODULE FUNCTIONS (PUBLIC)
+ ******************************************************************************/
 void GpsMcuOnPpsSignal( void )
 {
     bool parseData = false;
@@ -66,6 +78,9 @@ void GpsMcuInit( void )
 #endif
     GpioInit(&GpsPps, PPS, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
     GpioSetInterrupt(&GpsPps, IRQ_RISING_EDGE, IRQ_VERY_LOW_PRIORITY, &GpsMcuOnPpsSignal);
+
+    rmcMsgParsed = false;
+    ggaMsgParsed = false;
 }
 
 void GpsMcuIrqNotify( UartNotifyId_t id )
@@ -81,12 +96,21 @@ void GpsMcuIrqNotify( UartNotifyId_t id )
 
             if ( data == '\n' ) {
                 NmeaString[NmeaStringLength] = '\0';
-                if ( strncmp(NmeaString, (const char*) "$GPGGA", 6) == 0
-                        || strncmp(NmeaString, (const char*) "$GPRMC", 6) == 0 ) {
+                if ( !ggaMsgParsed && strncmp(NmeaString, (const char*) "$GPGGA", 6) == 0 ) {
                     if ( GpsParseGpsData(NmeaString, NmeaStringLength) == SUCCESS ) {
-                        LOG_TRACE_BARE("NMEA: %s", NmeaString);
+                        rmcMsgParsed = false;
+                        ggaMsgParsed = true;
                         UartEnableReceiver(&Uart0, false);
                         BlockLowPowerDuringTask(false);
+//                        LOG_TRACE_BARE("NMEA: %s", NmeaString);
+                    }
+                } else if ( !rmcMsgParsed && strncmp(NmeaString, (const char*) "$GPRMC", 6) == 0 ) {
+                    if ( GpsParseGpsData(NmeaString, NmeaStringLength) == SUCCESS ) {
+                        rmcMsgParsed = true;
+                        ggaMsgParsed = false;
+                        UartEnableReceiver(&Uart0, false);
+                        BlockLowPowerDuringTask(false);
+//                        LOG_TRACE_BARE("NMEA: %s", NmeaString);
                     }
                 }
             }

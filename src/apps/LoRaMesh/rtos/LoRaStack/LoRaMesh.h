@@ -507,6 +507,10 @@ uint32_t LoRaMesh_GetNofChildNodes( void );
 
 uint32_t LoRaMesh_GetNofMlticastGroups( void );
 
+void LoRaMesh_TimeSynch( void );
+
+time_t LoRaMesh_GetSynchTime( void );
+
 /*******************************************************************************
  * TEST FUNCTION PROTOTYPES (PUBLIC) (FOR DEBUG PURPOSES ONLY)
  ******************************************************************************/

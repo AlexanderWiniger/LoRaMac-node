@@ -25,8 +25,6 @@
 #define RADIO_PROCESS_INTERVAL                      100 /* in [ms] = 10ms */
 #define RADIO_RTOS_TICK_DELAY                       (RADIO_PROCESS_INTERVAL/portTICK_RATE_MS)
 
-#define NODE_C
-
 /*******************************************************************************
  * MACRO DEFINITIONS
  ******************************************************************************/
@@ -72,8 +70,10 @@ static uint8_t AppDataSize = LORAMESH_APP_DATA_SIZE;
 /*! User application data */
 static uint8_t AppData[LORAMESH_APP_DATA_MAX_SIZE];
 
+#if !defined(NODE_A)
 /*! Indicates if the node is sending confirmed or unconfirmed messages */
 static uint8_t IsTxConfirmed = LORAWAN_CONFIRMED_MSG_ON;
+#endif
 
 /*! Data entries */
 static DataEntry_t dataEntries[LORAMESH_APP_NOF_DATA_ENTRIES];
@@ -85,8 +85,10 @@ static DataEntry_t *pFreeDataEntries;
 /* Mesh app state machine function */
 static void Process( void );
 
+#if !defined(NODE_A)
 /* Send frame on configured app port */
 static void SendDataFrame( void *param );
+#endif
 
 /* Send frame on configured app port */
 static void SendMulticastDataFrame( void *param );
@@ -155,11 +157,20 @@ void LoRaMesh_AppInit( void )
 #if( OVER_THE_AIR_ACTIVATION == 0 )
     // NwkAddr
 #if defined(NODE_A)
+    LOG_DEBUG("Configuration for Node A.");
     DevAddr = 0x013AE27A;
 #elif defined(NODE_B)
+    LOG_DEBUG("Configuration for Node B.");
     DevAddr = 0x013A1024;
 #elif defined(NODE_C)
+    LOG_DEBUG("Configuration for Node C.");
     DevAddr = 0x013AD5F1;
+#elif defined(NODE_D)
+    LOG_DEBUG("Configuration for Node D.");
+    DevAddr = 0x013AFA23;
+#elif defined(NODE_E)
+    LOG_DEBUG("Configuration for Node E.");
+    DevAddr = 0x013ACB01;
 #endif
 
     LoRaMesh_SetNwkIds(LORAWAN_NETWORK_ID, DevAddr, NwkSKey, AppSKey);
@@ -179,7 +190,7 @@ void LoRaMesh_AppInit( void )
 
     LoRaMesh_RegisterApplication((PortHandlerFunction_t) & ProcessDataFrame, AppPort);
 
-#if 0
+#if 1
     if ( pLoRaDevice->devRole == NODE ) {
         /* Multicast group */
 #if defined(NODE_B)
@@ -195,8 +206,8 @@ void LoRaMesh_AppInit( void )
                 (void*) AppAddr);
     } else if ( pLoRaDevice->devRole == COORDINATOR ) {
         /* Test child node */
-        LoRaMesh_TestCreateChildNode(0x013A1024, 5000000, 868300000, NwkSKey, AppSKey);
-        LoRaMesh_RegisterReceptionWindow(0, 5000000, &ReceiveDataFrame, (void*) 0x013A1024);
+//        LoRaMesh_TestCreateChildNode(0x013A1024, 5000000, 868300000, NwkSKey, AppSKey);
+//        LoRaMesh_RegisterReceptionWindow(0, 5000000, &ReceiveDataFrame, (void*) 0x013A1024);
         /* Multicast group */
         LoRaMesh_TestCreateMulticastGroup(AppAddr, LORAMESH_APP_TX_INTERVAL, 868100000, NwkSKey,
                 AppSKey, true);
@@ -255,7 +266,7 @@ static uint8_t ProcessDataFrame( uint8_t *buf, uint8_t payloadSize, uint32_t dev
         if ( entry == NULL ) return ERR_FAILED;
     }
 
-    entry->Timestamp = GpsGetCurrentUnixTime();
+    entry->Timestamp = LoRaMesh_GetSynchTime();
     entry->EntryInfo.Value = (uint8_t) LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
     /* Latitude */
     entry->LatitudeBinary = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
@@ -386,6 +397,7 @@ static uint8_t ProcessDataFrame( uint8_t *buf, uint8_t payloadSize, uint32_t dev
     return ERR_OK;
 }
 
+#if !defined(NODE_A)
 static void SendDataFrame( void* param )
 {
     int32_t latiBin, longiBin;
@@ -418,6 +430,7 @@ static void SendDataFrame( void* param )
             (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS));
     LoRaMesh_SendFrame(AppData, LORAMESH_APP_DATA_SIZE, AppPort, true, IsTxConfirmed);
 }
+#endif
 
 static void SendMulticastDataFrame( void* param )
 {
@@ -428,7 +441,7 @@ static void SendMulticastDataFrame( void* param )
 
     latiBin = 0x42DEC4;
     longiBin = 0x05E868;
-    timestamp = GpsGetCurrentUnixTime();
+    timestamp = LoRaMesh_GetSynchTime();
 
     AppData[dataSize++] = 0x00; /* Reset SDS Header */
 
@@ -505,6 +518,7 @@ static void SendMulticastDataFrame( void* param )
 
     LOG_TRACE("Sending multicast data frame at %u ms.",
             (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS));
+
     LoRaMesh_SendMulticast(AppData, AppDataSize, AppPort);
 }
 
@@ -603,22 +617,33 @@ static void FreeEntry( DataEntry_t *entry )
 
 static void LoRaMeshTask( void *pvParameters )
 {
-//    uint32_t cntr = 0; /* initialize send counter */
+    uint8_t cntr = 0, lineBreakCntr = 0;
     bool meshAppActive = true;
     appState = LORAMESH_INITIAL; /* initialize state machine state */
     (void) pvParameters; /* not used */
 
-    LOG_DEBUG_BARE("Starting LoRaMesh application...\r\n");
+    Shell_SendStr((unsigned char *) "\r\n\r\nStarting LoRaMesh application...",
+            Shell_GetStdio()->stdOut);
+    lineBreakCntr = 32;
 
     /* Wait for GPS fix */
-    while ( !GpsHasFix() ) {
+    while ( !GpsHasFix() || !GpsHasValidDateTime() ) {
         /* Task interval of 100 ms */
         vTaskDelay(100 / portTICK_RATE_MS);
+        cntr++;
+        if ( cntr >= 10 ) {
+            Shell_SendStr((unsigned char *) ".", Shell_GetStdio()->stdOut);
+            lineBreakCntr++;
+            cntr = 0;
+            if ( lineBreakCntr >= 64 ) {
+                Shell_SendStr((unsigned char *) "\r\n", Shell_GetStdio()->stdOut);
+                lineBreakCntr = 0;
+            }
+        }
     }
+    Shell_SendStr((unsigned char *) "\r\n", Shell_GetStdio()->stdOut);
 
     LOG_DEBUG("Gps has fix. Application process started");
-    time_t now = GpsGetCurrentUnixTime();
-    LoRaMesh_TestScheduleAdvertising(now + (30 - (now % 30)));
 
     while ( meshAppActive ) {
         Process(); /* process state machine */
@@ -669,6 +694,18 @@ static uint8_t PrintStatus( Shell_ConstStdIO_t *io )
 
     Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
     Shell_SendStr((unsigned char*) "\r\nLoRaMesh App", io->stdOut);
+    /* Node # */
+#if defined(NODE_A)
+    Shell_SendStatusStr((unsigned char*) "\r\nName", (unsigned char*)"Node A", io->stdOut);
+#elif defined(NODE_B)
+    Shell_SendStatusStr((unsigned char*) "\r\nName", (unsigned char*)"Node B", io->stdOut);
+#elif defined(NODE_C)
+    Shell_SendStatusStr((unsigned char*) "\r\nName", (unsigned char*)"Node C", io->stdOut);
+#elif defined(NODE_D)
+    Shell_SendStatusStr((unsigned char*) "\r\nName", (unsigned char*)"Node D", io->stdOut);
+#elif defined(NODE_E)
+    Shell_SendStatusStr((unsigned char*) "\r\nName", (unsigned char*)"Node E", io->stdOut);
+#endif
     /* Number of entries */
     strcatNum8u(buf, sizeof(buf), cntr);
     Shell_SendStatusStr((unsigned char*) "\r\n# Entries", buf, io->stdOut);
@@ -696,7 +733,7 @@ static uint8_t PrintStatus( Shell_ConstStdIO_t *io )
      */
     /* Timestamp */
     custom_strcpy((unsigned char*) buf, sizeof(""), (unsigned char*) "");
-    strcatNum32u(buf, sizeof(buf), GpsGetCurrentUnixTime());
+    strcatNum32u(buf, sizeof(buf), LoRaMesh_GetSynchTime());
     Shell_SendStatusStr((unsigned char*) "\r\nTimestamp", buf, io->stdOut);
     /* Latitude */
     custom_strcpy((unsigned char*) buf, sizeof(NmeaGpsData.NmeaLatitude),

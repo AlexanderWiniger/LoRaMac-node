@@ -14,7 +14,7 @@
 #include "LoRaMesh.h"
 #include "LoRaPhy.h"
 
-#define LOG_LEVEL_TRACE
+#define LOG_LEVEL_ERROR
 #include "debug.h"
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
@@ -512,6 +512,7 @@ static void HandleStateMachine()
                     phyStatus = PHY_RECEIVING;
                 break;
             case PHY_POWER_DOWN:
+//                LOG_TRACE("Radio sleep.");
                 Radio.Sleep();
                 phyStatus = PHY_IDLE;
                 return;
@@ -541,7 +542,7 @@ static void HandleStateMachine()
                 return;
             case PHY_TIMEOUT:
                 phyStatus = PHY_POWER_DOWN;
-                LOG_TRACE("Radio timeout.");
+//                LOG_TRACE("Radio timeout.");
                 break;
             case PHY_ERROR:
                 break;
@@ -678,9 +679,11 @@ static uint8_t CheckTx( void )
     uint8_t TxDataBuffer[LORAPHY_BUFFER_SIZE];
 
     if ( GetTxMsg(TxDataBuffer, sizeof(TxDataBuffer)) == ERR_OK ) {
+#if 0
         if ( SetNextChannel() != ERR_OK ) {
             return ERR_NOTAVAIL;
         }
+#endif
         flags = LORAPHY_BUF_FLAGS(TxDataBuffer);
         channel = Channels[pLoRaDevice->currChannelIndex];
 
@@ -908,7 +911,9 @@ static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t
 
 static void OnCadDone( bool channelActivityDetected )
 {
+#if defined(LOG_LEVEL_TRACE)
     uint64_t curTime = TimerGetCurrentTime();
+#endif
     Radio.Sleep();
     if ( !channelActivityDetected ) {
         LOG_TRACE("Channel clear. Send packet now (%d%d)", *(((int*) (&curTime)) + 1), curTime);

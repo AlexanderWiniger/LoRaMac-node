@@ -305,6 +305,13 @@ void GpioMcuSetInterrupt( Gpio_t *obj, IrqModes irqMode, IrqPriorities irqPriori
                             & PORT_PCR_IRQC_MASK)));
 
     /* Configure NVIC */
+    if ( obj->pin == PPS ) {
+        /* Set interrupt priority */
+        NVIC_BASE_PTR->IP[40 + obj->portIndex] = 0x00u;
+    } else {
+        /* Set interrupt priority */
+        NVIC_BASE_PTR->IP[40 + obj->portIndex] = 0x40u;
+    }
     if ( intConfig ) {
         /* Enable port interrupt.*/
         NVIC_BASE_PTR->ISER[(((uint32_t)(int32_t)(PORTA_IRQn + obj->portIndex)) >> 5UL)] =
@@ -389,18 +396,36 @@ void PORTB_IRQHandler( void )
     /* Clear interrupt flag.*/
     PORTB_ISFR = ~0u;
 
+    if ( (pendingInt & (1U << 1)) ) {
+#if 0
+        uint32_t drift, cvr;
+        /* SysTick synchronisation */
+        SYST_CSR &= ~SysTick_CSR_ENABLE_MASK; /* Stop SysTick */
+        cvr = SysTick_BASE_PTR->CVR;
+        if ( (drift = (cvr % 1000)) > 0 ) {
+            SYST_CVR = 0x00; /* Reset current value register */
+            LOG_TRACE("Reset SysTick counter - (%u/%u)", cvr, drift);
+        }
+        SYST_CSR |= SysTick_CSR_ENABLE_MASK; /* Re-enable SysTick */
+#elif 1
+        SYST_CVR = 0x00; /* Reset current value register */
+#endif
+    }
+
     if ( pendingInt & 0x1 )
         GpioBIrq[0]();
-    else if ( (pendingInt & (1U << 1)) >> 1 )
+    else if ( (pendingInt & (1U << 1)) >> 1 ) {
         GpioBIrq[1]();
-    else if ( (pendingInt & (1U << 2)) >> 2 )
+    } else if ( (pendingInt & (1U << 2)) >> 2 ) {
         GpioBIrq[2]();
-    else if ( (pendingInt & (1U << 3)) >> 3 )
+    } else if ( (pendingInt & (1U << 3)) >> 3 ) {
         GpioBIrq[3]();
-    /* PTB4 to PTB15 can't be used as GPIO */
-    else if ( (pendingInt & (1U << 16)) >> 16 )
+        /* PTB4 to PTB15 can't be used as GPIO */
+    } else if ( (pendingInt & (1U << 16)) >> 16 ) {
         GpioBIrq[16]();
-    else if ( (pendingInt & (1U << 17)) >> 17 ) GpioBIrq[17]();
+    } else if ( (pendingInt & (1U << 17)) >> 17 ) {
+        GpioBIrq[17]();
+    }
     /* PTB18 to PTB31 can't be used as GPIO */
 }
 

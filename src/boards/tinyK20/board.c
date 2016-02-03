@@ -24,7 +24,11 @@ Gpio_t Led1;
 
 /*! GPIO pin objects */
 Gpio_t GpsPps;
-Gpio_t SysTick;
+
+/*! GPIO debug pin objects */
+Gpio_t dbgPin0;
+Gpio_t dbgPin1;
+Gpio_t dbgPin2;
 
 /*! MCU objects */
 Uart_t Uart0;
@@ -53,8 +57,10 @@ void BoardInitPeriph( void )
     /* Init GPIO pins */
     GpioInit(&Led1, LED_1, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
 
-    /* Init GPIO pins */
-    GpioInit(&SysTick, SYS_TICK, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1);
+    /* Init GPIO debug pins */
+    GpioInit(&dbgPin0, PB_0, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
+    GpioInit(&dbgPin1, PB_2, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
+    GpioInit(&dbgPin2, PB_3, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0);
 
     /* Init GPS */
     GpsInit();

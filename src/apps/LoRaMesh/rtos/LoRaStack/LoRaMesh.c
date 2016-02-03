@@ -212,6 +212,10 @@ const uint8_t TxPowers[] = { 20, 14, 11, 8, 5, 2 };
 /*! LoRa device used throughout the stack */
 extern LoRaDevice_t* pLoRaDevice;
 
+/* Time synchronization */
+static uint8_t synchCntr;
+static time_t unixTime;
+
 /*******************************************************************************
  * MODULE FUNCTIONS (PUBLIC)
  ******************************************************************************/
@@ -286,6 +290,10 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks )
     for ( i = 0; i < MAX_NOF_MULTICAST_GROUPS - 1; i++ ) {
         multicastGrpList[i].next = &multicastGrpList[i + 1];
     }
+
+    /* Initialize unix time */
+    unixTime = 0;
+    synchCntr = 60;   // Force initial synch
 
     /* Initialize stack */
     LoRaFrm_Init();
@@ -446,6 +454,9 @@ uint8_t LoRaMesh_SendFrame( uint8_t *appPayload, size_t appPayloadSize, uint8_t 
         i++;
     }
 
+    /*! \todo this is a workaround */
+    pLoRaDevice->currChannelIndex = pLoRaDevice->upLinkSlot.ChannelIndex;
+
     return LoRaMesh_PutPayload(buf, sizeof(buf), appPayloadSize, pLoRaDevice->devAddr, fPort,
             isConfirmed);
 }
@@ -476,6 +487,9 @@ uint8_t LoRaMesh_SendMulticast( uint8_t *appPayload, size_t appPayloadSize, uint
     }
 
     if ( multicastGrp == NULL ) return ERR_DISABLED;
+
+    /*! \todo this is a workaround */
+    pLoRaDevice->currChannelIndex = multicastGrp->Connection.ChannelIndex;
 
     return LoRaMesh_PutPayload(buf, sizeof(buf), appPayloadSize, multicastGrp->Connection.Address,
             fPort, false);
@@ -892,6 +906,30 @@ uint32_t LoRaMesh_GetNofMlticastGroups( void )
     return cnt;
 }
 
+void LoRaMesh_TimeSynch( void )
+{
+    unixTime++;
+
+    /* Ceck synchronization every minute*/
+    if ( synchCntr >= 60 ) {
+        time_t currTime = GpsConvertLatestDateTimeToUnixTime();
+        if ( unixTime != currTime ) {
+            LOG_TRACE("Internal clock out of synch.");
+            unixTime = currTime;
+            LoRaMesh_TestScheduleAdvertising(unixTime + (30 - (unixTime % 30)));
+            synchCntr = 0;
+            return;
+        }
+    } else {
+        synchCntr++;
+    }
+}
+
+time_t LoRaMesh_GetSynchTime( void )
+{
+    return unixTime;
+}
+
 /*******************************************************************************
  * TEST FUNCTIONS (PUBLIC) (FOR DEBUG PURPOSES ONLY)
  ******************************************************************************/
@@ -942,8 +980,7 @@ void LoRaMesh_TestCreateMulticastGroup( uint32_t grpAddr, uint32_t interval, uin
 void LoRaMesh_TestScheduleAdvertising( time_t nextAdvTime )
 {
     LOG_TRACE("Schedule next advertising for %lu", nextAdvTime);
-    time_t now = GpsGetCurrentUnixTime();
-    TimerSetValue(&AdvertisingTimer, (nextAdvTime - now) * 1000000);
+    TimerSetValue(&AdvertisingTimer, (nextAdvTime - unixTime) * 1000000);
     TimerStart(&AdvertisingTimer);
 }
 
@@ -1286,11 +1323,16 @@ static void OnAdvertisingTimerEvent( TimerHandle_t xTimer )
     LOG_TRACE("Advertising timer event at %u (ms).",
             (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS));
 #else
-    LOG_TRACE("Advertising timer event at %lu.", (timer_t)(GpsGetCurrentUnixTime()));
+    PTB_BASE_PTR->PSOR |= (0x1 << 0);   // Set PB_0
+    LOG_TRACE("Advertising timer event at %lu.", (timer_t)(unixTime));
 #endif
     if ( AdvertisingTimer.PeriodInMs != (ADVERTISING_INTERVAL / 1000) ) {
         TimerStop(&AdvertisingTimer);
         TimerSetValue(&AdvertisingTimer, ADVERTISING_INTERVAL);
+        TimerStart(&AdvertisingTimer);
+    } else if ( unixTime % 30 > 0 ) {
+        TimerStop(&AdvertisingTimer);
+        TimerSetValue(&AdvertisingTimer, ((30 - (unixTime % 30))) * 1000000);
         TimerStart(&AdvertisingTimer);
     }
     /* Add packet to message queue */
@@ -1318,6 +1360,7 @@ static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer )
     uint16_t slot;
 
     TimerStop(&EventSchedulerTimer);
+    PTB_BASE_PTR->PCOR |= (0x1 << 0);   // Clear PB_0
 
     if ( pNextSchedulerEvent == NULL ) return;
 

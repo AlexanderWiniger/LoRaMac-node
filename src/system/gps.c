@@ -20,8 +20,9 @@
 #include <string.h>
 #include "board.h"
 #include "gps.h"
+#include "LoRaMesh.h"
 
-#define LOG_LEVEL_TRACE
+#define LOG_LEVEL_ERROR
 #include "debug.h"
 
 #define TRIGGER_GPS_CNT                             10
@@ -50,7 +51,7 @@ static uint16_t Altitude = 0xFFFF;
 
 static uint32_t PpsCnt = 0;
 
-static time_t unixTime = 1454339433;
+static struct tm dateTime;
 
 bool PpsDetected = false;
 
@@ -58,22 +59,9 @@ void GpsPpsHandler( bool *parseData )
 {
     PpsDetected = true;
     PpsCnt++;
-    unixTime++;
     *parseData = false;
 
-#if 0
-    uint32_t drift, cvr;
-    /* SysTick synchronisation */
-    SYST_CSR &= ~SysTick_CSR_ENABLE_MASK; /* Stop SysTick */
-    cvr = SysTick_BASE_PTR->CVR;
-    if ( (drift = (cvr % 1000)) > 0 ) {
-        SYST_CVR = 0x00; /* Reset current value register */
-        LOG_TRACE("Reset SysTick counter - (%u/%u)", cvr, drift);
-    }
-    SYST_CSR |= SysTick_CSR_ENABLE_MASK; /* Re-enable SysTick */
-#else
-//    LOG_TRACE("SysTick counter %u", SYST_CVR);
-#endif
+    LoRaMesh_TimeSynch();
 
     if ( PpsCnt >= TRIGGER_GPS_CNT ) {
         PpsCnt = 0;
@@ -104,9 +92,35 @@ bool GpsHasFix( void )
     return (NmeaGpsData.NmeaFixQuality[0] > 0x30) ? true : false;
 }
 
-uint32_t GpsGetCurrentUnixTime( void )
+bool GpsHasValidDateTime( void )
 {
-    return unixTime;
+    if ( NmeaGpsData.NmeaUtcTime[0] > '2' || NmeaGpsData.NmeaUtcTime[0] < '0' ) {
+        return false;
+    } else if ( NmeaGpsData.NmeaUtcTime[1] > '9' || NmeaGpsData.NmeaUtcTime[1] < '0' ) {
+        return false;
+    } else if ( NmeaGpsData.NmeaUtcTime[2] > '6' || NmeaGpsData.NmeaUtcTime[2] < '0' ) {
+        return false;
+    } else if ( NmeaGpsData.NmeaUtcTime[3] > '9' || NmeaGpsData.NmeaUtcTime[3] < '0' ) {
+        return false;
+    } else if ( NmeaGpsData.NmeaUtcTime[4] > '6' || NmeaGpsData.NmeaUtcTime[4] < '0' ) {
+        return false;
+    } else if ( NmeaGpsData.NmeaUtcTime[5] > '9' || NmeaGpsData.NmeaUtcTime[5] < '0' ) {
+        return false;
+    } else if ( NmeaGpsData.NmeaDate[0] > '3' || NmeaGpsData.NmeaDate[0] < '0' ) {
+        return false;
+    } else if ( NmeaGpsData.NmeaDate[1] > '9' || NmeaGpsData.NmeaDate[1] < '0' ) {
+        return false;
+    } else if ( NmeaGpsData.NmeaDate[2] > '1' || NmeaGpsData.NmeaDate[2] < '0' ) {
+        return false;
+    } else if ( NmeaGpsData.NmeaDate[3] > '9' || NmeaGpsData.NmeaDate[3] < '0' ) {
+        return false;
+    } else if ( NmeaGpsData.NmeaDate[4] > '9' || NmeaGpsData.NmeaDate[4] < '0' ) {
+        return false;
+    } else if ( NmeaGpsData.NmeaDate[5] > '9' || NmeaGpsData.NmeaDate[5] < '0' ) {
+        return false;
+    }
+
+    return true;
 }
 
 void GpsConvertPositionIntoBinary( void )
@@ -134,24 +148,25 @@ void GpsConvertPositionIntoBinary( void )
     }
 }
 
+time_t GpsConvertLatestDateTimeToUnixTime( void )
+{
+    return mktime(&dateTime);
+}
+
 void GpsConvertUnixTimeFromStringToNumerical( void )
 {
-    struct tm dt;
-    time_t currTime;
-    dt.tm_hour = ((NmeaGpsData.NmeaUtcTime[0] - 0x30) * 10) + (NmeaGpsData.NmeaUtcTime[1] - 0x30);
-    dt.tm_min = ((NmeaGpsData.NmeaUtcTime[2] - 0x30) * 10) + (NmeaGpsData.NmeaUtcTime[3] - 0x30);
-    dt.tm_sec = ((NmeaGpsData.NmeaUtcTime[4] - 0x30) * 10) + (NmeaGpsData.NmeaUtcTime[5] - 0x30);
-    dt.tm_mday = ((NmeaGpsData.NmeaDate[0] - 0x30) * 10) + (NmeaGpsData.NmeaDate[1] - 0x30);
-    dt.tm_mon = ((NmeaGpsData.NmeaDate[2] - 0x30) * 10) + (NmeaGpsData.NmeaDate[3] - 0x30) - 1;
-    dt.tm_year = (2000 - 1900) + ((NmeaGpsData.NmeaDate[4] - 0x30) * 10)
+    dateTime.tm_hour = ((NmeaGpsData.NmeaUtcTime[0] - 0x30) * 10)
+            + (NmeaGpsData.NmeaUtcTime[1] - 0x30);
+    dateTime.tm_min = ((NmeaGpsData.NmeaUtcTime[2] - 0x30) * 10)
+            + (NmeaGpsData.NmeaUtcTime[3] - 0x30);
+    dateTime.tm_sec = ((NmeaGpsData.NmeaUtcTime[4] - 0x30) * 10)
+            + (NmeaGpsData.NmeaUtcTime[5] - 0x30);
+    dateTime.tm_mday = ((NmeaGpsData.NmeaDate[0] - 0x30) * 10) + (NmeaGpsData.NmeaDate[1] - 0x30);
+    dateTime.tm_mon = ((NmeaGpsData.NmeaDate[2] - 0x30) * 10) + (NmeaGpsData.NmeaDate[3] - 0x30)
+            - 1;
+    dateTime.tm_year = (2000 - 1900) + ((NmeaGpsData.NmeaDate[4] - 0x30) * 10)
             + (NmeaGpsData.NmeaDate[5] - 0x30);
-    dt.tm_isdst = -1;
-
-    currTime = mktime(&dt);
-    if ( currTime != unixTime ) {
-        LOG_ERROR("Unix time drift detected (%lu/%lu).", currTime, unixTime);
-        unixTime = currTime;
-    }
+    dateTime.tm_isdst = -1;
 }
 
 void GpsConvertPositionFromStringToNumerical( void )
@@ -163,11 +178,11 @@ void GpsConvertPositionFromStringToNumerical( void )
     double valueTmp3;
     double valueTmp4;
 
-    // Convert the latitude from ASCII to uint8_t values
+// Convert the latitude from ASCII to uint8_t values
     for ( i = 0; i < 10; i++ ) {
         NmeaGpsData.NmeaLatitude[i] = NmeaGpsData.NmeaLatitude[i] & 0xF;
     }
-    // Convert latitude from degree/minute/second (DMS) format into decimal
+// Convert latitude from degree/minute/second (DMS) format into decimal
     valueTmp1 = (double) NmeaGpsData.NmeaLatitude[0] * 10.0 + (double) NmeaGpsData.NmeaLatitude[1];
     valueTmp2 = (double) NmeaGpsData.NmeaLatitude[2] * 10.0 + (double) NmeaGpsData.NmeaLatitude[3];
     valueTmp3 = (double) NmeaGpsData.NmeaLatitude[5] * 1000.0
@@ -180,11 +195,11 @@ void GpsConvertPositionFromStringToNumerical( void )
         Latitude *= -1;
     }
 
-    // Convert the longitude from ASCII to uint8_t values
+// Convert the longitude from ASCII to uint8_t values
     for ( i = 0; i < 10; i++ ) {
         NmeaGpsData.NmeaLongitude[i] = NmeaGpsData.NmeaLongitude[i] & 0xF;
     }
-    // Convert longitude from degree/minute/second (DMS) format into decimal
+// Convert longitude from degree/minute/second (DMS) format into decimal
     valueTmp1 = (double) NmeaGpsData.NmeaLongitude[0] * 100.0
             + (double) NmeaGpsData.NmeaLongitude[1] * 10.0 + (double) NmeaGpsData.NmeaLongitude[2];
     valueTmp2 = (double) NmeaGpsData.NmeaLongitude[3] * 10.0
@@ -262,17 +277,17 @@ int32_t GpsNmeaChecksum( char *nmeaStr, size_t nmeaStrSize, uint8_t * checksum )
     int i = 0;
     uint8_t checkNum = 0;
 
-    // Check input parameters
+// Check input parameters
     if ( (nmeaStr == NULL) || (checksum == NULL) || (nmeaStrSize <= 1) ) {
         return -1;
     }
 
-    // Skip the first '$' if necessary
+// Skip the first '$' if necessary
     if ( nmeaStr[i] == '$' ) {
         i += 1;
     }
 
-    // XOR until '*' or max length is reached
+// XOR until '*' or max length is reached
     while ( nmeaStr[i] != '*' ) {
         checkNum ^= nmeaStr[i];
         i += 1;
@@ -281,7 +296,7 @@ int32_t GpsNmeaChecksum( char *nmeaStr, size_t nmeaStrSize, uint8_t * checksum )
         }
     }
 
-    // Convert checksum value to 2 hexadecimal characters
+// Convert checksum value to 2 hexadecimal characters
     checksum[0] = Nibble2HexChar(checkNum / 16);   // upper nibble
     checksum[1] = Nibble2HexChar(checkNum % 16);   // lower nibble
 
@@ -300,17 +315,17 @@ static bool GpsNmeaValidateChecksum( char *serialBuff, size_t buffSize )
 
     checksumIndex = GpsNmeaChecksum(serialBuff, buffSize, checksum);
 
-    // could we calculate a verification checksum ?
+// could we calculate a verification checksum ?
     if ( checksumIndex < 0 ) {
         return false;
     }
 
-    // check if there are enough char in the serial buffer to read checksum
+// check if there are enough char in the serial buffer to read checksum
     if ( checksumIndex >= (buffSize - 2) ) {
         return false;
     }
 
-    // check the checksum
+// check the checksum
     if ( (serialBuff[checksumIndex] == checksum[0])
             && (serialBuff[checksumIndex + 1] == checksum[1]) ) {
         return true;
@@ -342,7 +357,7 @@ uint8_t GpsParseGpsData( char *rxBuffer, size_t rxBufferSize )
     for ( j = 0; j < fieldSize; j++, i++ ) {
         NmeaGpsData.NmeaDataType[j] = rxBuffer[i];
     }
-    // Parse the GPGGA data 
+// Parse the GPGGA data 
     if ( strncmp((const char*) NmeaGpsData.NmeaDataType, (const char*) NmeaDataTypeGPGGA, 5)
             == 0 ) {
         // NmeaUtcTime

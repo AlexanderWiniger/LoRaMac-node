@@ -96,7 +96,18 @@
 #define configCPU_CLOCK_HZ                        SystemCoreClock /* CPU clock frequency */
 #define configBUS_CLOCK_HZ                        SystemCoreClock /* Bus clock frequency */
 #else
-#define configCPU_CLOCK_HZ                        48000000U /* CPU clock frequency */
+/* Adjusted CPU clock to compensate for reference clock skew */
+#if defined(NODE_A)
+#define configCPU_CLOCK_HZ                        47928300U /* CPU clock frequency */
+#elif defined(NODE_B)
+#define configCPU_CLOCK_HZ                        47914300U /* CPU clock frequency */
+#elif defined(NODE_C)
+#define configCPU_CLOCK_HZ                        47905000U /* CPU clock frequency */
+#elif defined(NODE_D)
+#define configCPU_CLOCK_HZ                        47905600U /* CPU clock frequency */
+#elif defined(NODE_E)
+#define configCPU_CLOCK_HZ                        47924600U /* CPU clock frequency */
+#endif
 #define configBUS_CLOCK_HZ                        48000000U /* Bus clock frequency */
 #endif /* configPEX_KINETIS_SDK */
 #define configSYSTICK_USE_CORE_CLOCK              1 /* System Tick is using core clock  */
@@ -120,7 +131,7 @@
 #define configIDLE_SHOULD_YIELD                   1
 #define configUSE_CO_ROUTINES                     0
 #define configUSE_MUTEXES                         1
-#define configCHECK_FOR_STACK_OVERFLOW            0 /* 0 is disabling stack overflow. Set it to 1 for Method1 or 2 for Method2 */  
+#define configCHECK_FOR_STACK_OVERFLOW            1 /* 0 is disabling stack overflow. Set it to 1 for Method1 or 2 for Method2 */
 #define configUSE_RECURSIVE_MUTEXES               1
 #define configQUEUE_REGISTRY_SIZE                 0
 #define configUSE_QUEUE_SETS                      0
@@ -132,7 +143,7 @@
 #define configUSE_TICKLESS_IDLE_DECISION_HOOK     0 /* set to 1 to enable application hook, zero otherwise */
 #define configUSE_TICKLESS_IDLE_DECISION_HOOK_NAME xEnterTicklessIdle /* function name of decision hook */
 
-#define configMAX_PRIORITIES                      ((unsigned portBASE_TYPE)18)
+#define configMAX_PRIORITIES                      ((unsigned portBASE_TYPE)6)
 #define configMAX_CO_ROUTINE_PRIORITIES           2
 
 /* Software timer definitions. */
@@ -145,7 +156,7 @@
  to exclude the API function. */
 #define INCLUDE_vTaskPrioritySet                  1
 #define INCLUDE_uxTaskPriorityGet                 1
-#define INCLUDE_vTaskDelete                       1
+#define INCLUDE_vTaskDelete                       0
 #define INCLUDE_vTaskCleanUpResources             1
 #define INCLUDE_vTaskSuspend                      1
 #define INCLUDE_vTaskDelayUntil                   1
@@ -202,7 +213,7 @@
  routine that makes calls to interrupt safe FreeRTOS API functions.  DO NOT CALL
  INTERRUPT SAFE FREERTOS API FUNCTIONS FROM ANY INTERRUPT THAT HAS A HIGHER
  PRIORITY THAN THIS! (higher priorities are lower numeric values on an ARM Cortex-M). */
-#define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY 1
+#define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY 5
 
 /* Interrupt priorities used by the kernel port layer itself.  These are generic
  to all Cortex-M ports, and do not rely on any particular library functions. */

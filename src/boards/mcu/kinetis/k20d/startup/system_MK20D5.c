@@ -74,8 +74,7 @@ void __init_hardware( void )
     if ( (RTC_CR & RTC_CR_OSCE_MASK) == 0u ) { /* Only if the OSCILLATOR is not already enabled */
         /* RTC_CR: SC2P=0,SC4P=0,SC8P=0,SC16P=0 */
         RTC_CR &= (uint32_t) ~(uint32_t)(
-                RTC_CR_SC2P_MASK | RTC_CR_SC4P_MASK | RTC_CR_SC8P_MASK
-                        | RTC_CR_SC16P_MASK);
+                RTC_CR_SC2P_MASK | RTC_CR_SC4P_MASK | RTC_CR_SC8P_MASK | RTC_CR_SC16P_MASK);
         /* RTC_CR: OSCE=1 */
         RTC_CR |= RTC_CR_OSCE_MASK;
         /* RTC_CR: CLKO=0 */
@@ -87,23 +86,20 @@ void __init_hardware( void )
     /* WDOG_UNLOCK: WDOGUNLOCK=0xD928 */
     WDOG_UNLOCK = WDOG_UNLOCK_WDOGUNLOCK(0xD928); /* Key 2 */
     /* WDOG_STCTRLH: ??=0,DISTESTWDOG=0,BYTESEL=0,TESTSEL=0,TESTWDOG=0,??=0,??=1,WAITEN=1,STOPEN=1,DBGEN=0,ALLOWUPDATE=1,WINEN=0,IRQRSTEN=0,CLKSRC=1,WDOGEN=0 */
-    WDOG_STCTRLH = WDOG_STCTRLH_BYTESEL(0x00) | WDOG_STCTRLH_WAITEN_MASK
-            | WDOG_STCTRLH_STOPEN_MASK | WDOG_STCTRLH_ALLOWUPDATE_MASK
-            | WDOG_STCTRLH_CLKSRC_MASK | 0x0100U;
+    WDOG_STCTRLH = WDOG_STCTRLH_BYTESEL(0x00) | WDOG_STCTRLH_WAITEN_MASK | WDOG_STCTRLH_STOPEN_MASK
+            | WDOG_STCTRLH_ALLOWUPDATE_MASK | WDOG_STCTRLH_CLKSRC_MASK | 0x0100U;
 
     /* System clock initialization */
     /* SIM_CLKDIV1: OUTDIV1=0,OUTDIV2=1,??=0,??=0,??=0,??=0,OUTDIV4=3,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0 */
-    SIM_CLKDIV1 = SIM_CLKDIV1_OUTDIV1(0x00) | SIM_CLKDIV1_OUTDIV2(0x01)
-            | SIM_CLKDIV1_OUTDIV4(0x03); /* Set the system prescalers to safe value */
-    /* SIM_SCGC5: PORTD=1,PORTA=1 */
-    SIM_SCGC5 |= (SIM_SCGC5_PORTD_MASK | SIM_SCGC5_PORTA_MASK); /* Enable clock gate for ports to enable pin routing */
+    SIM_CLKDIV1 = SIM_CLKDIV1_OUTDIV1(0x00) | SIM_CLKDIV1_OUTDIV2(0x01) | SIM_CLKDIV1_OUTDIV4(0x03); /* Set the system prescalers to safe value */
+    /* SIM_SCGC5: PORTD=1,PORTC=1,PORTA=1 */
+    SIM_SCGC5 |= SIM_SCGC5_PORTD_MASK | SIM_SCGC5_PORTC_MASK | SIM_SCGC5_PORTA_MASK; /* Enable clock gate for ports to enable pin routing */
     if ( (PMC_REGSC & PMC_REGSC_ACKISO_MASK) != 0x0U ) {
         /* PMC_REGSC: ACKISO=1 */
         PMC_REGSC |= PMC_REGSC_ACKISO_MASK; /* Release IO pads after wakeup from VLLS mode. */
     }
     /* SIM_CLKDIV1: OUTDIV1=1,OUTDIV2=1,??=0,??=0,??=0,??=0,OUTDIV4=3,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0,??=0 */
-    SIM_CLKDIV1 = SIM_CLKDIV1_OUTDIV1(0x01) | SIM_CLKDIV1_OUTDIV2(0x01)
-            | SIM_CLKDIV1_OUTDIV4(0x03); /* Update system prescalers */
+    SIM_CLKDIV1 = SIM_CLKDIV1_OUTDIV1(0x01) | SIM_CLKDIV1_OUTDIV2(0x01) | SIM_CLKDIV1_OUTDIV4(0x03); /* Update system prescalers */
     /* SIM_SOPT2: PLLFLLSEL=1 */
     SIM_SOPT2 |= SIM_SOPT2_PLLFLLSEL_MASK; /* Select PLL as a clock source for various peripherals */
     /* SIM_SOPT1: OSC32KSEL=2 */
@@ -116,8 +112,7 @@ void __init_hardware( void )
     PORTA_PCR19 &= (uint32_t) ~(uint32_t)((PORT_PCR_ISF_MASK | PORT_PCR_MUX(0x07)));
     /* MCG_SC: FCRDIV=1 */
     MCG_SC = (uint8_t)(
-            (MCG_SC & (uint8_t) ~(uint8_t)(MCG_SC_FCRDIV(0x06)))
-                    | (uint8_t)(MCG_SC_FCRDIV(0x01)));
+            (MCG_SC & (uint8_t) ~(uint8_t)(MCG_SC_FCRDIV(0x06))) | (uint8_t)(MCG_SC_FCRDIV(0x01)));
     /* Switch to FBE Mode */
     /* MCG_C2: LOCRE0=0,??=0,RANGE0=2,HGO0=0,EREFS0=1,LP=0,IRCS=1 */
     MCG_C2 = (MCG_C2_RANGE0(0x02) | MCG_C2_EREFS0_MASK | MCG_C2_IRCS_MASK);
@@ -126,32 +121,30 @@ void __init_hardware( void )
     /* MCG_C7: OSCSEL=0 */
     MCG_C7 &= (uint8_t) ~(uint8_t)(MCG_C7_OSCSEL_MASK);
     /* MCG_C1: CLKS=2,FRDIV=3,IREFS=0,IRCLKEN=1,IREFSTEN=1 */
-    MCG_C1 = MCG_C1_CLKS(0x02) | MCG_C1_FRDIV(0x03) | MCG_C1_IRCLKEN_MASK
-            | MCG_C1_IREFSTEN_MASK;
+    MCG_C1 = MCG_C1_CLKS(0x02) | MCG_C1_FRDIV(0x03) | MCG_C1_IRCLKEN_MASK | MCG_C1_IREFSTEN_MASK;
     /* MCG_C4: DMX32=0,DRST_DRS=0 */
     MCG_C4 &= (uint8_t) ~(uint8_t)((MCG_C4_DMX32_MASK | MCG_C4_DRST_DRS(0x03)));
     /* MCG_C5: ??=0,PLLCLKEN0=0,PLLSTEN0=0,PRDIV0=1 */
     MCG_C5 = MCG_C5_PRDIV0(0x01);
     /* MCG_C6: LOLIE0=0,PLLS=0,CME0=0,VDIV0=0 */
     MCG_C6 = MCG_C6_VDIV0(0x00);
-    while ((MCG_S & MCG_S_OSCINIT0_MASK) == 0x00U) { /* Check that the oscillator is running */
+    while ( (MCG_S & MCG_S_OSCINIT0_MASK) == 0x00U ) { /* Check that the oscillator is running */
     }
-    while ((MCG_S & MCG_S_IREFST_MASK) != 0x00U) { /* Check that the source of the FLL reference clock is the external reference clock. */
+    while ( (MCG_S & MCG_S_IREFST_MASK) != 0x00U ) { /* Check that the source of the FLL reference clock is the external reference clock. */
     }
-    while ((MCG_S & 0x0CU) != 0x08U) { /* Wait until external reference clock is selected as MCG output */
+    while ( (MCG_S & 0x0CU) != 0x08U ) { /* Wait until external reference clock is selected as MCG output */
     }
     /* Switch to PBE Mode */
     /* MCG_C6: LOLIE0=0,PLLS=1,CME0=0,VDIV0=0 */
     MCG_C6 = (MCG_C6_PLLS_MASK | MCG_C6_VDIV0(0x00));
-    while ((MCG_S & 0x0CU) != 0x08U) { /* Wait until external reference clock is selected as MCG output */
+    while ( (MCG_S & 0x0CU) != 0x08U ) { /* Wait until external reference clock is selected as MCG output */
     }
-    while ((MCG_S & MCG_S_LOCK0_MASK) == 0x00U) { /* Wait until locked */
+    while ( (MCG_S & MCG_S_LOCK0_MASK) == 0x00U ) { /* Wait until locked */
     }
     /* Switch to PEE Mode */
     /* MCG_C1: CLKS=0,FRDIV=3,IREFS=0,IRCLKEN=1,IREFSTEN=1 */
-    MCG_C1 = MCG_C1_CLKS(0x00) | MCG_C1_FRDIV(0x03) | MCG_C1_IRCLKEN_MASK
-            | MCG_C1_IREFSTEN_MASK;
-    while ((MCG_S & 0x0CU) != 0x0CU) { /* Wait until output of the PLL is selected */
+    MCG_C1 = MCG_C1_CLKS(0x00) | MCG_C1_FRDIV(0x03) | MCG_C1_IRCLKEN_MASK | MCG_C1_IREFSTEN_MASK;
+    while ( (MCG_S & 0x0CU) != 0x0CU ) { /* Wait until output of the PLL is selected */
     }
 
 }
@@ -175,23 +168,50 @@ void low_level_init( void )
     RCM_RPFC &= (uint8_t) ~(uint8_t)(RCM_RPFC_RSTFLTSS_MASK | RCM_RPFC_RSTFLTSRW(0x03));
     /* Initialization of the FTFL_FlashConfig module */
     /* Initialization of the PMC module */
-    /* PMC_REGSC: ACKISO=0,BGBE=0 */
-    PMC_REGSC &= (uint8_t) ~(uint8_t)(PMC_REGSC_ACKISO_MASK | PMC_REGSC_BGBE_MASK);
+    /* PMC_REGSC: ACKISO=0,BGBE=1 */
+    PMC_REGSC = (uint8_t)(
+            (PMC_REGSC & (uint8_t) ~(uint8_t)(PMC_REGSC_ACKISO_MASK))
+                    | (uint8_t)(PMC_REGSC_BGBE_MASK));
     /* PMC_LVDSC1: LVDACK=1,LVDIE=0,LVDRE=1,LVDV=0 */
     PMC_LVDSC1 = (uint8_t)(
-            (PMC_LVDSC1
-                    & (uint8_t) ~(uint8_t)(PMC_LVDSC1_LVDIE_MASK | PMC_LVDSC1_LVDV(0x03)))
+            (PMC_LVDSC1 & (uint8_t) ~(uint8_t)(PMC_LVDSC1_LVDIE_MASK | PMC_LVDSC1_LVDV(0x03)))
                     | (uint8_t)(PMC_LVDSC1_LVDACK_MASK | PMC_LVDSC1_LVDRE_MASK));
     /* PMC_LVDSC2: LVWACK=1,LVWIE=0,LVWV=0 */
     PMC_LVDSC2 = (uint8_t)(
-            (PMC_LVDSC2
-                    & (uint8_t) ~(uint8_t)(PMC_LVDSC2_LVWIE_MASK | PMC_LVDSC2_LVWV(0x03)))
+            (PMC_LVDSC2 & (uint8_t) ~(uint8_t)(PMC_LVDSC2_LVWIE_MASK | PMC_LVDSC2_LVWV(0x03)))
                     | (uint8_t)(PMC_LVDSC2_LVWACK_MASK));
-    /* SMC_PMPROT: ??=0,??=0,AVLP=0,??=0,ALLS=0,??=0,AVLLS=0,??=0 */
-    SMC_PMPROT = 0x00U; /* Setup Power mode protection register */
+    /* Initialization of the LLWU module */
+    /* LLWU_PE1: WUPE3=0 */
+    LLWU_PE1 &= (uint8_t) ~(uint8_t)(LLWU_PE1_WUPE3(0x03));
+    /* LLWU_PE2: WUPE7=0,WUPE6=0,WUPE5=0 */
+    LLWU_PE2 &= (uint8_t) ~(uint8_t)(
+            LLWU_PE2_WUPE7(0x03) | LLWU_PE2_WUPE6(0x03) | LLWU_PE2_WUPE5(0x03));
+    /* LLWU_PE3: WUPE10=0,WUPE9=0,WUPE8=0 */
+    LLWU_PE3 &= (uint8_t) ~(uint8_t)(
+            LLWU_PE3_WUPE10(0x03) | LLWU_PE3_WUPE9(0x03) | LLWU_PE3_WUPE8(0x03));
+    /* LLWU_PE4: WUPE15=0,WUPE14=0,WUPE13=0,WUPE12=0 */
+    LLWU_PE4 = LLWU_PE4_WUPE15(0x00) | LLWU_PE4_WUPE14(0x00) | LLWU_PE4_WUPE13(0x00)
+            | LLWU_PE4_WUPE12(0x00);
+    /* LLWU_ME: WUME7=0,WUME5=0,WUME4=0,WUME2=0,WUME1=0,WUME0=1 */
+    LLWU_ME = (uint8_t)(
+            (LLWU_ME
+                    & (uint8_t) ~(uint8_t)(
+                            LLWU_ME_WUME7_MASK | LLWU_ME_WUME5_MASK | LLWU_ME_WUME4_MASK
+                                    | LLWU_ME_WUME2_MASK | LLWU_ME_WUME1_MASK))
+                    | (uint8_t)(LLWU_ME_WUME0_MASK));
+    /* LLWU_FILT1: FILTF=1,FILTE=0,??=0,FILTSEL=0 */
+    LLWU_FILT1 = LLWU_FILT1_FILTF_MASK | LLWU_FILT1_FILTE(0x00) | LLWU_FILT1_FILTSEL(0x00);
+    /* LLWU_FILT2: FILTF=1,FILTE=0,??=0,FILTSEL=0 */
+    LLWU_FILT2 = LLWU_FILT2_FILTF_MASK | LLWU_FILT2_FILTE(0x00) | LLWU_FILT2_FILTSEL(0x00);
+    /* LLWU_RST: ??=0,??=0,??=0,??=0,??=0,??=0,LLRSTE=1,RSTFILT=0 */
+    LLWU_RST = LLWU_RST_LLRSTE_MASK;
+    /* SMC_PMPROT: ??=0,??=0,AVLP=1,??=0,ALLS=1,??=0,AVLLS=0,??=0 */
+    SMC_PMPROT = (SMC_PMPROT_AVLP_MASK | SMC_PMPROT_ALLS_MASK); /* Setup Power mode protection register */
     /* Common initialization of the CPU registers */
     /* NVICIP8: PRI8=0 */
-    NVICIP8 = NVIC_IP_PRI8(0x00);
+    NVICIP8 = NVIC_IP_PRI8(0x00); /* LVD_LVW_IRQHandler priority */
+    /* NVICIP9: PRI9=0 */
+    NVICIP9 = NVIC_IP_PRI9(0x00); /* LLWU_IRQHandler */
     /* Enable interrupts of the given priority level */
     Cpu_SetBASEPRI(0U);
 }

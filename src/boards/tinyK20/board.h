@@ -86,7 +86,6 @@
  * Board MCU pins definitions
  */
 #define LED_1                          PD_4
-#define SYS_TICK                       PB_0
 
 #if defined(SX1276_BOARD_EMBED)
 
