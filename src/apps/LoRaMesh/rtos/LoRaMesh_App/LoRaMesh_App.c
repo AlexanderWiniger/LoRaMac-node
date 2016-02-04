@@ -266,7 +266,7 @@ static uint8_t ProcessDataFrame( uint8_t *buf, uint8_t payloadSize, uint32_t dev
         if ( entry == NULL ) return ERR_FAILED;
     }
 
-    entry->Timestamp = LoRaMesh_GetSynchTime();
+    entry->Timestamp = GpsGetCurrentUnixTime();
     entry->EntryInfo.Value = (uint8_t) LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
     /* Latitude */
     entry->LatitudeBinary = LORAMESH_BUF_PAYLOAD_START(buf)[payloadIndex++];
@@ -441,7 +441,7 @@ static void SendMulticastDataFrame( void* param )
 
     latiBin = 0x42DEC4;
     longiBin = 0x05E868;
-    timestamp = LoRaMesh_GetSynchTime();
+    timestamp = GpsGetCurrentUnixTime();
 
     AppData[dataSize++] = 0x00; /* Reset SDS Header */
 
@@ -733,7 +733,7 @@ static uint8_t PrintStatus( Shell_ConstStdIO_t *io )
      */
     /* Timestamp */
     custom_strcpy((unsigned char*) buf, sizeof(""), (unsigned char*) "");
-    strcatNum32u(buf, sizeof(buf), LoRaMesh_GetSynchTime());
+    strcatNum32u(buf, sizeof(buf), GpsGetCurrentUnixTime());
     Shell_SendStatusStr((unsigned char*) "\r\nTimestamp", buf, io->stdOut);
     /* Latitude */
     custom_strcpy((unsigned char*) buf, sizeof(NmeaGpsData.NmeaLatitude),

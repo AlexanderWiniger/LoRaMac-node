@@ -505,7 +505,7 @@ void LoRaMesh_SetAdrOn( bool enable );
 
 uint32_t LoRaMesh_GetNofChildNodes( void );
 
-uint32_t LoRaMesh_GetNofMlticastGroups( void );
+uint32_t LoRaMesh_GetNofMulticastGroups( void );
 
 void LoRaMesh_TimeSynch( time_t gpsTime );
 
@@ -558,13 +558,6 @@ void LoRaMesh_TestCreateChildNode( uint32_t devAddr, uint32_t interval, uint32_t
  */
 void LoRaMesh_TestCreateMulticastGroup( uint32_t grpAddr, uint32_t interval, uint32_t freqChannel,
         uint8_t *nwkSKey, uint8_t *appSKey, bool isOwner );
-
-/*!
- * Schedule next advertising window
- *
- * \param[IN] nextAdvTime Next scheduled advertising in unix time
- */
-void LoRaMesh_TestScheduleAdvertising( time_t nextAdvTime );
 
 /*!
  * Open reception window

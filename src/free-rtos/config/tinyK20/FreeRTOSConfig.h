@@ -88,7 +88,7 @@
 #define configUSE_IDLE_HOOK                       1 /* 1: use Idle hook; 0: no Idle hook */
 #define configUSE_TICK_HOOK                       0 /* 1: use Tick hook; 0: no Tick hook */
 #define configUSE_MALLOC_FAILED_HOOK              0 /* 1: use MallocFailed hook; 0: no MallocFailed hook */
-#define configTICK_RATE_HZ                        ((TickType_t)100) /* frequency of tick interrupt */
+#define configTICK_RATE_HZ                        ((TickType_t)1000) /* frequency of tick interrupt */
 #define configSYSTICK_USE_LOW_POWER_TIMER         0 /* If using Kinetis Low Power Timer (LPTMR) instead of SysTick timer */
 #define configSYSTICK_LOW_POWER_TIMER_CLOCK_HZ    1 /* 1 kHz LPO timer. Set to 1 if not used */
 #if configPEX_KINETIS_SDK
@@ -98,15 +98,15 @@
 #else
 /* Adjusted CPU clock to compensate for reference clock skew */
 #if defined(NODE_A)
-#define configCPU_CLOCK_HZ                        47928300U /* CPU clock frequency */
+#define configCPU_CLOCK_HZ                        47928000U /* CPU clock frequency */
 #elif defined(NODE_B)
-#define configCPU_CLOCK_HZ                        47914300U /* CPU clock frequency */
+#define configCPU_CLOCK_HZ                        47914000U /* CPU clock frequency */
 #elif defined(NODE_C)
 #define configCPU_CLOCK_HZ                        47905000U /* CPU clock frequency */
 #elif defined(NODE_D)
-#define configCPU_CLOCK_HZ                        47905600U /* CPU clock frequency */
+#define configCPU_CLOCK_HZ                        47905000U /* CPU clock frequency */
 #elif defined(NODE_E)
-#define configCPU_CLOCK_HZ                        47924600U /* CPU clock frequency */
+#define configCPU_CLOCK_HZ                        47924000U /* CPU clock frequency */
 #endif
 #define configBUS_CLOCK_HZ                        48000000U /* Bus clock frequency */
 #endif /* configPEX_KINETIS_SDK */

@@ -14,7 +14,7 @@
 #include "LoRaMesh.h"
 #include "LoRaPhy.h"
 
-#define LOG_LEVEL_ERROR
+#define LOG_LEVEL_NONE
 #include "debug.h"
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS

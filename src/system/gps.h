@@ -78,8 +78,6 @@ bool GpsHasFix( void );
  */
 bool GpsHasValidDateTime( void );
 
-time_t GpsConvertLatestDateTimeToUnixTime( void );
-
 /*!
  * \brief Converts the latest Position (latitude and longitude) into a binary
  *        number
@@ -91,6 +89,8 @@ void GpsConvertPositionIntoBinary( void );
  *        DMS numerical format
  */
 void GpsConvertPositionFromStringToNumerical( void );
+
+time_t GpsGetCurrentUnixTime( void );
 
 /*!
  * \brief Gets the latest Position (latitude and Longitude) as two double values

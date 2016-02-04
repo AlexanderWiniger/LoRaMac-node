@@ -237,6 +237,11 @@ void GpsConvertPositionFromStringToNumerical( void )
     }
 }
 
+time_t GpsGetCurrentUnixTime( void )
+{
+    return gpsUnixTime;
+}
+
 uint8_t GpsGetLatestGpsPositionDouble( double *lati, double *longi )
 {
     uint8_t status = FAIL;

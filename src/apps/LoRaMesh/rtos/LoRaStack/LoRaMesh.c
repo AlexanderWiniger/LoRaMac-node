@@ -26,10 +26,12 @@
 #define MAX_NOF_CHILD_NODES                 LORAMESH_CONFIG_MAX_NOF_CHILD_NODES
 #define MAX_NOF_PORT_HANDLERS               LORAMESH_CONFIG_MAX_NOF_PORT_HANDLERS
 
-#define ADVERTISING_INTERVAL                (30000000)
+#define ADVERTISING_INTERVAL_US             (30000000)
+#define ADVERTISING_INTERVAL_MS             (ADVERTISING_INTERVAL_US / 1000)
+#define ADVERTISING_INTERVAL_SEC            (ADVERTISING_INTERVAL_MS / 1000)
 #define ADVERTISING_GUARD_TIME              (2280000)
 #define ADVERTISING_RESERVED_TIME           (2120000)
-#define AVAILABLE_SLOT_TIME                 (ADVERTISING_INTERVAL-ADVERTISING_GUARD_TIME-ADVERTISING_RESERVED_TIME)
+#define AVAILABLE_SLOT_TIME                 (ADVERTISING_INTERVAL_US-ADVERTISING_GUARD_TIME-ADVERTISING_RESERVED_TIME)
 #define TIME_PER_SLOT                       (50000)
 #define NOF_AVAILABLE_SLOTS                 (AVAILABLE_SLOT_TIME / TIME_PER_SLOT)
 
@@ -101,13 +103,8 @@ static LoRaSchedulerEventHandler_t *pFreeEventHandler;
 /*! Event scheduler timer*/
 static TimerEvent_t EventSchedulerTimer;
 
-/*! Advertising timer */
-static TimerEvent_t AdvertisingTimer;
+/*! Advertising */
 static uint32_t LastAdvertisingWindow;
-
-/* Time synchronization */
-static uint8_t synchCntr;
-static time_t meshUnixTime;
 
 /*! Multicast groups */
 static MulticastGroupInfo_t multicastGrpList[MAX_NOF_MULTICAST_GROUPS];
@@ -133,11 +130,11 @@ static bool EvaluateNominationProbability( uint8_t nodeRank, DeviceClass_t nodeC
 /*! \brief Calculate the nodes rank. */
 static uint8_t CalculateNodeRank( void );
 
-/*! \brief Function executed on advertising timer event */
-static void OnAdvertisingTimerEvent( TimerHandle_t xTimer );
-
 /*! brief Function executed on event scheduler timer event */
 static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer );
+
+/*! \brief Function executed on advertising event */
+static void AdvertisingEvent( void );
 
 /*! \brief Schedule new event */
 static uint8_t ScheduleEvent( LoRaSchedulerEventHandler_t *evtHandler,
@@ -276,9 +273,6 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks )
     TimerInit(&EventSchedulerTimer, "EventSchedulerTimer", (void*) NULL, OnEventSchedulerTimerEvent,
             false);
 
-    /* Advertising timer */
-    TimerInit(&AdvertisingTimer, "AdvertisingTimer", (void*) NULL, OnAdvertisingTimerEvent, true);
-
     /* Init child node list */
     pFreeChildNode = childNodeList;
     for ( i = 0; i < MAX_NOF_CHILD_NODES - 1; i++ ) {
@@ -290,10 +284,6 @@ void LoRaMesh_Init( LoRaMeshCallbacks_t *callbacks )
     for ( i = 0; i < MAX_NOF_MULTICAST_GROUPS - 1; i++ ) {
         multicastGrpList[i].next = &multicastGrpList[i + 1];
     }
-
-    /* Initialize unix time */
-    meshUnixTime = 0;
-    synchCntr = 60;   // Force initial synch
 
     /* Initialize stack */
     LoRaFrm_Init();
@@ -891,7 +881,7 @@ uint32_t LoRaMesh_GetNofChildNodes( void )
     return cnt;
 }
 
-uint32_t LoRaMesh_GetNofMlticastGroups( void )
+uint32_t LoRaMesh_GetNofMulticastGroups( void )
 {
     MulticastGroupInfo_t* iterGrp;
     uint32_t cnt = 0;
@@ -906,32 +896,11 @@ uint32_t LoRaMesh_GetNofMlticastGroups( void )
     return cnt;
 }
 
-void LoRaMesh_TimeSynch( time_t gpsTime )
+void LoRaMesh_TimeSynch( time_t gpsUnixTime )
 {
-    meshUnixTime++;
-
-    /* Check synchronization every minute*/
-    if ( synchCntr >= 60 ) {
-        if ( meshUnixTime != gpsTime ) {
-            uint32_t nextAdvTime;
-
-            meshUnixTime = gpsTime;
-            nextAdvTime = meshUnixTime + (30 - (meshUnixTime % 30));
-            LOG_TRACE("Internal clock out of synch. Schedule next advertising for %lu.",
-                    nextAdvTime);
-            TimerSetValue(&AdvertisingTimer, (nextAdvTime - meshUnixTime) * 1000000);
-            TimerStart(&AdvertisingTimer);
-        }
-        synchCntr = 0;
-        return;
-    } else {
-        synchCntr++;
+    if ( gpsUnixTime % ADVERTISING_INTERVAL_SEC == 0 ) {
+        AdvertisingEvent();
     }
-}
-
-time_t LoRaMesh_GetSynchTime( void )
-{
-    return meshUnixTime;
 }
 
 /*******************************************************************************
@@ -979,13 +948,6 @@ void LoRaMesh_TestCreateMulticastGroup( uint32_t grpAddr, uint32_t interval, uin
     if ( newGrp != NULL ) {
         MulticastGroupAdd(newGrp);
     }
-}
-
-void LoRaMesh_TestScheduleAdvertising( time_t nextAdvTime )
-{
-    LOG_TRACE("Schedule next advertising for %lu", nextAdvTime);
-    TimerSetValue(&AdvertisingTimer, (nextAdvTime - meshUnixTime) * 1000000);
-    TimerStart(&AdvertisingTimer);
 }
 
 void LoRaMesh_TestOpenReceptionWindow( uint8_t channel, uint8_t datarate )
@@ -1317,28 +1279,13 @@ static uint8_t FindFreeSlots( uint16_t firstSlot, TimerTime_t interval, uint16_t
 }
 
 /*!
- * Function executed when advertising FreeRTOS software timer expires.
- *
- * \param xTimer FreeRTOS timer handle
+ * \brief Advertising event.
  */
-static void OnAdvertisingTimerEvent( TimerHandle_t xTimer )
+static void AdvertisingEvent( void )
 {
-#if 0
-    LOG_TRACE("Advertising timer event at %u (ms).",
-            (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS));
-#else
     PTB_BASE_PTR->PSOR |= (0x1 << 0);   // Set PB_0
-    LOG_TRACE("Advertising timer event at %lu.", (timer_t)(meshUnixTime));
-#endif
-    if ( AdvertisingTimer.PeriodInMs != (ADVERTISING_INTERVAL / 1000) ) {
-        TimerStop(&AdvertisingTimer);
-        TimerSetValue(&AdvertisingTimer, ADVERTISING_INTERVAL);
-        TimerStart(&AdvertisingTimer);
-    } else if ( meshUnixTime % 30 > 0 ) {
-        TimerStop(&AdvertisingTimer);
-        TimerSetValue(&AdvertisingTimer, ((30 - (meshUnixTime % 30))) * 1000000);
-        TimerStart(&AdvertisingTimer);
-    }
+    LOG_TRACE("Advertising timer event at %lu.", (timer_t)(GpsGetCurrentUnixTime()));
+
     /* Add packet to message queue */
     LoRaMesh_SendAdvertising();
 
@@ -1346,6 +1293,7 @@ static void OnAdvertisingTimerEvent( TimerHandle_t xTimer )
 
     /* Restart event scheduler */
     if ( pEventScheduler != NULL ) {
+        TimerStop(&EventSchedulerTimer);
         TimerSetValue(&EventSchedulerTimer,
                 (ADVERTISING_RESERVED_TIME + (pEventScheduler->startSlot * TIME_PER_SLOT)));
         TimerStart(&EventSchedulerTimer);
@@ -1359,7 +1307,6 @@ static void OnAdvertisingTimerEvent( TimerHandle_t xTimer )
  */
 static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer )
 {
-    LoRaSchedulerEvent_t* nextEvt;
     uint32_t nextEvtTime;
     uint16_t slot;
 
@@ -1372,33 +1319,33 @@ static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer )
             - ADVERTISING_RESERVED_TIME) / TIME_PER_SLOT;
 
     if ( pNextSchedulerEvent->next == NULL ) {
-        /* Calculate next event time */
-        nextEvtTime = (((NOF_AVAILABLE_SLOTS - pNextSchedulerEvent->startSlot)
-                + pEventScheduler->startSlot) * TIME_PER_SLOT) + ADVERTISING_GUARD_TIME
-                + ADVERTISING_RESERVED_TIME;
         /* Restart scheduler */
-        nextEvt = pEventScheduler;
+        pNextSchedulerEvent = pEventScheduler;
+        return;
     } else if ( pNextSchedulerEvent->startSlot == slot ) {
         /* Start scheduler timer */
         nextEvtTime = ((pNextSchedulerEvent->next->startSlot - pNextSchedulerEvent->startSlot)
                 * TIME_PER_SLOT);
-        /* Move pointer forward */
-        nextEvt = pNextSchedulerEvent->next;
+        /* Start scheduler timer */
+        TimerSetValue(&EventSchedulerTimer, nextEvtTime);
+        TimerStart(&EventSchedulerTimer);
+        /* Invoke callback function */
+        if ( pNextSchedulerEvent->eventHandler != NULL
+                && pNextSchedulerEvent->eventHandler->callback != NULL ) {
+            pNextSchedulerEvent->eventHandler->callback(pNextSchedulerEvent->eventHandler->param);
+        }
     } else {
-        LOG_ERROR("Drift occurred.");
+        LOG_ERROR("Drift occurred. Skip event.");
+        /* Start scheduler timer */
+        nextEvtTime = ((pNextSchedulerEvent->next->startSlot - slot) * TIME_PER_SLOT);
+        /* Start scheduler timer */
+        TimerSetValue(&EventSchedulerTimer, nextEvtTime);
+        TimerStart(&EventSchedulerTimer);
         return;
     }
 
-    /* Start scheduler timer */
-    TimerSetValue(&EventSchedulerTimer, nextEvtTime);
-    TimerStart(&EventSchedulerTimer);
-    /* Invoke callback function */
-    if ( pNextSchedulerEvent->eventHandler != NULL
-            && pNextSchedulerEvent->eventHandler->callback != NULL ) {
-        pNextSchedulerEvent->eventHandler->callback(pNextSchedulerEvent->eventHandler->param);
-    }
     /* Move pointer forward */
-    pNextSchedulerEvent = nextEvt;
+    pNextSchedulerEvent = pNextSchedulerEvent->next;
 }
 
 /*!
@@ -1729,7 +1676,7 @@ static uint8_t PrintStatus( Shell_ConstStdIO_t *io )
 
     /* Nof multicast groups */
     custom_strcpy((unsigned char*) buf, sizeof(""), (unsigned char*) "");
-    strcatNum32u(buf, sizeof(buf), LoRaMesh_GetNofMlticastGroups());
+    strcatNum32u(buf, sizeof(buf), LoRaMesh_GetNofMulticastGroups());
     Shell_SendStatusStr((unsigned char*) "\r\nMulticast Groups", buf, io->stdOut);
 
     Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
