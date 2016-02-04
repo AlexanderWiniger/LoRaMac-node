@@ -51,17 +51,22 @@ static uint16_t Altitude = 0xFFFF;
 
 static uint32_t PpsCnt = 0;
 
-static struct tm dateTime;
+static time_t gpsUnixTime;
 
-bool PpsDetected = false;
+static bool bGpsHasFix = false;
+static bool bGpsHasValidDateTime = false;
+static bool PpsDetected = false;
 
 void GpsPpsHandler( bool *parseData )
 {
     PpsDetected = true;
     PpsCnt++;
+    gpsUnixTime++;
     *parseData = false;
 
-    LoRaMesh_TimeSynch();
+    if ( bGpsHasFix && bGpsHasValidDateTime ) {
+        LoRaMesh_TimeSynch(gpsUnixTime);
+    }
 
     if ( PpsCnt >= TRIGGER_GPS_CNT ) {
         PpsCnt = 0;
@@ -73,6 +78,16 @@ void GpsPpsHandler( bool *parseData )
 void GpsInit( void )
 {
     PpsDetected = false;
+    gpsUnixTime = 0u;
+
+    /* Reset datetime to make sure it is current */
+    for ( uint8_t i = 0; i < 11; i++ ) {
+        NmeaGpsData.NmeaUtcTime[i] = 0x00u;
+        if ( i < 8 ) {
+            NmeaGpsData.NmeaDate[i] = 0x00u;
+        }
+    }
+
     GpsMcuInit();
 }
 
@@ -89,10 +104,15 @@ bool GpsGetPpsDetectedState( void )
 
 bool GpsHasFix( void )
 {
-    return (NmeaGpsData.NmeaFixQuality[0] > 0x30) ? true : false;
+    return bGpsHasFix;
 }
 
 bool GpsHasValidDateTime( void )
+{
+    return bGpsHasValidDateTime;
+}
+
+bool GpsValidateDateTime( struct tm *dt )
 {
     if ( NmeaGpsData.NmeaUtcTime[0] > '2' || NmeaGpsData.NmeaUtcTime[0] < '0' ) {
         return false;
@@ -119,6 +139,16 @@ bool GpsHasValidDateTime( void )
     } else if ( NmeaGpsData.NmeaDate[5] > '9' || NmeaGpsData.NmeaDate[5] < '0' ) {
         return false;
     }
+
+    /* Valid datetime */
+    dt->tm_hour = ((NmeaGpsData.NmeaUtcTime[0] - 0x30) * 10) + (NmeaGpsData.NmeaUtcTime[1] - 0x30);
+    dt->tm_min = ((NmeaGpsData.NmeaUtcTime[2] - 0x30) * 10) + (NmeaGpsData.NmeaUtcTime[3] - 0x30);
+    dt->tm_sec = ((NmeaGpsData.NmeaUtcTime[4] - 0x30) * 10) + (NmeaGpsData.NmeaUtcTime[5] - 0x30);
+    dt->tm_mday = ((NmeaGpsData.NmeaDate[0] - 0x30) * 10) + (NmeaGpsData.NmeaDate[1] - 0x30);
+    dt->tm_mon = ((NmeaGpsData.NmeaDate[2] - 0x30) * 10) + (NmeaGpsData.NmeaDate[3] - 0x30) - 1;
+    dt->tm_year = (2000 - 1900) + ((NmeaGpsData.NmeaDate[4] - 0x30) * 10)
+            + (NmeaGpsData.NmeaDate[5] - 0x30);
+    dt->tm_isdst = -1;
 
     return true;
 }
@@ -148,25 +178,16 @@ void GpsConvertPositionIntoBinary( void )
     }
 }
 
-time_t GpsConvertLatestDateTimeToUnixTime( void )
-{
-    return mktime(&dateTime);
-}
-
 void GpsConvertUnixTimeFromStringToNumerical( void )
 {
-    dateTime.tm_hour = ((NmeaGpsData.NmeaUtcTime[0] - 0x30) * 10)
-            + (NmeaGpsData.NmeaUtcTime[1] - 0x30);
-    dateTime.tm_min = ((NmeaGpsData.NmeaUtcTime[2] - 0x30) * 10)
-            + (NmeaGpsData.NmeaUtcTime[3] - 0x30);
-    dateTime.tm_sec = ((NmeaGpsData.NmeaUtcTime[4] - 0x30) * 10)
-            + (NmeaGpsData.NmeaUtcTime[5] - 0x30);
-    dateTime.tm_mday = ((NmeaGpsData.NmeaDate[0] - 0x30) * 10) + (NmeaGpsData.NmeaDate[1] - 0x30);
-    dateTime.tm_mon = ((NmeaGpsData.NmeaDate[2] - 0x30) * 10) + (NmeaGpsData.NmeaDate[3] - 0x30)
-            - 1;
-    dateTime.tm_year = (2000 - 1900) + ((NmeaGpsData.NmeaDate[4] - 0x30) * 10)
-            + (NmeaGpsData.NmeaDate[5] - 0x30);
-    dateTime.tm_isdst = -1;
+    struct tm dateTime;
+
+    if ( GpsValidateDateTime(&dateTime) ) {
+        gpsUnixTime = mktime(&dateTime);
+        bGpsHasValidDateTime = true;
+    } else {
+        bGpsHasValidDateTime = false;
+    }
 }
 
 void GpsConvertPositionFromStringToNumerical( void )
@@ -419,6 +440,11 @@ uint8_t GpsParseGpsData( char *rxBuffer, size_t rxBufferSize )
         }
         for ( j = 0; j < fieldSize; j++, i++ ) {
             NmeaGpsData.NmeaFixQuality[j] = rxBuffer[i];
+        }
+        if ( NmeaGpsData.NmeaFixQuality[0] > 0x30 ) {
+            bGpsHasFix = true;
+        } else {
+            bGpsHasFix = false;
         }
         // NmeaSatelliteTracked
         fieldSize = 0;
