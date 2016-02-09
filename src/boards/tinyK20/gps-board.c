@@ -91,7 +91,7 @@ void GpsMcuIrqNotify( UartNotifyId_t id )
             if ( (data == '$') || (NmeaStringLength >= NMEA_MAX_MESSAGE_LENGTH) ) {
                 NmeaStringLength = 0;
             }
-//            LOG_TRACE_BARE("%c", (char) data);
+            LOG_TRACE_BARE("%c", (char) data);
             NmeaString[NmeaStringLength++] = (int8_t) data;
 
             if ( data == '\n' ) {
@@ -102,7 +102,7 @@ void GpsMcuIrqNotify( UartNotifyId_t id )
                         ggaMsgParsed = true;
                         UartEnableReceiver(&Uart0, false);
                         BlockLowPowerDuringTask(false);
-//                        LOG_TRACE_BARE("NMEA: %s", NmeaString);
+                        LOG_TRACE_BARE("NMEA: %s", NmeaString);
                     }
                 } else if ( !rmcMsgParsed && strncmp(NmeaString, (const char*) "$GPRMC", 6) == 0 ) {
                     if ( GpsParseGpsData(NmeaString, NmeaStringLength) == SUCCESS ) {
@@ -110,7 +110,7 @@ void GpsMcuIrqNotify( UartNotifyId_t id )
                         ggaMsgParsed = false;
                         UartEnableReceiver(&Uart0, false);
                         BlockLowPowerDuringTask(false);
-//                        LOG_TRACE_BARE("NMEA: %s", NmeaString);
+                        LOG_TRACE_BARE("NMEA: %s", NmeaString);
                     }
                 }
             }

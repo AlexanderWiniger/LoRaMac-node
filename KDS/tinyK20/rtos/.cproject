@@ -115,8 +115,10 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.1774278529.1010106004" name="eeprom.h" rcbsApplicability="disable" resourcePath="src/system/eeprom.h" toolsToInvoke=""/>
+					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.1774278529.1782322229" name="adc.h" rcbsApplicability="disable" resourcePath="src/system/adc.h" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="src/radio/sx1272|src/boards/mcu/kinetis/k22f|src/boards/mcu/kinetis/kl26z" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/system/adc.h|src/system/adc.c|src/system/eeprom.h|src/system/eeprom.c|src/radio/sx1272|src/boards/mcu/kinetis/k22f|src/boards/mcu/kinetis/kl26z" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

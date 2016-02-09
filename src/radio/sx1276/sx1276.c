@@ -559,7 +559,7 @@ void SX1276SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev, uint32
     }
     SX1276Write(REG_PACONFIG, paConfig);
     LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_PACONFIG, SX1276Read(REG_PACONFIG));
-    SX1276Write(REG_PADAC, paDac);
+    SX1276Write(REG_PADAC, 0x84/*paDac*/);
     LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_PADAC, SX1276Read(REG_PADAC));
 
     switch ( modem ) {
@@ -1212,6 +1212,7 @@ void SX1276SetOpMode( uint8_t opMode )
             }
         }
         SX1276Write(REG_OPMODE, (SX1276Read(REG_OPMODE) & RF_OPMODE_MASK) | opMode);
+        DelayMs(1);
         LOG_TRACE("Value at 0x%02x:\t 0x%02x.", REG_OPMODE, SX1276Read(REG_OPMODE));
     }
     LOG_TRACE("Leaving %s...", __FUNCTION__);
@@ -1380,7 +1381,7 @@ void SX1276OnDio0Irq( void )
     switch ( SX1276.Settings.State ) {
         case RF_RX_RUNNING:
 //            TimerStop(&RxTimeoutTimer);
-            LOG_TRACE("Rx done interrupt."); /* \todo added debug output */
+            LOG_DEBUG("Rx done interrupt."); /* \todo added debug output */
             PTB_BASE_PTR->PCOR |= (0x1 << 2);   // Clear PB_2
             // RxDone interrupt
             switch ( SX1276.Settings.Modem ) {

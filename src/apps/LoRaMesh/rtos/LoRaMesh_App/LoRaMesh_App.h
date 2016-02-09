@@ -35,7 +35,7 @@ typedef union {
         uint8_t VectorTrack :1;
         uint8_t AltitudeBar :1;
         uint8_t AltitudeGPS :1;
-        uint8_t reserved :3;
+        uint8_t reserved :4;
     } Bits;
 } DataEntryInfo_t;
 
@@ -51,6 +51,10 @@ typedef struct DataEntry_s {
     struct DataEntry_s *next;
 } DataEntry_t;
 
+typedef enum {
+    INITIAL, WAIT_GPS_FIX, WAIT_NWK_JOIN, ACTIVE, TEST_MODE_RX, TEST_MODE_TX, STANDBY
+} LoRaMesh_AppState_t;
+
 /*******************************************************************************
  * MODULE FUNCTION PROTOTYPES (PUBLIC)
  ******************************************************************************/
@@ -58,10 +62,16 @@ typedef struct DataEntry_s {
  * Shell command parser.
  */
 byte LoRaMesh_AppParseCommand( const unsigned char *cmd, bool *handled, Shell_ConstStdIO_t *io );
+
 /*!
  * Initializes the LoRa mesh application
  */
 void LoRaMesh_AppInit( void );
+
+/*!
+ * Return the current app status
+ */
+uint8_t LoRaMesh_AppStatus( void );
 /*******************************************************************************
  * END OF CODE
  ******************************************************************************/

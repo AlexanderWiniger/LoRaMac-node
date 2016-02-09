@@ -16,6 +16,29 @@
 #define LORAMESH_TEST_APP_ACTIVATED         0
 
 /*!
+ * Activates the LoRa rx test mode
+ */
+#if defined(NODE_A)
+#define LORAMESH_TEST_MODE_RX_ACTIVATED     0
+#else
+#define LORAMESH_TEST_MODE_RX_ACTIVATED     0
+#endif
+
+/*!
+ * Activates the LoRa tx test mode
+ */
+#if !defined(NODE_A)
+#define LORAMESH_TEST_MODE_TX_ACTIVATED     0
+#else
+#define LORAMESH_TEST_MODE_TX_ACTIVATED     0
+#endif
+
+/*!
+ * Activates the LoRaMesh payload trace
+ */
+#define LORAMESH_DEBUG_OUTPUT_PAYLOAD       0
+
+/*!
  * When set to 1 the application uses the Over-the-Air activation procedure
  * When set to 0 the application uses the Personalization activation procedure
  */

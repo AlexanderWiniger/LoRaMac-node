@@ -124,6 +124,7 @@
 					</folderInfo>
 					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.784262688.1433880735" name="eeprom.h" rcbsApplicability="disable" resourcePath="src/system/eeprom.h" toolsToInvoke=""/>
 					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.784262688.510488869" name="adc.h" rcbsApplicability="disable" resourcePath="src/system/adc.h" toolsToInvoke=""/>
+					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.784262688.1867625437" name="Shell_FreeRTOS.h" rcbsApplicability="disable" resourcePath="src/apps/LoRaMesh/rtos/Shell_App/Shell_FreeRTOS.h" toolsToInvoke=""/>
 					<sourceEntries>
 						<entry excluding="src/boards/mcu/kinetis/k20d/segger|src/system/adc.c|src/system/adc.h|src/system/eeprom.c|src/system/eeprom.h|src/boards/mcu/kinetis/utilities/custom_list.h|src/boards/mcu/kinetis/utilities/custom_list.c|src/radio/sx1272|src/boards/mcu/kinetis/k22f|src/boards/mcu/kinetis/kl26z" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>

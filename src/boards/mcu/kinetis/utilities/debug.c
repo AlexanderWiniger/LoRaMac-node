@@ -166,8 +166,11 @@ static int debug_putc( int ch, void* stream )
     if ( dbg_stdio == NULL ) {
         return -1;
     }
+#if defined(USE_CUSTOM_UART_HAL)
     UartPutBuffer(dbg_stdio, (uint8_t *) &c, 1);
-//    UartPutChar(dbg_stdio, c);
+#else
+    UartPutChar(dbg_stdio, c);
+#endif
 
     return 0;
 

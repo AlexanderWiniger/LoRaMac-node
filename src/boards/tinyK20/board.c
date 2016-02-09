@@ -17,6 +17,15 @@
 #endif
 
 /*******************************************************************************
+ * PRIVATE CONSTANT DEFINITIONS
+ ******************************************************************************/
+#if !defined(USE_CUSTOM_UART_HAL)
+/*! FIFO buffers size */
+#define DBG_FIFO_RX_SIZE                                128
+#define DBG_FIFO_TX_SIZE                                128
+#endif
+
+/*******************************************************************************
  * PUBLIC VARIABLES
  ******************************************************************************/
 /*! LED GPIO pin objects */
@@ -42,6 +51,12 @@ Uart_t UartUsb;
  ******************************************************************************/
 /*! Flag to indicate if the MCU is Initialized */
 static bool McuInitialized = false;
+
+#if !defined(USE_CUSTOM_UART_HAL)
+/*! FIFO buffers */
+static uint8_t DbgRxBuffer[DBG_FIFO_RX_SIZE];
+static uint8_t DbgTxBuffer[DBG_FIFO_TX_SIZE];
+#endif
 
 /*******************************************************************************
  * PRIVATE FUNCTION PROTOTYPES (STATIC)
@@ -89,6 +104,11 @@ void BoardInitMcu( void )
 #if defined(USE_SHELL)
         Shell_Init();
 #else
+#if !defined(USE_CUSTOM_UART_HAL)
+        FifoInit(&Uart1.FifoRx, DbgRxBuffer, DBG_FIFO_RX_SIZE);
+        FifoInit(&Uart1.FifoTx, DbgTxBuffer, DBG_FIFO_TX_SIZE);
+#endif
+
         UartInit(&Uart1, UART_1, UART1_TX, UART1_RX);
         UartConfig(&Uart1, RX_TX, 115200, UART_8_BIT, UART_1_STOP_BIT, NO_PARITY,
                 NO_FLOW_CTRL);

@@ -214,3 +214,4 @@ pip-log.txt
 *.o
 *.d
 Eclipse/FRDM-KL26Z/LoRaMac/classA/.settings/language.settings.xml
+*.zip

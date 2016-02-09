@@ -20,7 +20,9 @@
 #include <string.h>
 #include "board.h"
 #include "gps.h"
+#if defined(USE_LORA_MESH)
 #include "LoRaMesh.h"
+#endif
 
 #define LOG_LEVEL_ERROR
 #include "debug.h"
@@ -64,9 +66,11 @@ void GpsPpsHandler( bool *parseData )
     gpsUnixTime++;
     *parseData = false;
 
+#if defined(USE_LORA_MESH)
     if ( bGpsHasFix && bGpsHasValidDateTime ) {
         LoRaMesh_TimeSynch(gpsUnixTime);
     }
+#endif
 
     if ( PpsCnt >= TRIGGER_GPS_CNT ) {
         PpsCnt = 0;
@@ -288,6 +292,21 @@ uint16_t GpsGetLatestGpsAltitude( void )
     __enable_irq();
 
     return Altitude;
+}
+
+uint8_t GpsGetLatestTrack( uint16_t *groundSpeed, uint16_t *track )
+{
+    uint8_t status = FAIL;
+
+    __disable_irq();
+    if ( GpsHasFix() == true ) {
+        *groundSpeed = atoi(NmeaGpsData.NmeaSpeed);
+        *track = atoi(NmeaGpsData.NmeaDetectionAngle);
+        status = SUCCESS;
+    }
+    __enable_irq();
+
+    return status;
 }
 
 /*!

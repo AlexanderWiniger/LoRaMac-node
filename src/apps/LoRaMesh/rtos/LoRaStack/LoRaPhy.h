@@ -91,7 +91,7 @@ typedef struct {
 
 typedef struct {
     uint32_t Frequency;   // Hz
-    LoRaPhy_DrRange_t DrRange; // Max datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+    LoRaPhy_DrRange_t DrRange;   // Max datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
     // Min datarate [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
     uint8_t Band;        // Band index
 } LoRaPhy_ChannelParams_t;
@@ -99,7 +99,7 @@ typedef struct {
 /*! Rx channel parameter structure */
 typedef struct {
     uint32_t freq;      // Hz
-    uint8_t datarate; // [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
+    uint8_t datarate;   // [0: SF12, 1: SF11, 2: SF10, 3: SF9, 4: SF8, 5: SF7, 6: SF7, 7: FSK]
 } LoRaPhy_RxChannelParams_t;
 
 /*! Rx reception window type */
@@ -159,8 +159,7 @@ uint8_t LoRaPhy_OnPacketRx( LoRaPhy_PacketDesc *packet );
  * \param payloadSize Size of payload data.
  * \return Error code, ERR_OK for everything fine.
  */
-uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, size_t payloadSize,
-        uint8_t flags );
+uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, size_t payloadSize, uint8_t flags );
 
 /*!
  *
@@ -267,12 +266,13 @@ uint8_t LoRaPhy_GetChannelIndex( uint32_t frequency );
  ******************************************************************************/
 uint8_t LoRaPhy_TestSetContinuousTx( void );
 
-uint8_t LoRaPhy_TestSetContinuousRx( void );
+uint8_t LoRaPhy_TestSetContinuousRx( uint32_t freq, uint8_t dr );
+
+uint8_t LoRaPhy_TestSendFrame( uint8_t *buf, size_t bufSize );
 
 uint8_t LoRaPhy_TestOpenRxWindow( uint8_t ch, uint8_t dr );
 
-uint8_t LoRaPhy_QueueRxMessage( uint8_t *payload, size_t payloadSize, bool toBack,
-        uint8_t flags );
+uint8_t LoRaPhy_QueueRxMessage( uint8_t *payload, size_t payloadSize, bool toBack, uint8_t flags );
 
 /*******************************************************************************
  * END OF CODE

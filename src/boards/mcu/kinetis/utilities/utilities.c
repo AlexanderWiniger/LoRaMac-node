@@ -85,6 +85,35 @@ void custom_strcat( byte *dst, size_t dstSize, const unsigned char *src )
     *dst = '\0';
 }
 
+void strcatPad( uint8_t *dst, size_t dstSize, const unsigned char *src, char padChar,
+        uint8_t srcPadSize )
+{
+    uint8_t *p;
+    size_t nof = 0;
+
+    if ( dstSize < 2 ) {
+        return; /* hmm, really to small for anything than the zero byte? */
+    }
+    p = dst;
+    while ( *p != '\0' ) { /* find end of string */
+        p++;
+        nof++;
+    }
+    custom_strcat(dst + nof, dstSize - nof, src); /* add string */
+    dstSize -= nof;
+    while ( *p != '\0' && srcPadSize > 0 && dstSize > 1 ) {
+        p++;
+        srcPadSize--;
+        dstSize--;
+    }
+    while ( srcPadSize > 0 && dstSize > 1 ) {
+        *p++ = padChar; /* add padding char */
+        srcPadSize--;
+        dstSize--;
+    }
+    *p = '\0'; /* terminate string */
+}
+
 void chcat( byte *dst, size_t dstSize, byte ch )
 {
     dstSize--; /* for zero byte */

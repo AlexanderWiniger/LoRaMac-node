@@ -172,7 +172,7 @@ void UartMcuDisable( Uart_t *obj )
 
 uint8_t UartMcuPutChar( Uart_t *obj, uint8_t data )
 {
-#if 0
+#if !defined(USE_CUSTOM_UART_HAL)
     if ( IsFifoFull(&obj->FifoTx) == false ) {
         __disable_irq();
         FifoPush(&obj->FifoTx, data);
@@ -228,11 +228,10 @@ void UartInterruptHandler( Uart_t *obj )
     uint8_t data;
 
     if ( obj == NULL ) return;
-#if 0
+#if !defined(USE_CUSTOM_UART_HAL)
     /* Transmission finished */
     if ( ((((g_uartBase[obj->UartId]->S1) & UART_S1_TDRE_MASK) >> UART_S1_TDRE_SHIFT) == 1)
-            && ((((g_uartBase[obj->UartId]->S1) & UART_S1_TC_MASK) >> UART_S1_TC_SHIFT)
-                    == 1) ) {
+            && ((((g_uartBase[obj->UartId]->S1) & UART_S1_TC_MASK) >> UART_S1_TC_SHIFT) == 1) ) {
         if ( !IsFifoEmpty(&obj->FifoTx) ) {
             data = FifoPop(&obj->FifoTx);
             /* Write one byte to the transmit data register */

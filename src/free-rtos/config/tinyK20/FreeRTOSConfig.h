@@ -124,7 +124,7 @@
 #endif
 /*----------------------------------------------------------*/
 #define configMAX_TASK_NAME_LEN                   12 /* task name length */
-#define configUSE_TRACE_FACILITY                  0
+#define configUSE_TRACE_FACILITY                  1
 #define configUSE_TRACE_HOOKS                     0 /* not using Percepio Trace hooks */
 #define configUSE_STATS_FORMATTING_FUNCTIONS      (configUSE_TRACE_FACILITY || configGENERATE_RUN_TIME_STATS)
 #define configUSE_16_BIT_TICKS                    0

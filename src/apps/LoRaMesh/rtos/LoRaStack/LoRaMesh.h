@@ -93,7 +93,8 @@ typedef union {
         uint8_t upLinkCounterFixed :1; /* 1: Frame counter up link is fixed */
         uint8_t rxWindowsDisabled :1; /* 1: Reception windows disabled */
         uint8_t dutyCycleCtrlOff :1; /* 1: Duty cycle control inactive */
-        uint8_t reserved :5;
+        uint8_t continuousRxEnabled :1; /* 1: Continuous Rx mode enabled */
+        uint8_t reserved :4;
     } Bits;
 } LoRaDbgFlags_t;
 
@@ -558,6 +559,8 @@ void LoRaMesh_TestCreateChildNode( uint32_t devAddr, uint32_t interval, uint32_t
  */
 void LoRaMesh_TestCreateMulticastGroup( uint32_t grpAddr, uint32_t interval, uint32_t freqChannel,
         uint8_t *nwkSKey, uint8_t *appSKey, bool isOwner );
+
+void LoRaMesh_TestContinuousRx( uint32_t freq, uint8_t datarate, bool enabled );
 
 /*!
  * Open reception window

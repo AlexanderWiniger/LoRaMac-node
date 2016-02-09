@@ -108,7 +108,7 @@ typedef uint32_t I2C_TypeDef;
 
  \return               IPSR Register value
  */
-__attribute__( ( always_inline ))                 static inline uint32_t __get_IPSR( void )
+__attribute__( ( always_inline ))                  static inline uint32_t __get_IPSR( void )
 {
     uint32_t result;
 
@@ -149,6 +149,9 @@ __attribute__( ( always_inline ))                 static inline uint32_t __get_I
 void custom_strcpy( unsigned char *dst, size_t dstSize, const unsigned char *src );
 
 void custom_strcat( unsigned char *dst, size_t dstSize, const unsigned char *src );
+
+void strcatPad( uint8_t *dst, size_t dstSize, const unsigned char *src, char padChar,
+        uint8_t srcPadSize );
 
 void num16sToStr( unsigned char *dst, size_t dstSize, int16_t val );
 

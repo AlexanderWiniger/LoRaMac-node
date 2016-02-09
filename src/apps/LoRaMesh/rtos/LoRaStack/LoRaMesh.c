@@ -15,7 +15,7 @@
 #include "LoRaMacCrypto.h"
 #include "LoRaMesh.h"
 
-#define LOG_LEVEL_TRACE
+#define LOG_LEVEL_DEBUG
 #include "debug.h"
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
@@ -369,9 +369,26 @@ uint8_t LoRaMesh_RegisterTransmission( uint16_t firstSlot, uint32_t interval,
     if ( (result = ScheduleEvent(evtHandler, evtType, firstSlot, (TimerTime_t) interval,
             (TimerTime_t) duration)) != ERR_OK ) {
         LOG_ERROR("Unable to schedule events.");
+        return result;
     }
 
-    return result;
+    if ( evtType == EVENT_TYPE_UPLINK ) {
+        pLoRaDevice->upLinkSlot.UpLinkCounter = 0;
+        pLoRaDevice->upLinkSlot.DownLinkCounter = 0;
+        pLoRaDevice->upLinkSlot.DataRateIndex = LORAMAC_DEFAULT_DATARATE;
+        pLoRaDevice->upLinkSlot.TxPowerIndex = LORAMAC_DEFAULT_TX_POWER;
+#if defined(NODE_B)
+        pLoRaDevice->upLinkSlot.ChannelIndex = 1;
+#elif defined(NODE_C)
+        pLoRaDevice->upLinkSlot.ChannelIndex = 2;
+#elif defined(NODE_D)
+        pLoRaDevice->upLinkSlot.ChannelIndex = 3;
+#elif defined(NODE_E)
+        pLoRaDevice->upLinkSlot.ChannelIndex = 4;
+#endif
+    }
+
+    return ERR_OK;
 }
 
 uint8_t LoRaMesh_RemoveTransmission( uint32_t interval, void (*callback)( void *param ) )
@@ -774,7 +791,7 @@ uint8_t LoRaMesh_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize
         uint8_t fPort, bool isConfirmed )
 {
     /* Add app information */
-#if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
+#if(LORAMESH_DEBUG_OUTPUT_PAYLOAD == 1)
     LOG_TRACE("%s - Size %d", __FUNCTION__, payloadSize);
     LOG_TRACE_BARE("\t");
     for ( uint8_t i = 0; i < payloadSize; i++ )
@@ -898,9 +915,12 @@ uint32_t LoRaMesh_GetNofMulticastGroups( void )
 
 void LoRaMesh_TimeSynch( time_t gpsUnixTime )
 {
-    if ( gpsUnixTime % ADVERTISING_INTERVAL_SEC == 0 ) {
+#if( LORAMESH_TEST_MODE_RX_ACTIVATED != 1 )
+    if ( pLoRaDevice->dbgFlags.Bits.continuousRxEnabled != 1
+            && gpsUnixTime % ADVERTISING_INTERVAL_SEC == 0 ) {
         AdvertisingEvent();
     }
+#endif
 }
 
 /*******************************************************************************
@@ -948,6 +968,16 @@ void LoRaMesh_TestCreateMulticastGroup( uint32_t grpAddr, uint32_t interval, uin
     if ( newGrp != NULL ) {
         MulticastGroupAdd(newGrp);
     }
+}
+
+void LoRaMesh_TestContinuousRx( uint32_t freq, uint8_t datarate, bool enabled )
+{
+    if ( !enabled ) {
+        pLoRaDevice->dbgFlags.Bits.continuousRxEnabled = 0;
+        return;
+    }
+    pLoRaDevice->dbgFlags.Bits.continuousRxEnabled = 1;
+    LoRaPhy_TestSetContinuousRx(freq, datarate);
 }
 
 void LoRaMesh_TestOpenReceptionWindow( uint8_t channel, uint8_t datarate )
@@ -1307,7 +1337,7 @@ static void AdvertisingEvent( void )
  */
 static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer )
 {
-    uint32_t nextEvtTime;
+    uint32_t nextEvtTime, currTime;
     uint16_t slot;
 
     TimerStop(&EventSchedulerTimer);
@@ -1315,8 +1345,11 @@ static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer )
 
     if ( pNextSchedulerEvent == NULL ) return;
 
-    slot = ((((TimerGetCurrentTime() - LastAdvertisingWindow) * portTICK_PERIOD_MS) * 1000)
+    currTime = TimerGetCurrentTime();
+    slot = ((((currTime - LastAdvertisingWindow) * portTICK_PERIOD_MS) * 1000)
             - ADVERTISING_RESERVED_TIME) / TIME_PER_SLOT;
+
+//    LOG_TRACE("Event scheduler at slot %u (%u ms)", slot, currTime);
 
     if ( pNextSchedulerEvent->next == NULL ) {
         /* Restart scheduler */
@@ -1335,13 +1368,13 @@ static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer )
             pNextSchedulerEvent->eventHandler->callback(pNextSchedulerEvent->eventHandler->param);
         }
     } else {
-        LOG_ERROR("Drift occurred. Skip event.");
+        LOG_ERROR("Drift occurred. Skip event. (Start %u / Current %u)",
+                pNextSchedulerEvent->next->startSlot, slot);
         /* Start scheduler timer */
         nextEvtTime = ((pNextSchedulerEvent->next->startSlot - slot) * TIME_PER_SLOT);
         /* Start scheduler timer */
         TimerSetValue(&EventSchedulerTimer, nextEvtTime);
         TimerStart(&EventSchedulerTimer);
-        return;
     }
 
     /* Move pointer forward */
@@ -1652,33 +1685,35 @@ static uint8_t PrintStatus( Shell_ConstStdIO_t *io )
 {
     byte buf[64];
 
-    Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
-    Shell_SendStr((unsigned char*) "\r\nLoRaMesh", io->stdOut);
+    Shell_SendStatusStr((unsigned char*) "LoRaMesh", (unsigned char*) "\r\n", io->stdOut);
     /* Address */
     custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
     strcatNum32Hex(buf, sizeof(buf), pLoRaDevice->devAddr);
-    Shell_SendStatusStr((unsigned char*) "\r\nAddress", buf, io->stdOut);
+    Shell_SendStatusStr((unsigned char*) "  Address", buf, io->stdOut);
+    Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
 
     /* Nwk Id */
     custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
     strcatNum32Hex(buf, sizeof(buf), pLoRaDevice->netId);
-    Shell_SendStatusStr((unsigned char*) "\r\nNet Id", buf, io->stdOut);
+    Shell_SendStatusStr((unsigned char*) "  Net Id", buf, io->stdOut);
+    Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
 
     /* Network joined */
-    Shell_SendStatusStr((unsigned char*) "\r\nNwk Joined?",
+    Shell_SendStatusStr((unsigned char*) "  Nwk Joined?",
             (unsigned char*) ((pLoRaDevice->ctrlFlags.Bits.nwkJoined == 1) ? "Yes" : "No"),
             io->stdOut);
+    Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
 
     /* Nof child nodes */
     custom_strcpy((unsigned char*) buf, sizeof(""), (unsigned char*) "");
     strcatNum32u(buf, sizeof(buf), LoRaMesh_GetNofChildNodes());
-    Shell_SendStatusStr((unsigned char*) "\r\nChild Nodes", buf, io->stdOut);
+    Shell_SendStatusStr((unsigned char*) "  Child Nodes", buf, io->stdOut);
+    Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
 
     /* Nof multicast groups */
     custom_strcpy((unsigned char*) buf, sizeof(""), (unsigned char*) "");
     strcatNum32u(buf, sizeof(buf), LoRaMesh_GetNofMulticastGroups());
-    Shell_SendStatusStr((unsigned char*) "\r\nMulticast Groups", buf, io->stdOut);
-
+    Shell_SendStatusStr((unsigned char*) "  Multicast Groups", buf, io->stdOut);
     Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
 
     return ERR_OK;

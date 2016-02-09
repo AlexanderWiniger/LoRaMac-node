@@ -37,16 +37,6 @@ int main( void )
     LOG_DEBUG("Mcu initialized.");
     BoardInitPeriph();
     LOG_DEBUG("Peripherals initialized.");
-#if(LORAMESH_TEST_APP_ACTIVATED == 1)
-    if ( xTaskCreate(LedTask, "Led", configMINIMAL_STACK_SIZE, (void*) NULL, tskIDLE_PRIORITY,
-                    (xTaskHandle*) NULL) != pdPASS ) {
-        /*lint -e527 */
-        for (;; ) {
-        }; /* error! probably out of memory */
-        /*lint +e527 */
-    }
-#endif
-
 #if defined( USE_SHELL )
     Shell_AppInit ();
 #endif /* USE_SHELL */
@@ -71,7 +61,16 @@ int main( void )
  ******************************************************************************/
 void vApplicationIdleHook( void )
 {
-    if ( (heartBeatCntr++ % 100000) == 0 ) {
+    uint32_t rollOverValue;
+    uint8_t appState = LoRaMesh_AppStatus();
+
+    if ( appState < ACTIVE ) {
+        rollOverValue = 100000;
+    } else {
+        rollOverValue = 500000;
+    }
+
+    if ( (heartBeatCntr++ % rollOverValue) == 0 ) {
         if ( heartBeatLedOn )
             GpioWrite(&Led1, 1);
         else

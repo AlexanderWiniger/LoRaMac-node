@@ -31,8 +31,8 @@ void LoRaFrm_Init( void )
 
 }
 
-uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr,
-        LoRaFrm_Dir_t fDir, uint32_t fCnt )
+uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr, LoRaFrm_Dir_t fDir,
+        uint32_t fCnt )
 {
     uint8_t fPayloadSize = 0, fBuffer[LORAFRM_BUFFER_SIZE], *nwkSKey, *appSKey;
     MulticastGroupInfo_t *multicastGrp;
@@ -48,9 +48,8 @@ uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr,
         pLoRaDevice->ctrlFlags.Bits.ackRequested = 1;
     }
 
-    fPayloadSize = LORAPHY_BUF_SIZE(packet->phyData) - LORAFRM_HEADER_SIZE_MIN
-            - LORAFRM_PORT_SIZE - LORAMAC_HEADER_SIZE - LORAMAC_MIC_SIZE
-            - fCtrl.Bits.FOptsLen;
+    fPayloadSize = LORAPHY_BUF_SIZE(packet->phyData) - LORAFRM_HEADER_SIZE_MIN - LORAFRM_PORT_SIZE
+            - LORAMAC_HEADER_SIZE - LORAMAC_MIC_SIZE - fCtrl.Bits.FOptsLen;
 
     /* Evaluate what kind of message it is */
     if ( pLoRaDevice->devAddr == devAddr ) {
@@ -68,15 +67,15 @@ uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr,
     /* Down link link from parent node or network server received */
     if ( fPort == 0 && !isMulticast ) {
         /* Decrypt with encrypt function */
-        LoRaMacPayloadEncrypt(LORAFRM_BUF_PAYLOAD_START_WPORT(packet->phyData),
-                fPayloadSize, nwkSKey, devAddr, fDir, fCnt, fBuffer);
+        LoRaMacPayloadEncrypt(LORAFRM_BUF_PAYLOAD_START_WPORT(packet->phyData), fPayloadSize,
+                nwkSKey, devAddr, fDir, fCnt, fBuffer);
 
         // Decode frame payload MAC commands
         LoRaMac_ProcessCommands(fBuffer, 0, fPayloadSize);
     } else {
         /* Decrypt with encrypt function */
-        LoRaMacPayloadEncrypt(LORAFRM_BUF_PAYLOAD_START_WPORT(packet->phyData),
-                fPayloadSize, appSKey, devAddr, fDir, fCnt, fBuffer);
+        LoRaMacPayloadEncrypt(LORAFRM_BUF_PAYLOAD_START_WPORT(packet->phyData), fPayloadSize,
+                appSKey, devAddr, fDir, fCnt, fBuffer);
     }
 
     // Decode frame options MAC commands
@@ -84,7 +83,7 @@ uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr,
         LoRaMac_ProcessCommands(fBuffer, LORAFRM_HEADER_SIZE_MIN + LORAMAC_HEADER_SIZE,
                 fPayloadSize);
 
-#if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
+#if(LORAMESH_DEBUG_OUTPUT_PAYLOAD == 1)
     LOG_TRACE("%s - Size %d", __FUNCTION__, fPayloadSize);
     LOG_TRACE_BARE("\t");
     for ( uint8_t i = 0; i < fPayloadSize; i++ )
@@ -95,8 +94,8 @@ uint8_t LoRaFrm_OnPacketRx( LoRaPhy_PacketDesc *packet, uint32_t devAddr,
     return LoRaMesh_OnPacketRx((uint8_t*) &fBuffer, fPayloadSize, devAddr, fPort); /* Pass message up the stack */
 }
 
-uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
-        uint32_t devAddr, uint8_t fPort, bool isConfirmed )
+uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize, uint32_t devAddr,
+        uint8_t fPort, bool isConfirmed )
 {
     uint8_t pktHdrSize = 0, fBuffer[LORAFRM_BUFFER_SIZE], *nwkSKey, *appSKey;
     MulticastGroupInfo_t *multicastGrp;
@@ -112,16 +111,13 @@ uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
 
     /* Evaluate what kind of message it is */
     if ( pLoRaDevice->devAddr == devAddr ) {
-        msgType =
-                (isConfirmed ? MSG_TYPE_DATA_CONFIRMED_UP : MSG_TYPE_DATA_UNCONFIRMED_UP);
+        msgType = (isConfirmed ? MSG_TYPE_DATA_CONFIRMED_UP : MSG_TYPE_DATA_UNCONFIRMED_UP);
         fDir = UP_LINK;
         nwkSKey = pLoRaDevice->upLinkSlot.NwkSKey;
         appSKey = pLoRaDevice->upLinkSlot.AppSKey;
         fCnt = pLoRaDevice->upLinkSlot.UpLinkCounter;
     } else if ( (childNode = LoRaMesh_FindChildNode(devAddr)) != NULL ) {
-        msgType = (
-                isConfirmed ?
-                        MSG_TYPE_DATA_CONFIRMED_DOWN : MSG_TYPE_DATA_UNCONFIRMED_DOWN);
+        msgType = (isConfirmed ? MSG_TYPE_DATA_CONFIRMED_DOWN : MSG_TYPE_DATA_UNCONFIRMED_DOWN);
         fDir = DOWN_LINK;
         nwkSKey = childNode->Connection.NwkSKey;
         appSKey = childNode->Connection.AppSKey;
@@ -206,15 +202,15 @@ uint8_t LoRaFrm_PutPayload( uint8_t* buf, uint16_t bufSize, uint8_t payloadSize,
 
     payloadSize += pktHdrSize;
 
-#if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
+#if(LORAMESH_DEBUG_OUTPUT_PAYLOAD == 1)
     LOG_TRACE("%s - Size %d", __FUNCTION__, payloadSize);
     LOG_TRACE_BARE("\t");
     for ( uint8_t i = 0; i < (payloadSize + 3); i++ )
     LOG_TRACE_BARE("0x%02x ", fBuffer[i]);
     LOG_TRACE_BARE("\r\n");
 #endif
-    return LoRaMac_PutPayload(fBuffer, sizeof(fBuffer), payloadSize, msgType, devAddr,
-            fCnt, nwkSKey, isMulticast);
+    return LoRaMac_PutPayload(fBuffer, sizeof(fBuffer), payloadSize, msgType, devAddr, fCnt,
+            nwkSKey, isMulticast);
 }
 
 /*******************************************************************************

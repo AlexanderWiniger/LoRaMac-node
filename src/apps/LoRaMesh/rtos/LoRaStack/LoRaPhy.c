@@ -290,7 +290,7 @@ uint8_t LoRaPhy_PutPayload( uint8_t *buf, size_t bufSize, size_t payloadSize, ui
 
 uint8_t LoRaPhy_OnPacketRx( LoRaPhy_PacketDesc *packet )
 {
-#if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
+#if(LORAMESH_DEBUG_OUTPUT_PAYLOAD == 1)
     LOG_TRACE("%s - Size %d", __FUNCTION__, LORAPHY_BUF_SIZE(packet->phyData));
     LOG_TRACE_BARE("\t");
     for ( uint8_t i = 0; i < (LORAPHY_BUF_SIZE(packet->phyData) + 2); i++ )
@@ -461,17 +461,47 @@ uint8_t LoRaPhy_TestSetContinuousTx( void )
     return ERR_OK;
 }
 
-uint8_t LoRaPhy_TestSetContinuousRx( void )
+uint8_t LoRaPhy_TestSetContinuousRx( uint32_t freq, uint8_t dr )
 {
-    Radio.SetRxConfig(MODEM_LORA, 1, 7, 1, 0, 8, 5, false, 0, true, 0, 0, false, true);
-    // Continuous Rx
-    Radio.Rx(0);
+    uint32_t bandwidth = 0;     // 0: 125 kHz
+    uint16_t symbTimeout = 5;     // DR_2, DR_1, DR_0
+
+    if ( dr >= DR_3 ) {   // DR_6, DR_5, DR_4, DR_3
+        symbTimeout = 8;
+    }
+    if ( dr == DR_6 ) {   // LoRa 250 kHz
+        bandwidth = 1;
+    }
+
+    OpenReceptionWindow(freq, dr, bandwidth, symbTimeout, true);
     return ERR_OK;
 }
 
 uint8_t LoRaPhy_QueueRxMessage( uint8_t *payload, size_t payloadSize, bool toBack, uint8_t flags )
 {
     return QueuePut(payload, LORAPHY_BUFFER_SIZE, payloadSize, false, false, toBack, flags);
+}
+
+uint8_t LoRaPhy_TestSendFrame( uint8_t *buf, size_t bufSize )
+{
+    Radio.SetChannel(Channels[pLoRaDevice->currChannelIndex].Frequency);
+    Radio.SetMaxPayloadLength(MODEM_LORA, bufSize);
+
+    if ( pLoRaDevice->currDataRateIndex == DR_7 ) {   // High Speed FSK channel
+        Radio.SetTxConfig(MODEM_FSK, TxPowers[pLoRaDevice->currTxPowerIndex], 25e3, 0,
+                Datarates[pLoRaDevice->currDataRateIndex] * 1e3, 0, 5, false, true, 0, 0, false,
+                3e6);
+    } else if ( pLoRaDevice->currDataRateIndex == DR_6 ) {   // High speed LoRa channel
+        Radio.SetTxConfig(MODEM_LORA, TxPowers[pLoRaDevice->currTxPowerIndex], 0, 1,
+                Datarates[pLoRaDevice->currDataRateIndex], 1, 8, false, true, 0, 0, false, 3e6);
+    } else {   // Normal LoRa channel
+        Radio.SetTxConfig(MODEM_LORA, TxPowers[pLoRaDevice->currTxPowerIndex], 0, 0,
+                Datarates[pLoRaDevice->currDataRateIndex], 1, 8, false, true, 0, 0, false, 3e6);
+    }
+
+    // Send now
+    Radio.Send(buf, bufSize);
+    return ERR_OK;
 }
 
 uint8_t LoRaPhy_TestOpenRxWindow( uint8_t ch, uint8_t datarate )
@@ -565,7 +595,7 @@ static uint8_t GetTxMsg( uint8_t *buf, size_t bufSize )
     }
     if ( xQueueReceive(msgTxQueue, buf, 0) == pdPASS ) {
         /* received message from queue */
-#if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
+#if(LORAMESH_DEBUG_OUTPUT_PAYLOAD == 1)
         LOG_TRACE("LoRaPhy %s - Size %d", __FUNCTION__, LORAPHY_BUF_SIZE(buf));
         LOG_TRACE_BARE("\t");
         for ( uint8_t i = 0; i < (LORAPHY_BUF_SIZE(buf) + 2); i++ )
@@ -627,9 +657,9 @@ static uint8_t QueuePut( uint8_t *buf, size_t bufSize, size_t payloadSize, bool 
     }
 
     LORAPHY_BUF_FLAGS(buf) = flags;
-    LORAPHY_BUF_SIZE(buf) = payloadSize;
+    LORAPHY_BUF_SIZE(buf) = (uint8_t) payloadSize;
 
-#if(LORA_DEBUG_OUTPUT_PAYLOAD == 1)
+#if(LORAMESH_DEBUG_OUTPUT_PAYLOAD == 1)
     LOG_TRACE("LoRaPhy %s - Size %d", __FUNCTION__, payloadSize);
     LOG_TRACE_BARE("\t");
     for ( uint8_t i = 0; i < (payloadSize + 2); i++ )
@@ -736,6 +766,9 @@ static uint8_t CheckTx( void )
                     (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS), channel.Frequency,
                     pLoRaDevice->currDataRateIndex);
             Radio.Send(LORAPHY_BUF_PAYLOAD_START(TxDataBuffer), LORAPHY_BUF_SIZE(TxDataBuffer));
+#if !defined(NODE_A)
+            LOG_DEBUG("Send data on channel with frequency %u Hz", channel.Frequency);
+#endif
         }
 
         if ( (flags & LORAPHY_PACKET_FLAGS_FRM_MASK) == LORAPHY_PACKET_FLAGS_FRM_ADVERTISING ) {
@@ -766,6 +799,7 @@ static uint8_t CheckTx( void )
 static void OpenReceptionWindow( uint32_t freq, int8_t datarate, uint32_t bandwidth,
         uint16_t timeout, bool rxContinuous )
 {
+
     uint8_t downlinkDatarate = Datarates[datarate];
     RadioModems_t modem;
 
@@ -778,7 +812,7 @@ static void OpenReceptionWindow( uint32_t freq, int8_t datarate, uint32_t bandwi
         } else {
             modem = MODEM_LORA;
             Radio.SetRxConfig(MODEM_LORA, bandwidth, downlinkDatarate, 1, 0, 8, timeout, false, 0,
-                    false, 0, 0, true, rxContinuous);
+                    true, 0, 0, false, rxContinuous);
         }
 
         Radio.SetMaxPayloadLength(modem, MaxPayloadByDatarate[datarate]);
@@ -788,6 +822,9 @@ static void OpenReceptionWindow( uint32_t freq, int8_t datarate, uint32_t bandwi
         } else {
             Radio.Rx(0);   // Continuous mode
         }
+#if defined(NODE_A)
+        LOG_DEBUG("Open reception window on frequency %u Hz", freq);
+#endif
     }
 }
 
@@ -900,11 +937,15 @@ static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t
 {
     LoRaPhy_PacketDesc packet;
 
+    LOG_DEBUG("Received %u bytes.", size);
+
     packet.flags = LORAPHY_PACKET_FLAGS_NONE;
     packet.phyData = payload;
+    packet.rxtx = LORAPHY_BUF_PAYLOAD_START(packet.phyData);
     packet.phySize = LORAPHY_BUFFER_SIZE;
 
-    if ( QueuePut(packet.rxtx, packet.phySize, size, true, false, true, packet.flags) == ERR_OK ) {
+    if ( QueuePut(packet.phyData, packet.phySize, size, true, false, true, packet.flags)
+            == ERR_OK ) {
         phyFlags.Bits.RxDone = 1;
     }
 }

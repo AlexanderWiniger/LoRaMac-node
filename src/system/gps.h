@@ -147,6 +147,16 @@ uint8_t GpsParseGpsData( char *rxBuffer, size_t rxBufferSize );
 uint16_t GpsGetLatestGpsAltitude( void );
 
 /*!
+ * \brief Gets the latest Vector track (ground speed and track) if available
+ *
+ * \param [OUT] groundSpeed Ground speed
+ * \param [OUT] track Direction
+ *
+ * \retval status [SUCCESS, FAIL]
+ */
+uint8_t GpsGetLatestTrack( uint16_t *groundSpeed, uint16_t *track );
+
+/*!
  * \brief Format GPS data into numeric and binary formats
  */
 void GpsFormatGpsData( void );
