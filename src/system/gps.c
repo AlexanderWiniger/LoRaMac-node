@@ -48,8 +48,9 @@ static double Longitude = 0;
 
 static int32_t LatitudeBinary = 0;
 static int32_t LongitudeBinary = 0;
-
-static uint16_t Altitude = 0xFFFF;
+static uint16_t GroundSpeedBinary = 0;
+static uint16_t TrackBinary = 0;
+static uint16_t AltitudeBinary = 0xFFFF;
 
 static uint32_t PpsCnt = 0;
 
@@ -159,10 +160,63 @@ bool GpsValidateDateTime( struct tm *dt )
 
 void GpsConvertPositionIntoBinary( void )
 {
+#if 1
+    int32_t valueTmp1, valueTmp2;
+    uint16_t i;
+
+    valueTmp1 = (NmeaGpsData.NmeaLatitude[0] * 10 + NmeaGpsData.NmeaLatitude[1]) * 10000000;
+    valueTmp1 += (NmeaGpsData.NmeaLatitude[2] * 10 + NmeaGpsData.NmeaLatitude[3]) * 100000;
+    valueTmp1 += (NmeaGpsData.NmeaLatitude[5] * 1000 + NmeaGpsData.NmeaLatitude[6] * 100
+            + NmeaGpsData.NmeaLatitude[7] * 10 + NmeaGpsData.NmeaLatitude[8]);
+
+    LatitudeBinary = valueTmp1;
+
+    if ( NmeaGpsData.NmeaLatitudePole[0] == 'S' ) {
+        LatitudeBinary *= -1;
+    }
+
+    valueTmp2 = (NmeaGpsData.NmeaLongitude[0] * 100 + NmeaGpsData.NmeaLongitude[1] * 10
+            + NmeaGpsData.NmeaLongitude[2]) * 1000000;
+    valueTmp2 += (NmeaGpsData.NmeaLongitude[3] * 10 + NmeaGpsData.NmeaLongitude[4]) * 10000;
+    valueTmp2 += (NmeaGpsData.NmeaLongitude[6] * 1000 + NmeaGpsData.NmeaLongitude[7] * 100
+            + NmeaGpsData.NmeaLongitude[8] * 10 + NmeaGpsData.NmeaLongitude[9]);
+
+    LongitudeBinary = valueTmp2;
+
+    if ( NmeaGpsData.NmeaLongitudePole[0] == 'W' ) {
+        LongitudeBinary *= -1;
+    }
+
+    // Convert the altitude from ASCII to uint8_t values
+    for ( i = 0; i < 8; i++ ) {
+        NmeaGpsData.NmeaAltitude[i] = NmeaGpsData.NmeaAltitude[i] & 0xF;
+    }
+
+    AltitudeBinary = (NmeaGpsData.NmeaAltitude[0] * 1000) + (NmeaGpsData.NmeaAltitude[1] * 100)
+            + (NmeaGpsData.NmeaAltitude[2] * 10) + (NmeaGpsData.NmeaAltitude[4]);
+
+    // Convert the ground speed from ASCII to uint8_t values
+    for ( i = 0; i < 8; i++ ) {
+        NmeaGpsData.NmeaSpeed[i] = NmeaGpsData.NmeaSpeed[i] & 0xF;
+    }
+
+    GroundSpeedBinary = (NmeaGpsData.NmeaSpeed[0] * 100) + (NmeaGpsData.NmeaSpeed[2] * 10)
+            + (NmeaGpsData.NmeaSpeed[3]);
+
+    // Convert the detection angle from ASCII to uint8_t values
+    for ( i = 0; i < 8; i++ ) {
+        NmeaGpsData.NmeaDetectionAngle[i] = NmeaGpsData.NmeaDetectionAngle[i] & 0xF;
+    }
+
+    TrackBinary = (NmeaGpsData.NmeaDetectionAngle[0] * 10000)
+            + (NmeaGpsData.NmeaDetectionAngle[1] * 1000) + (NmeaGpsData.NmeaDetectionAngle[2] * 100)
+            + (NmeaGpsData.NmeaDetectionAngle[4] * 10) + (NmeaGpsData.NmeaDetectionAngle[5]);
+
+#else
     long double temp;
 
     if ( Latitude >= 0 )   // North
-            {
+    {
         temp = Latitude * MaxNorthPosition;
         LatitudeBinary = temp / 90;
     } else                // South
@@ -172,7 +226,7 @@ void GpsConvertPositionIntoBinary( void )
     }
 
     if ( Longitude >= 0 )   // East
-            {
+    {
         temp = Longitude * MaxEastPosition;
         LongitudeBinary = temp / 180;
     } else                // West
@@ -180,6 +234,7 @@ void GpsConvertPositionIntoBinary( void )
         temp = Longitude * MaxWestPosition;
         LongitudeBinary = temp / 180;
     }
+#endif
 }
 
 void GpsConvertUnixTimeFromStringToNumerical( void )
@@ -203,11 +258,11 @@ void GpsConvertPositionFromStringToNumerical( void )
     double valueTmp3;
     double valueTmp4;
 
-// Convert the latitude from ASCII to uint8_t values
+    // Convert the latitude from ASCII to uint8_t values
     for ( i = 0; i < 10; i++ ) {
         NmeaGpsData.NmeaLatitude[i] = NmeaGpsData.NmeaLatitude[i] & 0xF;
     }
-// Convert latitude from degree/minute/second (DMS) format into decimal
+    // Convert latitude from degree/minute/second (DMS) format into decimal
     valueTmp1 = (double) NmeaGpsData.NmeaLatitude[0] * 10.0 + (double) NmeaGpsData.NmeaLatitude[1];
     valueTmp2 = (double) NmeaGpsData.NmeaLatitude[2] * 10.0 + (double) NmeaGpsData.NmeaLatitude[3];
     valueTmp3 = (double) NmeaGpsData.NmeaLatitude[5] * 1000.0
@@ -220,11 +275,11 @@ void GpsConvertPositionFromStringToNumerical( void )
         Latitude *= -1;
     }
 
-// Convert the longitude from ASCII to uint8_t values
+    // Convert the longitude from ASCII to uint8_t values
     for ( i = 0; i < 10; i++ ) {
         NmeaGpsData.NmeaLongitude[i] = NmeaGpsData.NmeaLongitude[i] & 0xF;
     }
-// Convert longitude from degree/minute/second (DMS) format into decimal
+    // Convert longitude from degree/minute/second (DMS) format into decimal
     valueTmp1 = (double) NmeaGpsData.NmeaLongitude[0] * 100.0
             + (double) NmeaGpsData.NmeaLongitude[1] * 10.0 + (double) NmeaGpsData.NmeaLongitude[2];
     valueTmp2 = (double) NmeaGpsData.NmeaLongitude[3] * 10.0
@@ -283,15 +338,17 @@ uint8_t GpsGetDistanceToLatestGpsPositionBinary( int32_t latiBin, int32_t longiB
 
 uint16_t GpsGetLatestGpsAltitude( void )
 {
+    uint16_t altBin;
+
     __disable_irq();
     if ( GpsHasFix() == true ) {
-        Altitude = atoi(NmeaGpsData.NmeaAltitude);
+        altBin = AltitudeBinary;
     } else {
-        Altitude = 0xFFFF;
+        altBin = 0xFFFF;
     }
     __enable_irq();
 
-    return Altitude;
+    return altBin;
 }
 
 uint8_t GpsGetLatestTrack( uint16_t *groundSpeed, uint16_t *track )
@@ -300,8 +357,8 @@ uint8_t GpsGetLatestTrack( uint16_t *groundSpeed, uint16_t *track )
 
     __disable_irq();
     if ( GpsHasFix() == true ) {
-        *groundSpeed = atoi(NmeaGpsData.NmeaSpeed);
-        *track = atoi(NmeaGpsData.NmeaDetectionAngle);
+        *groundSpeed = GroundSpeedBinary;
+        *track = TrackBinary;
         status = SUCCESS;
     }
     __enable_irq();
@@ -642,7 +699,7 @@ void GpsFormatGpsData( void )
 
 void GpsResetPosition( void )
 {
-    Altitude = 0xFFFF;
+    AltitudeBinary = 0xFFFF;
     Latitude = 0;
     Longitude = 0;
     LatitudeBinary = 0;

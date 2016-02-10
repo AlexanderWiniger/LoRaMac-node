@@ -90,6 +90,11 @@ void GpsConvertPositionIntoBinary( void );
  */
 void GpsConvertPositionFromStringToNumerical( void );
 
+/*!
+ * \brief Get current unix time
+ *
+ * \retval unixTime Current unix time
+ */
 time_t GpsGetCurrentUnixTime( void );
 
 /*!

@@ -158,16 +158,10 @@ uint8_t LoRaMac_OnPacketRx( LoRaPhy_PacketDesc *packet )
             rxAddr |= ((uint32_t) payload[LORAFRM_BUF_IDX_DEVADDR + 2] << 16);
             rxAddr |= ((uint32_t) payload[LORAFRM_BUF_IDX_DEVADDR + 3] << 24);
 
-            if ( (packet->flags & LORAPHY_PACKET_FLAGS_FRM_MASK)
-                    == LORAPHY_PACKET_FLAGS_FRM_MULTICAST ) {
-                curMulticastGrp = LoRaMesh_FindMulticastGroup(rxAddr);
-                if ( curMulticastGrp != NULL ) {
-                    micKey = curMulticastGrp->Connection.NwkSKey;
-                    frameCntr = curMulticastGrp->Connection.DownLinkCounter;
-                    devAddr = curMulticastGrp->Connection.Address;
-                } else {
-                    return ERR_FAILED;
-                }
+            if ( (curMulticastGrp = LoRaMesh_FindMulticastGroup(rxAddr)) != NULL ) {
+                micKey = curMulticastGrp->Connection.NwkSKey;
+                frameCntr = curMulticastGrp->Connection.DownLinkCounter;
+                devAddr = curMulticastGrp->Connection.Address;
             } else {
                 micKey = pLoRaDevice->upLinkSlot.NwkSKey;
                 frameCntr = pLoRaDevice->upLinkSlot.DownLinkCounter;

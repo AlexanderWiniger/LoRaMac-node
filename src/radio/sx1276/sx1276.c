@@ -1032,14 +1032,16 @@ void SX1276SetRx( uint32_t timeout )
         } else {
             SX1276SetOpMode (RFLR_OPMODE_RECEIVER_SINGLE);
         }
+        PTB_BASE_PTR->PSOR |= (0x1 << 2);   // Set PB_2
     }
-    PTB_BASE_PTR->PSOR |= (0x1 << 2);   // Set PB_2
     LOG_TRACE("Leaving %s...", __FUNCTION__);
 }
 
 void SX1276SetTx( uint32_t timeout )
 {
     LOG_TRACE("Entering %s...", __FUNCTION__);
+
+    TimerSetValue(&TxTimeoutTimer, timeout);
 
     switch ( SX1276.Settings.Modem ) {
         case MODEM_FSK:
@@ -1103,7 +1105,6 @@ void SX1276SetTx( uint32_t timeout )
     }
 
     SX1276.Settings.State = RF_TX_RUNNING;
-    TimerSetValue(&TxTimeoutTimer, timeout);
     TimerStart(&TxTimeoutTimer);
     SX1276SetOpMode (RF_OPMODE_TRANSMITTER);
     PTB_BASE_PTR->PSOR |= (0x1 << 3);   // Set PB_3
@@ -1357,10 +1358,10 @@ void SX1276OnTimeoutIrq( void )
                     TimerStop(&RxTimeoutSyncWord);
                 }
             }
+            PTB_BASE_PTR->PCOR |= (0x1 << 2);   // Clear PB_2
             if ( (RadioEvents != NULL) && (RadioEvents->RxTimeout != NULL) ) {
                 RadioEvents->RxTimeout();
             }
-            PTB_BASE_PTR->PCOR |= (0x1 << 2);   // Clear PB_2
             break;
         case RF_TX_RUNNING:
             SX1276.Settings.State = RF_IDLE;

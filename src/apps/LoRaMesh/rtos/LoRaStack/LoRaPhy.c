@@ -510,7 +510,7 @@ uint8_t LoRaPhy_TestOpenRxWindow( uint8_t ch, uint8_t datarate )
     uint16_t symbTimeout = 5;   // DR_2, DR_1, DR_0
 
     if ( datarate >= DR_3 ) {   // DR_6, DR_5, DR_4, DR_3
-        symbTimeout = 8;
+        symbTimeout = 16;
     }
     if ( datarate == DR_6 ) {   // LoRa 250 kHz
         bandwidth = 1;
@@ -533,17 +533,21 @@ static void HandleStateMachine()
     for ( ;; ) {
         switch ( phyStatus ) {
             case PHY_INITIAL_STATE:
+                LOG_TRACE("Radio reset.");
                 Radio.Reset();
                 /* Random seed initialization */
                 srand1(Radio.Random());
-                if ( pLoRaDevice->devClass != CLASS_C )
+                if ( pLoRaDevice->devClass != CLASS_C ) {
+                    LOG_TRACE("Radio idle.");
                     phyStatus = PHY_IDLE;
-                else
+                } else {
+                    LOG_TRACE("Radio receiving.");
                     phyStatus = PHY_RECEIVING;
+                }
                 break;
             case PHY_POWER_DOWN:
-//                LOG_TRACE("Radio sleep.");
                 Radio.Sleep();
+                LOG_TRACE("Radio idle.");
                 phyStatus = PHY_IDLE;
                 return;
             case PHY_IDLE:
@@ -551,6 +555,7 @@ static void HandleStateMachine()
                 result = CheckTx();
                 if ( result == ERR_OK ) { /* there was data and it has been sent */
                     phyStatus = PHY_WAIT_FOR_TXDONE;
+                    LOG_TRACE("Radio wait tx done.");
                     break; /* process switch again */
                 }
                 return;
@@ -558,23 +563,34 @@ static void HandleStateMachine()
             case PHY_WAIT_FOR_TXDONE:
                 if ( phyFlags.Bits.TxDone == 1 ) {
                     phyFlags.Bits.TxDone = 0;
-                    if ( pLoRaDevice->devClass != CLASS_C )
+                    if ( pLoRaDevice->devClass != CLASS_C ) {
+                        LOG_TRACE("Tx done. Radio power down.");
                         phyStatus = PHY_POWER_DOWN;
-                    else
+                    } else {
+                        LOG_TRACE("Radio receiving.");
                         phyStatus = PHY_RECEIVING;
+                    }
                     break;
                 }
                 return;
             case PHY_RECEIVING:
+                if ( phyFlags.Bits.RxDone == 1 ) {
+                    phyFlags.Bits.RxDone = 0;
+                    LOG_TRACE("Rx done. Radio power down.");
+                    phyStatus = PHY_POWER_DOWN;
+                    break;
+                }
                 /* Reception window open */
                 return;
             case PHY_ADVERTISING:
                 return;
             case PHY_TIMEOUT:
                 phyStatus = PHY_POWER_DOWN;
-//                LOG_TRACE("Radio timeout.");
+                LOG_TRACE("Radio timeout. Radio power down.");
                 break;
             case PHY_ERROR:
+                phyStatus = PHY_POWER_DOWN;
+                LOG_TRACE("Radio error. Radio power down.");
                 break;
             default:
                 return;
@@ -822,9 +838,8 @@ static void OpenReceptionWindow( uint32_t freq, int8_t datarate, uint32_t bandwi
         } else {
             Radio.Rx(0);   // Continuous mode
         }
-#if defined(NODE_A)
-        LOG_DEBUG("Open reception window on frequency %u Hz", freq);
-#endif
+        phyStatus = PHY_RECEIVING;
+        LOG_TRACE("Open reception window on frequency %u Hz", freq);
     }
 }
 
@@ -947,6 +962,8 @@ static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t
     if ( QueuePut(packet.phyData, packet.phySize, size, true, false, true, packet.flags)
             == ERR_OK ) {
         phyFlags.Bits.RxDone = 1;
+    } else {
+        LOG_ERROR("Failed to put received frame to queue.");
     }
 }
 
@@ -965,17 +982,14 @@ static void OnCadDone( bool channelActivityDetected )
 static void OnRadioTxTimeout( void )
 {
     LOG_ERROR("Tx timeout occurred.");
-    if ( pLoRaDevice->devClass != CLASS_C ) {
-        Radio.Sleep();
-    } else {
-//        OnRxWindow2TimerEvent();
-    }
 
-    phyFlags.Bits.TxDone = 1;
+    phyStatus = PHY_TIMEOUT;
+    phyFlags.Bits.TxDone = 0;
 }
 
 static void OnRadioRxTimeout( void )
 {
+#if defined(LOG_LEVEL_TRACE)
     if ( phyFlags.Bits.RxSlot == 1 ) {
         LOG_TRACE("Receive window 1 timeout occurred at %u ms.",
                 (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS));
@@ -985,7 +999,10 @@ static void OnRadioRxTimeout( void )
     } else if ( phyFlags.Bits.RxSlot == 3 ) {
         LOG_TRACE("Time synchronized reception window timeout occurred.");
     }
+#endif
+
     phyStatus = PHY_TIMEOUT;
+    phyFlags.Bits.RxDone = 0;
 }
 
 static void OnRadioRxError( void )
@@ -1000,6 +1017,8 @@ static void OnRadioRxError( void )
     if ( phyFlags.Bits.RxSlot == 2 ) {
         phyFlags.Bits.TxDone = 1;
     }
+
+    phyStatus = PHY_ERROR;
 }
 
 static void OnRxWindow1TimerEvent( TimerHandle_t xTimer )

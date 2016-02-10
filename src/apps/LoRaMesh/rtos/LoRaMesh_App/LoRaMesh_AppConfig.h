@@ -96,7 +96,7 @@
 /*!
  * Current network ID
  */
-#define LORAWAN_NETWORK_ID                  ( uint32_t )0
+#define LORAWAN_NETWORK_ID                  ( uint32_t )0x1
 
 /*!
  * Device address on the network

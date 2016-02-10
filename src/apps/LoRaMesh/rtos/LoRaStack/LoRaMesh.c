@@ -1041,7 +1041,11 @@ static uint8_t ScheduleEvent( LoRaSchedulerEventHandler_t *evtHandler,
         } else {
             LoRaSchedulerEvent_t *iterEvt = pEventScheduler;
             while ( iterEvt != NULL ) {
-                if ( ((iterEvt->endSlot < evt->startSlot) && (iterEvt->next != NULL)
+                if ( iterEvt == pEventScheduler && evt->endSlot < iterEvt->startSlot ) {
+                    evt->next = iterEvt;
+                    pEventScheduler = evt;
+                    break;
+                } else if ( ((iterEvt->endSlot < evt->startSlot) && (iterEvt->next != NULL)
                         && (iterEvt->next->startSlot > evt->endSlot))
                         || ((iterEvt->next == NULL) && (iterEvt->endSlot < evt->startSlot)) ) {
                     evt->next = iterEvt->next;
@@ -1685,7 +1689,7 @@ static uint8_t PrintStatus( Shell_ConstStdIO_t *io )
 {
     byte buf[64];
 
-    Shell_SendStatusStr((unsigned char*) "LoRaMesh", (unsigned char*) "\r\n", io->stdOut);
+    Shell_SendStatusStr((unsigned char*) "lora", (unsigned char*) "\r\n", io->stdOut);
     /* Address */
     custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
     strcatNum32Hex(buf, sizeof(buf), pLoRaDevice->devAddr);
@@ -1713,7 +1717,7 @@ static uint8_t PrintStatus( Shell_ConstStdIO_t *io )
     /* Nof multicast groups */
     custom_strcpy((unsigned char*) buf, sizeof(""), (unsigned char*) "");
     strcatNum32u(buf, sizeof(buf), LoRaMesh_GetNofMulticastGroups());
-    Shell_SendStatusStr((unsigned char*) "  Multicast Groups", buf, io->stdOut);
+    Shell_SendStatusStr((unsigned char*) "  Mcast Grps", buf, io->stdOut);
     Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
 
     return ERR_OK;
@@ -1800,35 +1804,41 @@ static uint8_t PrintChildNodes( Shell_ConstStdIO_t *io )
 
     while ( childNode != NULL ) {
         Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
         /* Address */
         custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
         strcatNum32Hex(buf, sizeof(buf), childNode->Connection.Address);
-        Shell_SendStatusStr((unsigned char*) "\r\nAddress", buf, io->stdOut);
+        Shell_SendStatusStr((unsigned char*) "Address", buf, io->stdOut);
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
         /* Network session key */
         custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
         for ( j = 0; j < 16; j++ )
             strcatNum8Hex(buf, sizeof(buf), childNode->Connection.NwkSKey[j]);
-        Shell_SendStatusStr((unsigned char*) "\r\nNwkSKey", buf, io->stdOut);
+        Shell_SendStatusStr((unsigned char*) "  NwkSKey", buf, io->stdOut);
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
         /* Application session key */
         custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
         for ( j = 0; j < 16; j++ )
             strcatNum8Hex(buf, sizeof(buf), childNode->Connection.AppSKey[j]);
-        Shell_SendStatusStr((unsigned char*) "\r\nAppSKey", buf, io->stdOut);
+        Shell_SendStatusStr((unsigned char*) "  AppSKey", buf, io->stdOut);
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
         /* UpLink counter */
         custom_strcpy((unsigned char*) buf, sizeof(""), (unsigned char*) "");
         strcatNum32u(buf, sizeof(buf), childNode->Connection.UpLinkCounter);
-        Shell_SendStatusStr((unsigned char*) "\r\nUpLinkCounter", buf, io->stdOut);
-
-        Shell_SendStr((unsigned char*) "\r\n---- Uplink Slot Info ----", io->stdOut);
+        Shell_SendStatusStr((unsigned char*) "  UpLinkCounter", buf, io->stdOut);
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
+        /* UpLink slot infor */
+        Shell_SendStr((unsigned char*) "---- Uplink Slot Info ----", io->stdOut);
         /* UpLink frequency */
         custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
         strcatNum32u(buf, sizeof(buf),
                 LoRaPhy_GetChannelFrequency(childNode->Connection.ChannelIndex));
-        Shell_SendStatusStr((unsigned char*) "\r\nFrequency", buf, io->stdOut);
+        Shell_SendStatusStr((unsigned char*) "  Frequency", buf, io->stdOut);
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
         /* UpLink periodicity */
         custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
         strcatNum32u(buf, sizeof(buf), childNode->Periodicity);
-        Shell_SendStatusStr((unsigned char*) "\r\nPeriodicity", buf, io->stdOut);
+        Shell_SendStatusStr((unsigned char*) "  Periodicity", buf, io->stdOut);
         Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
 
         childNode = childNode->next;
@@ -1849,37 +1859,46 @@ static uint8_t PrintMulticastGroups( Shell_ConstStdIO_t *io )
 
     while ( multicastGrp != NULL ) {
         Shell_SendStr((unsigned char*) SHELL_DASH_LINE, io->stdOut);
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
         /* Address */
         custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
         strcatNum32Hex(buf, sizeof(buf), multicastGrp->Connection.Address);
-        Shell_SendStatusStr((unsigned char*) "\r\nAddress", buf, io->stdOut);
+        Shell_SendStatusStr((unsigned char*) "Address", buf, io->stdOut);
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
         /* Network session key */
         custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
         for ( j = 0; j < 16; j++ )
             strcatNum8Hex(buf, sizeof(buf), multicastGrp->Connection.NwkSKey[j]);
-        Shell_SendStatusStr((unsigned char*) "\r\nNwkSKey", buf, io->stdOut);
+        Shell_SendStatusStr((unsigned char*) "  NwkSKey", buf, io->stdOut);
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
         /* Application session key */
         custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
         for ( j = 0; j < 16; j++ )
             strcatNum8Hex(buf, sizeof(buf), multicastGrp->Connection.AppSKey[j]);
-        Shell_SendStatusStr((unsigned char*) "\r\nAppSKey", buf, io->stdOut);
-        /* UpLink counter */
+        Shell_SendStatusStr((unsigned char*) "  AppSKey", buf, io->stdOut);
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
+        /* DownLink counter */
         custom_strcpy((unsigned char*) buf, sizeof(""), (unsigned char*) "");
         strcatNum32u(buf, sizeof(buf), multicastGrp->Connection.DownLinkCounter);
-        Shell_SendStatusStr((unsigned char*) "\r\nDownLinkCounter", buf, io->stdOut);
-        Shell_SendStatusStr((unsigned char*) "\r\nIsOwner",
+        Shell_SendStatusStr((unsigned char*) "  DL Counter", buf, io->stdOut);
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
+        /* Is owner */
+        Shell_SendStatusStr((unsigned char*) "  Is Owner",
                 (unsigned char*) ((multicastGrp->isOwner) ? "true" : "false"), io->stdOut);
-
-        Shell_SendStr((unsigned char*) "\r\n---- Downlink Slot Info ----", io->stdOut);
-        /* UpLink frequency */
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
+        /* DownLink slot info */
+        Shell_SendStr((unsigned char*) "---- Downlink Slot Info ----", io->stdOut);
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
+        /* DownLink frequency */
         custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
         strcatNum32u(buf, sizeof(buf),
                 LoRaPhy_GetChannelFrequency(multicastGrp->Connection.ChannelIndex));
-        Shell_SendStatusStr((unsigned char*) "\r\nFrequency", buf, io->stdOut);
-        /* UpLink periodicity */
+        Shell_SendStatusStr((unsigned char*) "  Frequency", buf, io->stdOut);
+        Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
+        /* DownLink periodicity */
         custom_strcpy((unsigned char*) buf, sizeof("0x"), (unsigned char*) "0x");
         strcatNum32u(buf, sizeof(buf), multicastGrp->Periodicity);
-        Shell_SendStatusStr((unsigned char*) "\r\nPeriodicity", buf, io->stdOut);
+        Shell_SendStatusStr((unsigned char*) "  Periodicity", buf, io->stdOut);
         Shell_SendStr((unsigned char*) "\r\n", io->stdOut);
 
         multicastGrp = multicastGrp->next;
