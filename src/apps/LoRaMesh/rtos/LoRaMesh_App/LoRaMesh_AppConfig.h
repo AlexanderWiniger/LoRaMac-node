@@ -142,14 +142,9 @@
 #define LORAMESH_NOF_RETRIES                2
 
 /*!
- * LoRaWAN application port single up link
- */
-#define LORAMESH_APP_PORT_SINGLE            2
-
-/*!
  * LoRaWAN application port
  */
-#define LORAMESH_APP_PORT_MULTI             80
+#define LORAMESH_APP_PORT                   2
 
 /*!
  * User application data buffer size
@@ -159,7 +154,7 @@
 /*!
  * User application data buffer size
  */
-#define LORAMESH_APP_DATA_SIZE              26
+#define LORAMESH_APP_DATA_SIZE              27
 
 /*!
  * Number of user application data entries
