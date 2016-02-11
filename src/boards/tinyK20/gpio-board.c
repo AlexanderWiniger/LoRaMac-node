@@ -397,24 +397,12 @@ void PORTB_IRQHandler( void )
     PORTB_ISFR = ~0u;
 
     if ( (pendingInt & (1U << 1)) ) {
-#if 0
-        uint32_t drift, cvr;
-        /* SysTick synchronisation */
-        SYST_CSR &= ~SysTick_CSR_ENABLE_MASK; /* Stop SysTick */
-        cvr = SysTick_BASE_PTR->CVR;
-        if ( (drift = (cvr % 1000)) > 0 ) {
-            SYST_CVR = 0x00; /* Reset current value register */
-            LOG_TRACE("Reset SysTick counter - (%u/%u)", cvr, drift);
-        }
-        SYST_CSR |= SysTick_CSR_ENABLE_MASK; /* Re-enable SysTick */
-#elif 1
         SYST_CVR = 0x00; /* Reset current value register */
-#endif
     }
 
-    if ( pendingInt & 0x1 )
+    if ( pendingInt & 0x1 ) {
         GpioBIrq[0]();
-    else if ( (pendingInt & (1U << 1)) >> 1 ) {
+    } else if ( (pendingInt & (1U << 1)) >> 1 ) {
         GpioBIrq[1]();
     } else if ( (pendingInt & (1U << 2)) >> 2 ) {
         GpioBIrq[2]();

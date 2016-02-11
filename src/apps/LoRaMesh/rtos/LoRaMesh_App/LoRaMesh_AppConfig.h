@@ -18,20 +18,12 @@
 /*!
  * Activates the LoRa rx test mode
  */
-#if defined(NODE_A)
 #define LORAMESH_TEST_MODE_RX_ACTIVATED     0
-#else
-#define LORAMESH_TEST_MODE_RX_ACTIVATED     0
-#endif
 
 /*!
  * Activates the LoRa tx test mode
  */
-#if !defined(NODE_A)
 #define LORAMESH_TEST_MODE_TX_ACTIVATED     0
-#else
-#define LORAMESH_TEST_MODE_TX_ACTIVATED     0
-#endif
 
 /*!
  * Activates the LoRaMesh payload trace
@@ -150,9 +142,14 @@
 #define LORAMESH_NOF_RETRIES                2
 
 /*!
+ * LoRaWAN application port single up link
+ */
+#define LORAMESH_APP_PORT_SINGLE            2
+
+/*!
  * LoRaWAN application port
  */
-#define LORAMESH_APP_PORT                   2
+#define LORAMESH_APP_PORT_MULTI             80
 
 /*!
  * User application data buffer size
@@ -162,11 +159,11 @@
 /*!
  * User application data buffer size
  */
-#define LORAMESH_APP_DATA_SIZE              19
+#define LORAMESH_APP_DATA_SIZE              26
 
 /*!
  * Number of user application data entries
  */
-#define LORAMESH_APP_NOF_DATA_ENTRIES       3
+#define LORAMESH_APP_NOF_DATA_ENTRIES       4
 
 #endif /* __LORAMESH_APPCONFIG_H_ */

@@ -15,7 +15,7 @@
 #include "LoRaMacCrypto.h"
 #include "LoRaMesh.h"
 
-#define LOG_LEVEL_DEBUG
+#define LOG_LEVEL_ERROR
 #include "debug.h"
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
@@ -310,10 +310,9 @@ uint8_t LoRaMesh_RegisterApplication( PortHandlerFunction_t fHandler, uint8_t fP
     if ( handler == NULL ) return ERR_FAILED;
 
     /* Populate port handler */
+    pFreePortHandler = handler->next;
     handler->fPort = fPort;
     handler->fHandler = fHandler;
-
-    /* Add to port handler list */
     handler->next = pPortHandlers;
     pPortHandlers = handler;
 
@@ -1043,6 +1042,7 @@ static uint8_t ScheduleEvent( LoRaSchedulerEventHandler_t *evtHandler,
             while ( iterEvt != NULL ) {
                 if ( iterEvt == pEventScheduler && evt->endSlot < iterEvt->startSlot ) {
                     evt->next = iterEvt;
+                    pNextSchedulerEvent = evt;
                     pEventScheduler = evt;
                     break;
                 } else if ( ((iterEvt->endSlot < evt->startSlot) && (iterEvt->next != NULL)
@@ -1353,7 +1353,7 @@ static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer )
     slot = ((((currTime - LastAdvertisingWindow) * portTICK_PERIOD_MS) * 1000)
             - ADVERTISING_RESERVED_TIME) / TIME_PER_SLOT;
 
-//    LOG_TRACE("Event scheduler at slot %u (%u ms)", slot, currTime);
+    LOG_TRACE("Event scheduler at slot %u (%u ms)", slot, currTime);
 
     if ( pNextSchedulerEvent->next == NULL ) {
         /* Restart scheduler */
@@ -1373,7 +1373,7 @@ static void OnEventSchedulerTimerEvent( TimerHandle_t xTimer )
         }
     } else {
         LOG_ERROR("Drift occurred. Skip event. (Start %u / Current %u)",
-                pNextSchedulerEvent->next->startSlot, slot);
+                pNextSchedulerEvent->startSlot, slot);
         /* Start scheduler timer */
         nextEvtTime = ((pNextSchedulerEvent->next->startSlot - slot) * TIME_PER_SLOT);
         /* Start scheduler timer */
@@ -1732,14 +1732,14 @@ static uint8_t PrintHelp( Shell_ConstStdIO_t *io )
 {
     Shell_SendHelpStr((unsigned char*) "lora", (unsigned char*) "Group of lora commands\r\n",
             io->stdOut);
+    Shell_SendHelpStr((unsigned char*) "  help|status",
+            (unsigned char*) "Print help or status information\r\n", io->stdOut);
     Shell_SendHelpStr((unsigned char*) "  events",
             (unsigned char*) "Print event scheduler list\r\n", io->stdOut);
     Shell_SendHelpStr((unsigned char*) "  childnodes",
             (unsigned char*) "Print child nodes list\r\n", io->stdOut);
     Shell_SendHelpStr((unsigned char*) "  multicastgroups",
             (unsigned char*) "Print multicast groups list\r\n", io->stdOut);
-    Shell_SendHelpStr((unsigned char*) "  help|status",
-            (unsigned char*) "Print help or status information\r\n", io->stdOut);
 
     return ERR_OK;
 }

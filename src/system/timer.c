@@ -20,7 +20,7 @@
 #include "rtc-board.h"
 #include "timer-board.h"
 
-#define LOG_LEVEL_NONE
+#define LOG_LEVEL_ERROR
 #include "debug.h"
 
 /*******************************************************************************

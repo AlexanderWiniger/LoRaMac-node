@@ -37,7 +37,7 @@
 
 /*! Class A&B maximum receive window delay in us */
 #ifndef LORAMESH_CONFIG_MAX_RX_WINDOW
-#define LORAMESH_CONFIG_MAX_RX_WINDOW                       (1000000)
+#define LORAMESH_CONFIG_MAX_RX_WINDOW                       (300000)//(1000000)
 #endif
 
 /*! Transmission timeout */

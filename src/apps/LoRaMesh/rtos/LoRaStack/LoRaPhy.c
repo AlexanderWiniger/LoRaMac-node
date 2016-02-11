@@ -14,7 +14,7 @@
 #include "LoRaMesh.h"
 #include "LoRaPhy.h"
 
-#define LOG_LEVEL_NONE
+#define LOG_LEVEL_ERROR
 #include "debug.h"
 /*******************************************************************************
  * PRIVATE CONSTANT DEFINITIONS
@@ -782,9 +782,7 @@ static uint8_t CheckTx( void )
                     (uint32_t)(TimerGetCurrentTime() * portTICK_PERIOD_MS), channel.Frequency,
                     pLoRaDevice->currDataRateIndex);
             Radio.Send(LORAPHY_BUF_PAYLOAD_START(TxDataBuffer), LORAPHY_BUF_SIZE(TxDataBuffer));
-#if !defined(NODE_A)
-            LOG_DEBUG("Send data on channel with frequency %u Hz", channel.Frequency);
-#endif
+//            LOG_DEBUG("Send data on channel with frequency %u Hz", channel.Frequency);
         }
 
         if ( (flags & LORAPHY_PACKET_FLAGS_FRM_MASK) == LORAPHY_PACKET_FLAGS_FRM_ADVERTISING ) {
@@ -839,7 +837,7 @@ static void OpenReceptionWindow( uint32_t freq, int8_t datarate, uint32_t bandwi
             Radio.Rx(0);   // Continuous mode
         }
         phyStatus = PHY_RECEIVING;
-        LOG_TRACE("Open reception window on frequency %u Hz", freq);
+//        LOG_DEBUG("Open reception window on frequency %u Hz", freq);
     }
 }
 

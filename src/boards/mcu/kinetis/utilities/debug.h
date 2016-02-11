@@ -26,8 +26,8 @@
  */
 //#define LOG_DEFAULT_LEVEL_TRACE       // Everything gets printed
 //#define LOG_DEFAULT_LEVEL_DEBUG       // Errors and debug data get printed
-//#define LOG_DEFAULT_LEVEL_ERROR       // Only errors get printed
-#define LOG_DEFAULT_LEVEL_NONE        // Nothing gets printed
+#define LOG_DEFAULT_LEVEL_ERROR       // Only errors get printed
+//#define LOG_DEFAULT_LEVEL_NONE        // Nothing gets printed
 
 /**
  * Undefine log enable flags
