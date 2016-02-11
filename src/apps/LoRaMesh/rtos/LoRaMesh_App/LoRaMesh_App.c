@@ -51,7 +51,8 @@ static uint32_t DevAddr;
 #endif
 
 /*! Application multicast group address */
-static const uint32_t AppAddr = 0x00A5EF01;
+static const uint32_t McGrpAddr1 = 0x00A5EF01;
+static const uint32_t McGrpAddr2 = 0x00A5EF02;
 
 /*! Application port */
 static uint8_t AppPort = LORAMESH_APP_PORT;
@@ -189,37 +190,60 @@ void LoRaMesh_AppInit( void )
     LoRaMesh_TestSetDutyCycleCtrlOff (LORAWAN_DUTYCYCLE_OFF);
 #if defined(NODE_A)
     LoRaMesh_SetDeviceRole (COORDINATOR);
+#elif defined(NODE_C)
+    LoRaMesh_SetDeviceRole (ROUTER);
 #endif
 
     LoRaMesh_RegisterApplication((PortHandlerFunction_t) & ProcessDataFrame, AppPort);
-#if defined(NODE_B) || defined(NODE_C) || defined(NODE_D)
-#if defined(NODE_B)
-    LoRaMesh_RegisterTransmission(0, 5000000, EVENT_TYPE_UPLINK,
-            LORAMESH_APP_DATA_SIZE, &SendDataFrame, (void*) NULL);
-#elif defined(NODE_C)
-    LoRaMesh_RegisterTransmission(8, 4000000, EVENT_TYPE_UPLINK, LORAMESH_APP_DATA_SIZE,
-            &SendDataFrame, (void*) NULL);
-#elif defined(NODE_D)
-    LoRaMesh_RegisterTransmission(0, 5000000, EVENT_TYPE_UPLINK, LORAMESH_APP_DATA_SIZE,
-            &SendDataFrame, (void*) NULL);
-#endif
-    /* Multicast group */
-    LoRaMesh_TestCreateMulticastGroup(AppAddr, LORAMESH_APP_TX_INTERVAL, 868100000, NwkSKey,
-            AppSKey, false);
-    LoRaMesh_RegisterReceptionWindow(3, LORAMESH_APP_TX_INTERVAL, &ReceiveDataFrame,
-            (void*) AppAddr);
-#elif defined(NODE_A)
+
+#if defined(NODE_A)
     /* Test child node */
     LoRaMesh_TestCreateChildNode(0x013A1024, 5000000, 868300000, NwkSKey, AppSKey);
     LoRaMesh_RegisterReceptionWindow(0, 5000000, &ReceiveDataFrame, (void*) 0x013A1024);
     /* Multicast group */
-    LoRaMesh_TestCreateMulticastGroup(AppAddr, LORAMESH_APP_TX_INTERVAL, 868100000, NwkSKey,
+    LoRaMesh_TestCreateMulticastGroup(McGrpAddr1, LORAMESH_APP_TX_INTERVAL, 868100000, NwkSKey,
             AppSKey, true);
     LoRaMesh_RegisterTransmission(3, LORAMESH_APP_TX_INTERVAL, EVENT_TYPE_MULTICAST,
-            ((3 * LORAMESH_APP_DATA_SIZE) + 1), &SendMulticastDataFrame, (void*) NULL);
+            ((4 * LORAMESH_APP_DATA_SIZE) + 1), &SendMulticastDataFrame, (void*) NULL);
     /* Test child node */
     LoRaMesh_TestCreateChildNode(0x013AD5F1, 4000000, 868500000, NwkSKey, AppSKey);
-    LoRaMesh_RegisterReceptionWindow(8, 4000000, &ReceiveDataFrame, (void*) 0x013AD5F1);
+    LoRaMesh_RegisterReceptionWindow(9, 4000000, &ReceiveDataFrame, (void*) 0x013AD5F1);
+#elif defined(NODE_B)
+    /* Up Link */
+    LoRaMesh_RegisterTransmission(0, 5000000, EVENT_TYPE_UPLINK,
+            LORAMESH_APP_DATA_SIZE, &SendDataFrame, (void*) NULL);
+    /* Multicast group */
+    LoRaMesh_TestCreateMulticastGroup(McGrpAddr1, LORAMESH_APP_TX_INTERVAL, 868100000, NwkSKey,
+            AppSKey, false);
+    LoRaMesh_RegisterReceptionWindow(3, LORAMESH_APP_TX_INTERVAL, &ReceiveDataFrame,
+            (void*) McGrpAddr1);
+#elif defined(NODE_C)
+    /* Up Link */
+    LoRaMesh_RegisterTransmission(9, 4000000, EVENT_TYPE_UPLINK, LORAMESH_APP_DATA_SIZE,
+            &SendDataFrame, (void*) NULL);
+    /* Multicast group */
+    LoRaMesh_TestCreateMulticastGroup(McGrpAddr1, LORAMESH_APP_TX_INTERVAL, 868100000, NwkSKey,
+            AppSKey, false);
+    LoRaMesh_RegisterReceptionWindow(3, LORAMESH_APP_TX_INTERVAL, &ReceiveDataFrame,
+            (void*) McGrpAddr1);
+#if 1
+    /* Test child node */
+    LoRaMesh_TestCreateChildNode(0x013AFA23, 5000000, 867300000, NwkSKey, AppSKey);
+    LoRaMesh_RegisterReceptionWindow(0, 5000000, &ReceiveDataFrame, (void*) 0x013AFA23);
+    /* Multicast group 2 */
+    LoRaMesh_TestCreateMulticastGroup(McGrpAddr2, (LORAMESH_APP_TX_INTERVAL+1000000), 867100000, NwkSKey,
+            AppSKey, true);
+    LoRaMesh_RegisterTransmission(12, (LORAMESH_APP_TX_INTERVAL+1000000), EVENT_TYPE_MULTICAST,
+            ((4 * LORAMESH_APP_DATA_SIZE) + 1), &SendMulticastDataFrame, (void*) NULL);
+#endif
+#elif defined(NODE_D)
+    LoRaMesh_RegisterTransmission(0, 5000000, EVENT_TYPE_UPLINK, LORAMESH_APP_DATA_SIZE,
+            &SendDataFrame, (void*) NULL);
+    /* Multicast group */
+    LoRaMesh_TestCreateMulticastGroup(McGrpAddr2, (LORAMESH_APP_TX_INTERVAL+1000000), 867100000, NwkSKey,
+            AppSKey, false);
+    LoRaMesh_RegisterReceptionWindow(12, (LORAMESH_APP_TX_INTERVAL+1000000), &ReceiveDataFrame,
+            (void*) McGrpAddr2);
 #endif
 
     if ( xTaskCreate(LoRaMeshTask, "LoRaMesh", configMINIMAL_STACK_SIZE + 150, (void*) NULL,

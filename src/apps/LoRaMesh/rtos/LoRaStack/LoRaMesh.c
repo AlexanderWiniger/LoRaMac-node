@@ -381,9 +381,9 @@ uint8_t LoRaMesh_RegisterTransmission( uint16_t firstSlot, uint32_t interval,
 #elif defined(NODE_C)
         pLoRaDevice->upLinkSlot.ChannelIndex = 2;
 #elif defined(NODE_D)
-        pLoRaDevice->upLinkSlot.ChannelIndex = 3;
-#elif defined(NODE_E)
         pLoRaDevice->upLinkSlot.ChannelIndex = 4;
+#elif defined(NODE_E)
+        pLoRaDevice->upLinkSlot.ChannelIndex = 5;
 #endif
     }
 
